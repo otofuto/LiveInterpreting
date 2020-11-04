@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 	"strconv"
-	"../../database"
+	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -14,7 +14,7 @@ import (
 	_ "image/jpeg"
 	"image/png"
 	"github.com/nfnt/resize"
-	"./pkg/database/accounts"
+	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 )
 
 var port string
