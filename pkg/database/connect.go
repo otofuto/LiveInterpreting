@@ -1,7 +1,7 @@
 package database
 
 import (
-	//"fmt"
+	"fmt"
 	"os"
 	"database/sql"
 	"crypto/tls"
