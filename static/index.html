@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>LiveInterpreting</title>
+		<link rel="stylesheet" href="/css/master.css">
+		<style>
+			#promote {
+				font-family: 'M PLUS Rounded 1c', sans-serif;
+				width: 50%;
+				font-size: 200%;
+				margin: 0 auto;
+				padding: 20px;
+			}
+
+			@media screen and (max-width: 812px) {
+				#promote {
+					padding: 10px;
+					width: calc(100% - 20px);
+				}
+			}
+
+			#buttonArea {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+
+			.login-button {
+				border-radius: 10px;
+				font-size: 40px;
+				padding: 10px 20px;
+				color: white;
+				margin: 20px;
+				outline: none;
+				border: none;
+				box-shadow: 2px 2px 2px gray;
+				font-family: 'M PLUS Rounded 1c', sans-serif;
+			}
+
+			.login-button:hover {
+				box-shadow: 2px 2px 2px black;
+			}
+
+			.login-button:active {
+				box-shadow: 2px 2px 2px black inset;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="promote">
+				<p>多言語のライブ配信を見よう！</p>
+				<p style="margin-left: 30px;">海外にファンを作ろう！</p>
+				<p style="margin-left: 60px;">配信者と通訳者を繋げるマッチングサイトです！</p>
+				<p style="text-align: center;">- めっちゃ仮バージョンで開発中 -</p>
+			</div>
+			<div id="buttonArea">
+				<button class="login-button" style="background-color: #1322AB;" onclick="location = '/login/';">ログイン</button>
+				<button class="login-button" style="background-color: #AB5013;" onclick="location = '/signup/';">使ってみる</button>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/js/master.js"></script>
+		<script>
+			checkLogin().then(login => {
+				if (login != null) {
+					location = "/home/";
+				}
+			});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>ログイン | LiveInterpreting</title>
+		<link rel="stylesheet" href="/css/master.css">
+		<style>
+			.button {
+				width: 300px;
+				background-color: var(--color2);
+				color: white;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="content">
+				<form name="fm" onsubmit="login(); return false;">
+					<h1>Live Interpretingにログイン</h1>
+					<div class="field">
+						<input type="email" class="input" name="email" onchange="checkmail(this)" required>
+						<lavel class="input-label">メールアドレス</lavel>
+					</div>
+					<div class="field">
+						<input type="password" name="password" class="input" minlength="8" maxlength="16" pattern="^[0-9A-Za-z]+$" required>
+						<lavel class="input-label">パスワード</lavel>
+					</div>
+					<label id="loginresult"></label>
+					<input type="submit" style="display: none;" name="sub">
+				</form>
+				<button class="button" onclick="document.fm.sub.click()">ログイン</button>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/js/master.js"></script>
+		<script>
+			function login() {
+				fetch('/Login/', {
+					method: "post",
+					body: new FormData(document.fm),
+					credentials: "same-origin"
+				}).then(res => {
+					if (res.status == 200)
+						return res.json();
+					else
+						return null;
+				}).then(result => {
+					if (result == null) {
+						loginresult.innerText = "ログインできませんでした。";
+					} else {
+						loginresult.innerText = "ログイン成功";
+						location = "/home/";
+					}
+				}).catch(err => {
+					loginresult.innerText = "エラーによりログインに失敗しました。";
+				});
+			}
+		</script>
+	</body>
+</html>

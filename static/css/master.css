@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Turret+Road:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500&display=swap');
+
+body {
+	font-family: 'Turret Road', cursive;
+	font-size: 16px;
+	padding: 0;
+	margin: 0;
+
+	--color1: #136EAB;
+	--color2: #AB5013;
+	--color3: #AB9C13;
+}
+
+.page-header {
+	position: absolute;
+	display: block;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 80px;
+	background-color: var(--color1);
+	cursor: pointer;
+}
+
+.service-title {
+	display: inline-block;
+	color: white;
+	font-size: 50px;
+	font-weight: bolder;
+	margin-left: 10px;
+}
+
+@media screen and (max-width: 812px) {
+	.service-title {
+		font-size: 35px;
+	}
+}
+
+main {
+	margin-top: 100px;
+	min-height: calc(100vh - 120px);
+}
+
+#content {
+	width: 50%;
+	margin: 0 auto;
+	text-align: center;
+	font-family: 'M PLUS Rounded 1c', sans-serif;
+}
+
+@media screen and (max-width: 812px) {
+	#content {
+		width: 100%;
+	}
+}
+
+.page-footer {
+	position: relative;
+	display: block;
+	color: white;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	height: 20px;
+	line-height: 20px;
+	text-align: center;
+	background-color: var(--color1);
+}
+
+.button {
+	outline: none;
+	border: none;
+	box-shadow: 2px 2px 2px gray;
+	padding: 10px 20px;
+	border-radius: 10px;
+	margin: 10px;
+	font-family: 'M PLUS Rounded 1c', sans-serif;
+	user-select: none;
+}
+
+.button:focus {
+	box-shadow: 2px 2px 2px black;
+}
+
+.button:hover {
+	box-shadow: 2px 2px 2px black;
+}
+
+.button:active {
+	box-shadow: 2px 2px 2px black inset;
+}
+
+.field {
+	width: 300px;
+	text-align: left;
+	color: black;
+	display: flex;
+	position: relative;
+	flex-wrap: wrap;
+	margin: 0 auto 20px auto;
+}
+
+.input-label {
+	position: absolute;
+	left: 8px;
+	top: 0;
+	background-color: white;
+	font-weight: bold;
+	padding: 0 5px;
+}
+
+.input {
+	position: relative;
+	top: 10px;
+	left: 0;
+	width: 100%;
+	height: 50px;
+	display: inline-block;
+	outline: none;
+	border: solid 2px var(--color2);
+	padding: 0 8px;
+	border-radius: 3px;
+}
+
+.textarea {
+	position: relative;
+	top: 10px;
+	left: 0;
+	width: 100%;
+	height: 80px;
+	display: inline-block;
+	outline: none;
+	border: solid 2px var(--color2);
+	padding: 18px 8px 8px 8px;
+	border-radius: 3px;
+}

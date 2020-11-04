@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>{{.Name}} | LiveInterpreting</title>
+		<link rel="stylesheet" href="/css/master.css">
+		<style>
+			#content {
+				width: 50%;
+				margin: 0 auto;
+				text-align: center;
+				font-family: 'M PLUS Rounded 1c', sans-serif;
+			}
+
+			@media screen and (max-width: 812px) {
+				#content {
+					width: 100%;
+				}
+			}
+
+			#iconDisp {
+				position: relative;
+				display: inline-block;
+				width: 100px;
+				height: 100px;
+				/*border: solid 1px gray;*/
+				border-radius: 5px;
+				background-size: cover;
+				background-position: center;
+				background-image: url('/img/accounts/{{.IconImage}}');
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="content">
+				<div id="iconDisp"></div>
+				<h1>{{.Name}}</h1>
+				<p>{{.Description}}</p>
+				<p>{{ if eq .Sex 0 }}男性{{ else if eq .Sex 1 }}女性{{ else }}その他{{ end }}&nbsp;{{ if eq .UserType "influencer" }}配信者{{ else }}翻訳者{{end}}</p>
+				<p>登録日時: {{.CreatedAt}}</p>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/js/master.js"></script>
+		<script>
+			function checkmail(elm) {
+				if (elm.value.trim() == "")
+					return;
+				fetch('/Account/CheckMail/?email=' + elm.value)
+				.then(res => res.json())
+				.then(result => {
+					if (!result) {
+						emailexists.innerText = "このメールアドレスは使用できません！";
+						emailexists.style.animationName = "vibe";
+						setTimeout(() => {
+							emailexists.style.animationName = "none";
+						}, 400);
+					}
+					else {
+						emailexists.innerText = "";
+					}
+				});
+			}
+
+			function next() {
+				var obj = {
+					"user_type": "influencer",
+					"name": document.fm.name.value,
+					"description": document.fm.description.value,
+					"email": document.fm.email.value,
+					"sex": document.fm.sex.value
+				};
+				sessionStorage.setItem("signup", JSON.stringify(obj));
+				location = "/signup/password/";
+			}
+		</script>
+	</body>
+</html>

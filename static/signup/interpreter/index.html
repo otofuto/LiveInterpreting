@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>LiveInterpreting</title>
+		<link rel="stylesheet" href="/css/master.css">
+		<style>
+			.button {
+				font-size: 150%;
+				width: 300px;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="content">
+				<form name="fm" onsubmit="next(); return false;">
+					<h1>あなたのプロフィールを教えて下さい</h1>
+					<div class="field">
+						<input type="text" name="name" class="input" required>
+						<lavel class="input-label">おなまえ</lavel>
+					</div>
+					<div class="field">
+						<textarea class="textarea" name="description"></textarea>
+						<lavel class="input-label">自己紹介</lavel>
+					</div>
+					<div class="field">
+						<input type="email" class="input" name="email" required>
+						<lavel class="input-label">メールアドレス</lavel>
+					</div>
+					<div class="field">
+						<select name="sex" class="input">
+							<option value="0">男性</option>
+							<option value="1">女性</option>
+							<option value="2">その他</option>
+						</select>
+						<lavel class="input-label">性別</lavel>
+					</div>
+					<input type="submit" style="display: none;" name="sub">
+				</form>
+				<button class="button" onclick="document.fm.sub.click()">次へ</button>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/js/master.js"></script>
+		<script>
+			function next() {
+				var obj = {
+					"user_type": "interpreter",
+					"name": document.fm.name.value,
+					"description": document.fm.description.value,
+					"email": document.fm.email.value,
+					"sex": document.fm.sex.value
+				};
+				sessionStorage.setItem("signup", JSON.stringify(obj));
+				location = "/signup/password/";
+			}
+		</script>
+	</body>
+</html>
