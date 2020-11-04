@@ -22,6 +22,7 @@ func Connect() *sql.DB {
 	connectionstring := os.Getenv("DB_USER") + ":" + os.Getenv("DB_PASS") + "@" + os.Getenv("DB_HOST") + "/" + os.Getenv("DB_NAME") + ""
 	db, err := sql.Open("mysql", connectionstring)
 	if err != nil {
+		fmt.Println(connectionstring)
 		panic(err.Error())
 	}
 	//fmt.Println("connect db");
