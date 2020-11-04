@@ -4,8 +4,8 @@
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 
-./static/img/accounts/
-./documents/
+static/img/accounts/
+documents/
 *.sql
 *.bat
 *.exe
