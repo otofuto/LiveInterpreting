@@ -51,7 +51,7 @@
 					<input type="submit" style="display: none;" name="sub">
 				</form>
 				<button class="button" onclick="history.back(-1);">戻る</button>
-				<button class="button" onclick="document.fm.sub.click()" style="background-color: var(--color2); color: white;">登録</button>
+				<button class="button" id="btnRegist" onclick="document.fm.sub.click()" style="background-color: var(--color2); color: white;">登録</button>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -98,6 +98,8 @@
 				if (document.getElementsByName("icon_image")[0].files.length > 0) {
 					data.append("icon_image", document.getElementsByName("icon_image")[0].files[0]);
 				}
+				btnRegist.innerText = "送信中";
+				btnRegist.setAttribute("disabled", "");
 				fetch('/Account/', {
 					method: "post",
 					body: data,
