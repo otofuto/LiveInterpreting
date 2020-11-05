@@ -25,7 +25,7 @@ func main() {
 		port = "5000"
 	}
 
-	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./static"))));
+	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./static"))))
 	http.HandleFunc("/Account/", AccountHandle)
 	http.HandleFunc("/Login/", LoginHandle)
 	http.HandleFunc("/Logout/", LogoutHandle)
@@ -38,7 +38,7 @@ func main() {
 
 func AccountHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "localhost")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
@@ -120,7 +120,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		fmt.Fprintf(w, string(bytes))
-	}else if r.Method == http.MethodGet {
+	} else if r.Method == http.MethodGet {
 		mode := r.URL.Path[len("/Account/"):]
 		if strings.HasPrefix(mode, "CheckMail") {
 			email := r.FormValue("email")
@@ -175,7 +175,7 @@ func ToSquare(img image.Image) image.Image {
 
 func LoginHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "localhost")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
@@ -227,7 +227,7 @@ func LoginHandle(w http.ResponseWriter, r *http.Request) {
 
 func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "localhost")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		cookie, err := r.Cookie("accounttoken")
@@ -277,7 +277,7 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 
 func HomeHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	w.Header().Set("Access-Control-Allow-Origin", "localhost")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
 		cookie, err := r.Cookie("accounttoken")
