@@ -16,6 +16,10 @@
 				font-family: 'M PLUS Rounded 1c', sans-serif;
 			}
 
+			pre {
+				font-family: 'M PLUS Rounded 1c', sans-serif;
+			}
+
 			@media screen and (max-width: 812px) {
 				#content {
 					width: 100%;
@@ -43,7 +47,7 @@
 			<div id="content">
 				<div id="iconDisp"></div>
 				<h1>{{.Name}}</h1>
-				<p>{{.Description}}</p>
+				<pre>{{.Description}}</pre>
 				<p>{{ if eq .Sex 0 }}男性{{ else if eq .Sex 1 }}女性{{ else }}その他{{ end }}&nbsp;{{ if eq .UserType "influencer" }}配信者{{ else }}翻訳者{{end}}</p>
 				<p>登録日時: {{.CreatedAt}}</p>
 			</div>
@@ -53,36 +57,6 @@
 		</footer>
 		<script src="/js/master.js"></script>
 		<script>
-			function checkmail(elm) {
-				if (elm.value.trim() == "")
-					return;
-				fetch('/Account/CheckMail/?email=' + elm.value)
-				.then(res => res.json())
-				.then(result => {
-					if (!result) {
-						emailexists.innerText = "このメールアドレスは使用できません！";
-						emailexists.style.animationName = "vibe";
-						setTimeout(() => {
-							emailexists.style.animationName = "none";
-						}, 400);
-					}
-					else {
-						emailexists.innerText = "";
-					}
-				});
-			}
-
-			function next() {
-				var obj = {
-					"user_type": "influencer",
-					"name": document.fm.name.value,
-					"description": document.fm.description.value,
-					"email": document.fm.email.value,
-					"sex": document.fm.sex.value
-				};
-				sessionStorage.setItem("signup", JSON.stringify(obj));
-				location = "/signup/password/";
-			}
 		</script>
 	</body>
 </html>
