@@ -280,11 +280,22 @@ func HomeHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "localhost")
 
 	if r.Method == http.MethodGet {
-		temp := template.Must(template.ParseFiles("template/home.html"))
-
-		if err := temp.Execute(w, "");
-		err != nil {
-			log.Fatal(err)
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			fmt.Println(err)
+			http.Redirect(w, r, "/", 301)
+			return
+		}
+		ac, err := accounts.CheckToken(cookie.Value)
+		if err != nil {
+			http.Redirect(w, r, "/", 301)
+			fmt.Println(err)
+		} else {
+			temp := template.Must(template.ParseFiles("template/home.html"))
+			if err := temp.Execute(w, ac);
+			err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
