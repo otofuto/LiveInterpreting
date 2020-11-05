@@ -1,6 +1,6 @@
 if ((serviceTitle = document.getElementsByClassName("service-title")).length > 0) {
 	serviceTitle[0].addEventListener("click", () => {
-		location = "/";
+		location = "/home/";
 	});
 }
 
