@@ -141,6 +141,8 @@ func Login(email string, pass string) (Accounts, error) {
 		}
 		ac.Password = ""
 		ac.Email = ""
+	} else {
+		return Accounts{}, errors.New("account not found")
 	}
 
 	return ac, nil

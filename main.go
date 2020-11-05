@@ -211,7 +211,7 @@ func LoginHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		ac, err := accounts.CheckToken(cookie.Value)
 		if err != nil {
-			http.Error(w, "err", 403)
+			http.Error(w, "checktoken err", 403)
 			fmt.Println(err)
 		} else {
 			bytes, err := json.Marshal(ac)
