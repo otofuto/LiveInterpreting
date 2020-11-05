@@ -6,7 +6,9 @@ import (
 	"errors"
 	"time"
 	"strconv"
+	"encoding/json"
 	"github.com/otofuto/LiveInterpreting/pkg/database"
+	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,6 +21,7 @@ type Accounts struct {
 	Description string `json:"description"`
 	Sex int `json:"sex"`
 	UserType string `json:"user_type"`
+	Langs []langs.Langs `json:"langs"`
 	CreatedAt	string `json:"created_at"`
 }
 
@@ -52,9 +55,33 @@ func (ac *Accounts) Insert() int {
 		newId := -1
 		rows.Scan(&newId)
 		ac.Id = newId
+		for _, v := range ac.Langs {
+			ins, err = db.Prepare("insert into `account_langs` (`id`, `lang_id`) values (?, ?)")
+			if err != nil {
+				ac.Delete()
+				log.Fatal(err)
+				return -3
+			}
+			ins.Exec(newId, v.Id)
+		}
 		return newId
 	}
 	return -1
+}
+
+func (ac *Accounts) SetLangs(jsonstring string) error {
+	var ids []string
+	err := json.Unmarshal([]byte(jsonstring), &ids)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	var ls []langs.Langs
+	for _, v := range ids {
+		id, _ := strconv.Atoi(v)
+		ls = append(ls, langs.Langs { Id: id })
+	}
+	ac.Langs = ls
+	return nil
 }
 
 func (ac *Accounts) Update() bool {
@@ -71,6 +98,16 @@ func (ac *Accounts) Update() bool {
 		return false
 	}
 	upd.Exec(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Id)
+	db.Query("delete from `account_langs` where `id` = " + strconv.Itoa(ac.Id))
+	for _, v := range ac.Langs {
+		ins, err := db.Prepare("insert into `account_langs` (`id`, `lang_id`) values (?, ?)")
+		if err != nil {
+			ac.Delete()
+			log.Fatal(err)
+			return false
+		}
+		ins.Exec(ac.Id, v.Id)
+	}
 	return true
 }
 
@@ -79,6 +116,18 @@ func (ac *Accounts) Delete() bool {
 	defer db.Close()
 
 	upd, err := db.Prepare("delete from `accounts` where `id` = ?")
+	if err != nil {
+		log.Fatal(err)
+		return false
+	}
+	upd.Exec(&ac.Id)
+	upd, err = db.Prepare("delete from `account_tokens` where `id` = ?")
+	if err != nil {
+		log.Fatal(err)
+		return false
+	}
+	upd.Exec(&ac.Id)
+	upd, err = db.Prepare("delete from `account_langs` where `id` = ?")
 	if err != nil {
 		log.Fatal(err)
 		return false
@@ -99,6 +148,15 @@ func (ac *Accounts) Get() bool {
 		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.CreatedAt)
 		if err != nil {
 			log.Fatal(err)
+		}
+		rows, err = db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		if err != nil {
+			log.Fatal(err)
+		}
+		for rows.Next() {
+			var l langs.Langs
+			err = rows.Scan(&l.Id, &l.Lang)
+			ac.Langs = append(ac.Langs, l)
 		}
 		return true
 	}

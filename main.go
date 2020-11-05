@@ -15,6 +15,7 @@ import (
 	"image/png"
 	"github.com/nfnt/resize"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
+	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 )
 
 var port string
@@ -31,6 +32,7 @@ func main() {
 	http.HandleFunc("/Logout/", LogoutHandle)
 	http.HandleFunc("/u/", UserHandle)
 	http.HandleFunc("/home/", HomeHandle)
+	http.HandleFunc("/Lang/", LangHandle)
 
 	log.Println("Listening on port: " + port)
 	log.Fatal(http.ListenAndServe(":" + port, nil))
@@ -54,6 +56,13 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			Email: r.FormValue("email"),
 			Sex: sex,
 			Password: r.FormValue("password"),
+		}
+		if ac.UserType == "interpreter" {
+			err = ac.SetLangs(r.FormValue("langs"))
+			if err != nil {
+				http.Error(w, "langs is not json", 400)
+				return
+			}
 		}
 		if !accounts.CheckMail(ac.Email, -1) {
 			http.Error(w, "email already registered", 400)
@@ -299,5 +308,20 @@ func HomeHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func LangHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodGet {
+		bytes, err := json.Marshal(langs.All())
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Fprintf(w, string(bytes))
+	} else {
+		http.Error(w, "method not allowed.", 405)
 	}
 }

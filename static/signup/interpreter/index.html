@@ -6,12 +6,40 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>LiveInterpreting</title>
+		<title>アカウント作成 | LiveInterpreting</title>
 		<link rel="stylesheet" href="/css/master.css">
 		<style>
 			.button {
 				font-size: 150%;
 				width: 300px;
+			}
+
+			#emailexists {
+				color: red;
+				animation-duration: 400ms;
+				animation-timing-function: ease;
+			}
+
+			@keyframes vibe {
+				0% {
+					margin-right: 10px;
+					margin-left: 0;
+				}
+
+				33% {
+					margin-right: 0;
+					margin-left: 10px;
+				}
+
+				66% {
+					margin-right: 10px;
+					margin-left: 0;
+				}
+
+				100% {
+					margin-right: 0;
+					margin-left: 0;
+				}
 			}
 		</style>
 	</head>
@@ -23,6 +51,7 @@
 			<div id="content">
 				<form name="fm" onsubmit="next(); return false;">
 					<h1>あなたのプロフィールを教えて下さい</h1>
+					<p>翻訳者向け</p>
 					<div class="field">
 						<input type="text" name="name" class="input" required>
 						<lavel class="input-label">おなまえ</lavel>
@@ -32,9 +61,10 @@
 						<lavel class="input-label">自己紹介</lavel>
 					</div>
 					<div class="field">
-						<input type="email" class="input" name="email" required>
+						<input type="email" class="input" name="email" onchange="checkmail(this)" required>
 						<lavel class="input-label">メールアドレス</lavel>
 					</div>
+					<label id="emailexists"></label>
 					<div class="field">
 						<select name="sex" class="input">
 							<option value="0">男性</option>
@@ -53,6 +83,25 @@
 		</footer>
 		<script src="/js/master.js"></script>
 		<script>
+			function checkmail(elm) {
+				if (elm.value.trim() == "")
+					return;
+				fetch('/Account/CheckMail/?email=' + elm.value)
+				.then(res => res.json())
+				.then(result => {
+					if (!result) {
+						emailexists.innerText = "このメールアドレスは使用できません！";
+						emailexists.style.animationName = "vibe";
+						setTimeout(() => {
+							emailexists.style.animationName = "none";
+						}, 400);
+					}
+					else {
+						emailexists.innerText = "";
+					}
+				});
+			}
+
 			function next() {
 				var obj = {
 					"user_type": "interpreter",
@@ -62,7 +111,7 @@
 					"sex": document.fm.sex.value
 				};
 				sessionStorage.setItem("signup", JSON.stringify(obj));
-				location = "/signup/password/";
+				location = "lang/";
 			}
 		</script>
 	</body>

@@ -49,6 +49,11 @@
 				<h1>{{.Name}}</h1>
 				<pre>{{.Description}}</pre>
 				<p>{{ if eq .Sex 0 }}男性{{ else if eq .Sex 1 }}女性{{ else }}その他{{ end }}&nbsp;{{ if eq .UserType "influencer" }}配信者{{ else }}翻訳者{{end}}</p>
+				{{ if eq .UserType "interpreter" }}<p>
+					{{ range .Langs }}
+					{{ .Lang }}<br>
+					{{ end }}
+				</p>{{ end }}
 				<p>登録日時: {{.CreatedAt}}</p>
 			</div>
 		</main>

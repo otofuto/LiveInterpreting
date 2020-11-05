@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>アカウント作成 | LiveInterpreting</title>
+		<link rel="stylesheet" href="/css/master.css">
+		<style>
+			.button {
+				font-size: 150%;
+				width: 300px;
+			}
+
+			.lang {
+				width: 49%;
+				text-align: right;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="content">
+				<form name="fm" onsubmit="next(); return false;">
+					<h1>使用する言語をすべて選択してください</h1>
+					<div id="langs" style="display: flex; flex-wrap: wrap;">読込中</div>
+					<input type="submit" style="display: none;" name="sub">
+				</form>
+				<button class="button" onclick="document.fm.sub.click()">次へ</button>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/js/master.js"></script>
+		<script>
+			if (sessionStorage.getItem("signup") == null) {
+				location = "/signup/";
+			}
+
+			fetch('/Lang/')
+			.then(res => res.json())
+			.then(list => {
+				langs.innerHTML = "";
+				Array.from(list).forEach(l => {
+					var lbl = document.createElement("label");
+					lbl.innerText = l.lang;
+					lbl.setAttribute("class", "lang");
+					langs.appendChild(lbl);
+
+					var chk = document.createElement("input");
+					chk.setAttribute("type", "checkbox");
+					chk.setAttribute("name", "lang");
+					chk.value = l.id;
+					lbl.appendChild(chk);
+				});
+			});
+
+			function next() {
+				langarray = [];
+				Array.from(document.getElementsByName("lang")).forEach(l => {
+					if (l.checked)
+						langarray.push(l.value);
+				});
+				var prevData = JSON.parse(sessionStorage.getItem("signup"));
+				prevData.langs = JSON.stringify(langarray);
+				sessionStorage.setItem("signup", JSON.stringify(prevData));
+				location = "/signup/password/";
+			}
+		</script>
+	</body>
+</html>

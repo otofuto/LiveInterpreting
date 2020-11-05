@@ -98,6 +98,9 @@
 				if (document.getElementsByName("icon_image")[0].files.length > 0) {
 					data.append("icon_image", document.getElementsByName("icon_image")[0].files[0]);
 				}
+				if (prevData.user_type == "interpreter") {
+					data.append("langs", prevData.langs);
+				}
 				btnRegist.innerText = "送信中";
 				btnRegist.setAttribute("disabled", "");
 				fetch('/Account/', {
