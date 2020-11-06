@@ -60,7 +60,7 @@
 					<div style="width: calc(100% - 130px);">
 						<div style="font-size: 120%; font-weight: bold;">{{.Name}}</div>
 						<span>{{ if eq .Sex 0 }}男性{{ else if eq .Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
-						<span>{{ if eq .UserType "influencer" }}配信者{{ else }}翻訳者{{end}}</span><br>
+						<span>{{ if eq .UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
 						<span>{{.CreatedAt}}に登録</span>
 					</div>
 					<div style="width: 100%;"><pre>{{.Description}}</pre></div>
