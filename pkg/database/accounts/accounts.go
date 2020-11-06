@@ -273,3 +273,45 @@ func DeleteToken(token string) {
 
 	db.Query("delete from `account_tokens` where `token` = '" + token + "'")
 }
+
+func Search(search string, user_type string) []Accounts {
+	db := database.Connect()
+	defer db.Close()
+
+	if user_type != "" {
+		user_type = "`user_type` = '" + user_type + "'"
+	}
+
+	if search == "new" {
+		if user_type != "" {
+			user_type += " and "
+		}
+		search = "`created_at` >= subtime(now(), '168:00:00')"
+	} else {
+		search = ""
+	}
+
+	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `created_at` from `accounts` where " + user_type + search)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var acs []Accounts
+	for rows.Next() {
+		var ac Accounts
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.CreatedAt)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		if err != nil {
+			log.Fatal(err)
+		}
+		for rows2.Next() {
+			var l langs.Langs
+			err = rows2.Scan(&l.Id, &l.Lang)
+			ac.Langs = append(ac.Langs, l)
+		}
+		acs = append(acs, ac)
+	}
+	return acs
+}

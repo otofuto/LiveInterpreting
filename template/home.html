@@ -22,11 +22,21 @@
 				}
 			}
 
-			#iconDisp {
-				position: relative;
+			.account {
 				display: inline-block;
+				width: 150px;
+				border-radius: 15px 15px 0 0;
+				margin: 5px;
+				color: white;
+				cursor: pointer;
+			}
+
+			.iconDisp {
+				position: relative;
+				display: block;
 				width: 75px;
 				height: 75px;
+				margin: 5px auto 0 auto;
 				border-radius: 5px;
 				background-size: cover;
 				background-position: center;
@@ -42,6 +52,8 @@
 				<h1>ホーム</h1>
 				<button class="button" onclick="location = '/u/{{.Id}}';">マイページ</button>
 				<button class="button" onclick="logout();">ログアウト</button>
+				<h2>▽新着ユーザー▽</h2>
+				<div id="newaccounts"></div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -49,12 +61,38 @@
 		</footer>
 		<script src="/js/master.js"></script>
 		<script>
-			checkLogin().then(login => {
-				if (login == null) {
-					location = "/";
-				}
-			});
+			fetch('/Account/Search/?search=new')
+			.then(res => res.json())
+			.then(accounts => {
+				Array.from(accounts).forEach(ac => {
+					var acbox = document.createElement("div");
+					acbox.setAttribute("class", "account");
+					if (ac.user_type == "influencer") {
+						acbox.style.backgroundColor = "var(--color1)";
+					} else {
+						acbox.style.backgroundColor = "var(--color2)";
+					}
+					newaccounts.appendChild(acbox);
 
+					var iconDisp = document.createElement("div");
+					iconDisp.setAttribute("class", "iconDisp");
+					iconDisp.style.backgroundImage = "url('/img/accounts/" + ac.icon_image + "')";
+					acbox.appendChild(iconDisp);
+
+					var namelabel = document.createElement("div");
+					namelabel.innerText = ac.name;
+					acbox.appendChild(namelabel);
+
+					var datelabel = document.createElement("label");
+					datelabel.style.fontSize = "80%";
+					datelabel.innerText = ac.created_at;
+					acbox.appendChild(datelabel);
+
+					acbox.addEventListener('click', () => {
+						location = "/u/" + ac.id;
+					});
+				});
+			});
 			function logout() {
 				fetch('/Logout/', {
 					method: "post",

@@ -142,6 +142,23 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "parameter 'email' is required", 400)
 			}
+		} else if strings.HasPrefix(mode, "Search") {
+			search := r.FormValue("search")
+			userType := r.FormValue("user_type")
+			if search == "" && userType == "" {
+				http.Error(w, "user_type or search value is must", 400)
+				return
+			}
+			if userType != "influencer" && userType != "interpreter" && userType != ""{
+				http.Error(w, "user_type value is not allowed", 400)
+				return
+			}
+			acs := accounts.Search(search, userType)
+			bytes, err := json.Marshal(acs)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Fprintf(w, string(bytes))
 		} else {
 			http.Error(w, "なに？", 404)
 		}
