@@ -6,7 +6,7 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>{{.Name}} | LiveInterpreting</title>
+		<title>{{.Account.Name}} | LiveInterpreting</title>
 		<link rel="stylesheet" href="/css/master.css">
 		<style>
 			#content {
@@ -45,7 +45,7 @@
 				background-size: cover;
 				background-position: center;
 				background-color: lightgray;
-				background-image: url('/img/accounts/{{.IconImage}}');
+				background-image: url('/img/accounts/{{.Account.IconImage}}');
 			}
 		</style>
 	</head>
@@ -58,19 +58,27 @@
 				<header id="accountinfo">
 					<div id="iconDisp"></div>
 					<div style="width: calc(100% - 130px);">
-						<div style="font-size: 120%; font-weight: bold;">{{.Name}}</div>
-						<span>{{ if eq .Sex 0 }}男性{{ else if eq .Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
-						<span>{{ if eq .UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
-						<span>{{.CreatedAt}}に登録</span>
+						<div style="font-size: 120%; font-weight: bold;">{{.Account.Name}}</div>
+						<span>{{ if eq .Account.Sex 0 }}男性{{ else if eq .Account.Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
+						<span>{{ if eq .Account.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
+						<span>{{.Account.CreatedAt}}に登録</span>
 					</div>
-					<div style="width: 100%;"><pre>{{.Description}}</pre></div>
-					{{ if eq .UserType "interpreter" }}
+					<div style="width: 100%;"><pre>{{.Account.Description}}</pre></div>
+					{{ if eq .Account.UserType "interpreter" }}
 						<p>使用出来る言語: </p>
 						<p>
-						{{ range .Langs }}
+						{{ range .Account.Langs }}
 						{{ .Lang }}<br>
 						{{ end }}
 					</p>{{ end }}
+					<div style="width: 100%; text-align: right;">
+						{{ if eq .Login.Id .Account.Id }}
+						<button class="button" onclick="location = '/edit/';">アカウント情報を編集する</button>
+						{{ else }}
+						<button class="button">フォロー</button>
+						<button class="button">通報</button>
+						{{ end }}
+					</div>
 				</header>
 			</div>
 		</main>

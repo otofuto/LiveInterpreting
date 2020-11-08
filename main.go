@@ -31,6 +31,7 @@ func main() {
 	http.HandleFunc("/Login/", LoginHandle)
 	http.HandleFunc("/Logout/", LogoutHandle)
 	http.HandleFunc("/u/", UserHandle)
+	http.HandleFunc("/edit/", EditHandle)
 	http.HandleFunc("/home/", HomeHandle)
 	http.HandleFunc("/Lang/", LangHandle)
 
@@ -133,8 +134,12 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 		mode := r.URL.Path[len("/Account/"):]
 		if strings.HasPrefix(mode, "CheckMail") {
 			email := r.FormValue("email")
+			accountId, err := strconv.Atoi(r.FormValue("id"))
+			if err != nil {
+				accountId = -1
+			}
 			if email != "" {
-				if accounts.CheckMail(email, -1) {
+				if accounts.CheckMail(email, accountId) {
 					fmt.Fprintf(w, "true")
 				} else {
 					fmt.Fprintf(w, "false")
@@ -161,6 +166,77 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, string(bytes))
 		} else {
 			http.Error(w, "なに？", 404)
+		}
+	} else if r.Method == http.MethodPut {
+		r.ParseMultipartForm(32 << 20)
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
+			return
+		}
+		ac, err := accounts.CheckToken(cookie.Value)
+		ac.Get()
+		if err != nil {
+			http.Error(w, "checktoken err", 403)
+			fmt.Println(err)
+		} else {
+			if !accounts.CheckMail(ac.Email, ac.Id) {
+				http.Error(w, "email already registered", 400)
+				return
+			}
+			ac.Name = r.FormValue("name")
+			ac.Description = r.FormValue("description")
+			ac.Email = r.FormValue("email")
+
+			if r.FormValue("langs") != "" {
+				err = ac.SetLangs(r.FormValue("langs"))
+				if err != nil {
+					http.Error(w, "langs is not json", 400)
+					return
+				}
+			}
+
+			file, fileHeader, err := r.FormFile("icon_image")
+			if err == nil {
+				defer file.Close()
+
+				img, _, err := image.Decode(file)
+				if err != nil {
+					fmt.Println("画像取得失敗")
+					http.Error(w, "image.Decode failed", 500)
+					return
+				}
+
+				//正方形にトリム
+				img = ToSquare(img)
+				//140角にリサイズ
+				img = resize.Resize(140, 140, img, resize.Lanczos3)
+
+				ac.IconImage = strconv.Itoa(ac.Id) + "_" + fileHeader.Filename + ".png"
+				save, err := os.Create("./static/img/accounts/" + ac.IconImage)
+				if err != nil {
+					fmt.Println("ファイル確保失敗")
+					http.Error(w, "upload failed", 500)
+					return
+				}
+				defer save.Close()
+
+				err = png.Encode(save, img)
+				if err != nil {
+					fmt.Println("ファイル保存失敗")
+					http.Error(w, "upload failed", 500)
+					return
+				}
+			}
+
+			ac.Update()
+
+			bytes, err := json.Marshal(ac)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Fprintf(w, string(bytes))
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)
@@ -287,14 +363,57 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		if ac.Get() {
 			ac.Password = "";
+			context := struct {
+				Account accounts.Accounts `json:"account"`
+				Login accounts.Accounts `json:"login"`
+			}{
+				Account: ac,
+				Login: accounts.Accounts{ Id: -1 },
+			}
+			cookie, err := r.Cookie("accounttoken")
+			if err == nil {
+				loginaccount, err := accounts.CheckToken(cookie.Value)
+				if err == nil {
+					context.Login = loginaccount
+				}
+			}
 			temp := template.Must(template.ParseFiles("template/user.html"))
 
-			if err := temp.Execute(w, ac);
+			if err := temp.Execute(w, context);
 			err != nil {
 				log.Fatal(err)
 			}
 		} else {
 			http.Error(w, "このユーザーは存在しません。", 404)
+		}
+	} else {
+		http.Error(w, "method not allowed.", 405)
+	}
+}
+
+func EditHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodGet {
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
+			return
+		}
+		ac, err := accounts.CheckToken(cookie.Value)
+		ac.Get()
+		if err != nil {
+			http.Error(w, "checktoken err", 403)
+			fmt.Println(err)
+		} else {
+			temp := template.Must(template.ParseFiles("template/edit.html"))
+
+			if err := temp.Execute(w, ac);
+			err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)

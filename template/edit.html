@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>アカウント情報編集 | LiveInterpreting</title>
+		<link rel="stylesheet" href="/css/master.css">
+		<style>
+			.button {
+				font-size: 150%;
+				width: 300px;
+			}
+
+			#emailexists {
+				color: red;
+				animation-duration: 400ms;
+				animation-timing-function: ease;
+			}
+
+			@keyframes vibe {
+				0% {
+					margin-right: 10px;
+					margin-left: 0;
+				}
+
+				33% {
+					margin-right: 0;
+					margin-left: 10px;
+				}
+
+				66% {
+					margin-right: 10px;
+					margin-left: 0;
+				}
+
+				100% {
+					margin-right: 0;
+					margin-left: 0;
+				}
+			}
+
+			#langs {
+				display: flex;
+				flex-wrap: wrap;
+				position: relative;
+				width: 100%;
+				top: 10px;
+				padding: 10px 5px;
+				border: solid 2px var(--color2);
+				border-radius: 3px;
+				text-align: right;
+			}
+
+			.lang {
+				width: calc(49% - 24px);
+				display: inline-block;
+				outline: none;
+			}
+
+			#iconDisp {
+				position: relative;
+				display: block;
+				width: 100px;
+				height: 100px;
+				border: solid 1px gray;
+				border-radius: 5px;
+				background-size: cover;
+				background-position: center;
+				background-image: url('/img/accounts/{{.IconImage}}');
+			}
+
+			#selectFile {
+				display: inline-block;
+				height: 26px;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="content">
+				<form name="fm" onsubmit="update(); return false;">
+					<div class="field">
+						<input type="text" name="name" class="input" value="{{.Name}}" required>
+						<lavel class="input-label">おなまえ</lavel>
+					</div>
+					<div class="field">
+						<textarea class="textarea" name="description">{{.Description}}</textarea>
+						<lavel class="input-label">自己紹介</lavel>
+					</div>
+					<div class="field">
+						<input type="email" class="input" name="email" onchange="checkmail(this)" value="{{.Email}}" required>
+						<lavel class="input-label">メールアドレス</lavel>
+					</div>
+					<label id="emailexists"></label>
+					<div class="field" style="width: 100%;">
+						<div id="langs">読込中</div>
+						<label class="input-label">使用できる言語</label>
+					</div>
+					<div class="field">
+						<div class="input" style="height: 110px; display: flex; padding-top: 12px;">
+							<div id="iconDisp"></div>
+							<input type="button" value="ファイルを選択" id="selectFile" onclick="selectFileClick()">
+						</div>
+						<input type="file" name="icon_image" accept="image/*" style="display: none;" onchange="viewFile(this)">
+						<lavel class="input-label">アイコン</lavel>
+					</div>
+					<input type="submit" style="display: none;" name="sub">
+				</form>
+				<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">更新</button>
+				<button class="button" onclick="location = '/u/{{.Id}}';">マイページに戻る</button>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/js/master.js"></script>
+		<script>
+			fetch('/Lang/')
+			.then(res => res.json())
+			.then(list => {
+				langs.innerHTML = "";
+				Array.from(list).forEach(l => {
+					var lbl = document.createElement("label");
+					lbl.innerText = l.lang;
+					lbl.setAttribute("class", "lang");
+					langs.appendChild(lbl);
+
+					var chk = document.createElement("input");
+					chk.setAttribute("type", "checkbox");
+					chk.setAttribute("name", "lang");
+					chk.value = l.id;
+					lbl.appendChild(chk);
+				});
+			});
+
+			function checkmail(elm) {
+				if (elm.value.trim() == "")
+					return;
+				fetch('/Account/CheckMail/?email=' + elm.value + "&id={{.Id}}")
+				.then(res => res.json())
+				.then(result => {
+					if (!result) {
+						emailexists.innerText = "このメールアドレスは使用できません！";
+						emailexists.style.animationName = "vibe";
+						setTimeout(() => {
+							emailexists.style.animationName = "none";
+						}, 400);
+					}
+					else {
+						emailexists.innerText = "";
+					}
+				});
+			}
+
+			function selectFileClick() {
+				document.getElementsByName("icon_image")[0].click();
+			}
+
+			function viewFile(elm) {
+				if (elm.files.length > 0) {
+					Array.from(elm.files).forEach(fl => {
+						if (fl.name.toLowerCase().endsWith(".png")
+							||
+							fl.name.toLowerCase().endsWith(".jpg")
+							||
+							fl.name.toLowerCase().endsWith(".jpeg")) {
+							iconDisp.style.backgroundImage = "url('" + URL.createObjectURL(fl) + "')";
+						} else {
+							alert("png, jpg, jpegのみ選択可能です。\n\"" + fl.name + "\"");
+						}
+					});
+				} else {
+					iconDisp.style.backgroundImage = "url('/img/accounts/{{.IconImage}}')";
+				}
+			}
+
+			function update() {
+				var pass = prompt("パスワードを入力してください。");
+				var data = new FormData();
+				data.append("email", "{{.Email}}");
+				data.append("password", pass);
+				fetch('/Login/', {
+					method: "post",
+					body: data,
+					credentials: "include"
+				}).then(res => {
+					if (res.status == 200)
+						return res.json();
+					else
+						return null;
+				}).then(login => {
+					if (login == null) {
+						alert("パスワードが間違っています。");
+					} else {
+						data = new FormData();
+						data.append("name", document.fm.name.value);
+						data.append("description", document.fm.description.value);
+						data.append("email", document.fm.email.value);
+						if (document.getElementsByName("icon_image")[0].files.length > 0) {
+							data.append("icon_image", document.getElementsByName("icon_image")[0].files[0]);
+						}
+						langarray = [];
+						Array.from(document.getElementsByName("lang")).forEach(l => {
+							if (l.checked)
+								langarray.push(l.value);
+						});
+						data.append("langs", JSON.stringify(langarray));
+						btnUpdate.innerText = "送信中";
+						btnUpdate.setAttribute("disabled", "");
+						fetch('/Account/', {
+							method: "put",
+							body: data,
+							credentials: "include"
+						}).then(res => {
+							if (res.status == 200) return res.json();
+							else return null;
+						}).then(result => {
+							if (result == null) {
+								alert("更新に失敗しました。");
+							} else {
+								alert("アカウント情報を更新しました。");
+								btnUpdate.innerText = "更新";
+								btnUpdate.removeAttribute("disabled");
+							}
+						}).catch(err => {
+							alert("更新に失敗しました。");
+						});
+					}
+				});
+			}
+		</script>
+	</body>
+</html>

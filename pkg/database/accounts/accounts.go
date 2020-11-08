@@ -224,19 +224,6 @@ func (ac *Accounts) CreateToken() string {
 	return token
 }
 
-func passHash(pass string) string {
-	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(hash)
-}
-
-func checkPass(hash string, pass string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
-	return err == nil
-}
-
 func CheckToken(token string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
@@ -272,6 +259,19 @@ func DeleteToken(token string) {
 	defer db.Close()
 
 	db.Query("delete from `account_tokens` where `token` = '" + token + "'")
+}
+
+func passHash(pass string) string {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(hash)
+}
+
+func checkPass(hash string, pass string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
+	return err == nil
 }
 
 func Search(search string, user_type string) []Accounts {
