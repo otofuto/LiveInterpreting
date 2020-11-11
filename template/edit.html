@@ -121,6 +121,8 @@
 		</footer>
 		<script src="/js/master.js"></script>
 		<script>
+			var mylangs = {{.Langs}};
+			mylangs = mylangs.map(l => l.id);
 			fetch('/Lang/')
 			.then(res => res.json())
 			.then(list => {
@@ -136,6 +138,10 @@
 					chk.setAttribute("name", "lang");
 					chk.value = l.id;
 					lbl.appendChild(chk);
+
+					if (typeof mylangs.find(ml => ml == l.id) != 'undefined') {
+						chk.click();
+					}
 				});
 			});
 

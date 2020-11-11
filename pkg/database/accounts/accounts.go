@@ -153,6 +153,7 @@ func (ac *Accounts) Get() bool {
 		if err != nil {
 			log.Fatal(err)
 		}
+		ac.Langs = make([]langs.Langs, 0)
 		for rows.Next() {
 			var l langs.Langs
 			err = rows.Scan(&l.Id, &l.Lang)
