@@ -8,11 +8,16 @@ import (
 	"strconv"
 	"strings"
 	"os"
-	//"io"
+	"io"
 	"encoding/json"
 	"image"
 	_ "image/jpeg"
 	"image/png"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/nfnt/resize"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
@@ -95,7 +100,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			ac.Get()
 			ac.IconImage = strconv.Itoa(newId) + "_" + fileHeader.Filename + ".png"
 			ac.Update()
-			save, err := os.Create("./static/img/accounts/" + ac.IconImage)
+			/*save, err := os.Create("./static/img/accounts/" + ac.IconImage)
 			if err != nil {
 				fmt.Println("ファイル確保失敗")
 				ac.Delete()
@@ -107,6 +112,35 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			err = png.Encode(save, img)
 			if err != nil {
 				fmt.Println("ファイル保存失敗")
+				ac.Delete()
+				http.Error(w, "upload failed", 500)
+				os.Exit(1)
+				return
+			}*/
+
+			pr, pw := io.Pipe()
+			go func() {
+				err = png.Encode(pw, img)
+				if err != nil {
+					log.Fatal(err)
+				}
+				pw.Close()
+			}()
+
+			sess := session.Must(session.NewSession(&aws.Config{
+				Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
+				Region: aws.String(os.Getenv("S3_REGION")),
+			}))
+
+			uploader := s3manager.NewUploader(sess)
+			_, err = uploader.Upload(&s3manager.UploadInput{
+				Bucket: aws.String(os.Getenv("S3_BUCKET")),
+				Key: aws.String("accounts/" + ac.IconImage),
+				Body: pr,
+			})
+			if err != nil {
+				fmt.Println("S3アップロード失敗")
+				fmt.Println(err)
 				ac.Delete()
 				http.Error(w, "upload failed", 500)
 				os.Exit(1)
@@ -164,7 +198,36 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				log.Fatal(err)
 			}
 			fmt.Fprintf(w, string(bytes))
-		} else {
+		} else if strings.HasPrefix(mode, "img/") {
+			id, err := strconv.Atoi(r.URL.Path[len("/Account/img/"):])
+			if err != nil {
+				http.Error(w, "id is not integer: " + r.URL.Path[len("/Accounts/img/"):], 400)
+				return
+			}
+			ac := accounts.Accounts { Id: id }
+			if ac.Get() {
+				sess := session.Must(session.NewSession(&aws.Config{
+					Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
+					Region: aws.String(os.Getenv("S3_REGION")),
+				}))
+
+				svc := s3.New(sess)
+				obj, err := svc.GetObject(&s3.GetObjectInput{
+					Bucket: aws.String(os.Getenv("S3_BUCKET")),
+					Key: aws.String("accounts/" + ac.IconImage),
+				})
+				if err != nil {
+					fmt.Println(err.Error)
+					fmt.Fprintf(w, "failed to fetch account-icon", 404)
+				} else {
+					w.Header().Set("Content-Type", "image/png")
+					io.Copy(w, obj.Body)
+					obj.Body.Close()
+				}
+			} else {
+				http.Error(w, "account not found", 400)
+			}
+		}else {
 			http.Error(w, "なに？", 404)
 		}
 	} else if r.Method == http.MethodPut {
