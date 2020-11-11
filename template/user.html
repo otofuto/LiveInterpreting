@@ -64,7 +64,7 @@
 						<span>{{.Account.CreatedAt}}に登録</span>
 					</div>
 					<div style="width: 100%;"><pre>{{.Account.Description}}</pre></div>
-					{{ if eq .Account.UserType "interpreter" }}
+					{{ if ne (len .Account.Langs) 0 }}
 						<p>使用出来る言語: </p>
 						<p>
 						{{ range .Account.Langs }}
