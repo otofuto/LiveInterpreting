@@ -277,7 +277,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				img = resize.Resize(140, 140, img, resize.Lanczos3)
 
 				ac.IconImage = strconv.Itoa(ac.Id) + "_" + fileHeader.Filename + ".png"
-				save, err := os.Create("./static/img/accounts/" + ac.IconImage)
+				/*save, err := os.Create("./static/img/accounts/" + ac.IconImage)
 				if err != nil {
 					fmt.Println("ファイル確保失敗")
 					http.Error(w, "upload failed", 500)
@@ -289,6 +289,35 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					fmt.Println("ファイル保存失敗")
 					http.Error(w, "upload failed", 500)
+					return
+				}*/
+
+				pr, pw := io.Pipe()
+				go func() {
+					err = png.Encode(pw, img)
+					if err != nil {
+						log.Fatal(err)
+					}
+					pw.Close()
+				}()
+
+				sess := session.Must(session.NewSession(&aws.Config{
+					Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
+					Region: aws.String(os.Getenv("S3_REGION")),
+				}))
+
+				uploader := s3manager.NewUploader(sess)
+				_, err = uploader.Upload(&s3manager.UploadInput{
+					Bucket: aws.String(os.Getenv("S3_BUCKET")),
+					Key: aws.String("accounts/" + ac.IconImage),
+					Body: pr,
+				})
+				if err != nil {
+					fmt.Println("S3アップロード失敗")
+					fmt.Println(err)
+					ac.Delete()
+					http.Error(w, "upload failed", 500)
+					os.Exit(1)
 					return
 				}
 			}
