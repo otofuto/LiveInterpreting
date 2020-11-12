@@ -7,7 +7,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
 		<title>アカウント作成 | LiveInterpreting</title>
-		<link rel="stylesheet" href="/css/master.css">
+		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
 			.button {
 				font-size: 150%;
@@ -37,10 +37,10 @@
 		<footer class="page-footer">
 			<label>© 2020 Live InterPreting - Powered by OTFT</label>
 		</footer>
-		<script src="/js/master.js"></script>
+		<script src="/st/js/master.js"></script>
 		<script>
 			if (sessionStorage.getItem("signup") == null) {
-				location = "/signup/";
+				location = "/st/signup/";
 			}
 
 			fetch('/Lang/')
@@ -70,7 +70,7 @@
 				var prevData = JSON.parse(sessionStorage.getItem("signup"));
 				prevData.langs = JSON.stringify(langarray);
 				sessionStorage.setItem("signup", JSON.stringify(prevData));
-				location = "/signup/password/";
+				location = "/st/signup/password/";
 			}
 		</script>
 	</body>

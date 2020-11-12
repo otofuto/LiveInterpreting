@@ -7,7 +7,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
 		<title>パスワードを入力 | LiveInterpreting</title>
-		<link rel="stylesheet" href="/css/master.css">
+		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
 			.button {
 				font-size: 150%;
@@ -70,10 +70,10 @@
 		<footer class="page-footer">
 			<label>© 2020 Live InterPreting - Powered by OTFT</label>
 		</footer>
-		<script src="/js/master.js"></script>
+		<script src="/st/js/master.js"></script>
 		<script>
 			if (sessionStorage.getItem("signup") == null) {
-				location = "/signup/";
+				location = "/st/signup/";
 			}
 			function next() {
 				if (document.fm.pass.value != document.fm.pass2.value) {
@@ -88,7 +88,7 @@
 					var prevData = JSON.parse(sessionStorage.getItem("signup"));
 					prevData.password = document.fm.pass.value;
 					sessionStorage.setItem("signup", JSON.stringify(prevData));
-					location = "/signup/iconset/";
+					location = "/st/signup/iconset/";
 				}
 			}
 		</script>

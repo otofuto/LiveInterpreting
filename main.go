@@ -31,7 +31,8 @@ func main() {
 		port = "5000"
 	}
 
-	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./static"))))
+	http.Handle("/st/", http.StripPrefix("/st/", http.FileServer(http.Dir("./static"))))
+	http.HandleFunc("/", IndexHandle)
 	http.HandleFunc("/Account/", AccountHandle)
 	http.HandleFunc("/AccountSocial/", AccountSocialHandle)
 	http.HandleFunc("/Login/", LoginHandle)
@@ -43,6 +44,35 @@ func main() {
 
 	log.Println("Listening on port: " + port)
 	log.Fatal(http.ListenAndServe(":" + port, nil))
+}
+
+func IndexHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodGet {
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			temp := template.Must(template.ParseFiles("template/index.html"))
+			if err := temp.Execute(w, "");
+			err != nil {
+				log.Fatal(err)
+			}
+			return
+		}
+		_, err = accounts.CheckToken(cookie.Value)
+		if err != nil {
+			temp := template.Must(template.ParseFiles("template/index.html"))
+			if err := temp.Execute(w, "");
+			err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			http.Redirect(w, r, "/home/", 302)
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
 }
 
 func AccountHandle(w http.ResponseWriter, r *http.Request) {
