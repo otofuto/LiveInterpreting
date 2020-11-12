@@ -75,7 +75,11 @@
 						{{ if eq .Login.Id .Account.Id }}
 						<button class="button" onclick="location = '/edit/';">アカウント情報を編集する</button>
 						{{ else }}
-						<button class="button">フォロー</button>
+							{{ if .IsFollow }}
+						<button class="button" onclick="unfollow(this)">フォロー解除</button>
+							{{ else }}
+						<button class="button" onclick="follow(this)">フォロー</button>
+							{{ end }}
 						<button class="button">通報</button>
 						{{ end }}
 					</div>
@@ -87,6 +91,50 @@
 		</footer>
 		<script src="/js/master.js"></script>
 		<script>
+			function follow(btn) {
+				var data = new FormData();
+				data.append("target_id", "{{.Account.Id}}");
+				data.append("action", "0");
+				fetch('/AccountSocial/', {
+					method: "post",
+					body: data,
+					credentials: "include"
+				}).then(res => {
+					if (res.status == 200)
+						return res.json();
+					else
+						return false;
+				}).then(result => {
+					if (result) {
+						btn.innerText = "フォロー解除";
+						btn.setAttribute("onclick", "unfollow(this)");
+					} else {
+						alert('フォローに失敗しました。');
+					}
+				});
+			}
+
+			function unfollow(btn) {
+				var data = new FormData();
+				data.append("target_id", "{{.Account.Id}}");
+				fetch('/AccountSocial/', {
+					method: "delete",
+					body: data,
+					credentials: "include"
+				}).then(res => {
+					if (res.status == 200)
+						return res.json();
+					else
+						return false;
+				}).then(result => {
+					if (result) {
+						btn.innerText = "フォロー";
+						btn.setAttribute("onclick", "follow(this)");
+					} else {
+						alert('フォロー解除に失敗しました。');
+					}
+				});
+			}
 		</script>
 	</body>
 </html>

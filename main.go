@@ -33,6 +33,7 @@ func main() {
 
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("./static"))))
 	http.HandleFunc("/Account/", AccountHandle)
+	http.HandleFunc("/AccountSocial/", AccountSocialHandle)
 	http.HandleFunc("/Login/", LoginHandle)
 	http.HandleFunc("/Logout/", LogoutHandle)
 	http.HandleFunc("/u/", UserHandle)
@@ -335,6 +336,110 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func AccountSocialHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodPost {
+		r.ParseMultipartForm(32 << 20)
+		targetId, err := strconv.Atoi(r.FormValue("target_id"))
+		if err != nil {
+			http.Error(w, "target_id is not integer", 400)
+			return
+		}
+		action, err := strconv.Atoi(r.FormValue("action"))
+		if err != nil {
+			http.Error(w, "action is not integer", 400)
+			return
+		}
+		if action != 0 && action != 1 {
+			http.Error(w, "action value is not defined", 400)
+			return
+		}
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
+			return
+		}
+		ac, err := accounts.CheckToken(cookie.Value)
+		if err != nil {
+			http.Error(w, "checktoken err", 403)
+			fmt.Println(err)
+		} else {
+			social := accounts.AccountSocial {
+				Id: ac.Id,
+				TargetId: targetId,
+				Action: action,
+			}
+			if social.Insert() {
+				fmt.Fprintf(w, "true")
+			} else {
+				fmt.Fprintf(w, "false")
+			}
+		}
+	} else if r.Method == http.MethodGet {
+		action, err := strconv.Atoi(r.URL.Path[len("/AccountSocial/"):])
+		if err != nil {
+			http.Error(w, "action is not integer", 400)
+			return
+		}
+
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
+			return
+		}
+		ac, err := accounts.CheckToken(cookie.Value)
+		if err != nil {
+			http.Error(w, "checktoken err", 403)
+			fmt.Println(err)
+		} else {
+			socials, err := accounts.Social(ac.Id, action)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+			bytes, err := json.Marshal(socials)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Fprintf(w, string(bytes))
+		}
+	} else if r.Method == http.MethodDelete {
+		r.ParseMultipartForm(32 << 20)
+		targetId, err := strconv.Atoi(r.FormValue("target_id"))
+		if err != nil {
+			http.Error(w, "target_id is not integer", 400)
+			return
+		}
+		cookie, err := r.Cookie("accounttoken")
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
+			return
+		}
+		ac, err := accounts.CheckToken(cookie.Value)
+		if err != nil {
+			http.Error(w, "checktoken err", 403)
+			fmt.Println(err)
+		} else {
+			social := accounts.AccountSocial {
+				Id: ac.Id,
+				TargetId: targetId,
+			}
+			if social.Delete() {
+				fmt.Fprintf(w, "true")
+			} else {
+				fmt.Fprintf(w, "false")
+			}
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
 func ToSquare(img image.Image) image.Image {
 	b := img.Bounds()
 	x, y := b.Dx(), b.Dy()
@@ -458,15 +563,18 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 			context := struct {
 				Account accounts.Accounts `json:"account"`
 				Login accounts.Accounts `json:"login"`
+				IsFollow bool `json:"is_follow"`
 			}{
 				Account: ac,
 				Login: accounts.Accounts{ Id: -1 },
+				IsFollow: false,
 			}
 			cookie, err := r.Cookie("accounttoken")
 			if err == nil {
 				loginaccount, err := accounts.CheckToken(cookie.Value)
 				if err == nil {
 					context.Login = loginaccount
+					context.IsFollow = accounts.CheckFollow(loginaccount.Id, ac.Id)
 				}
 			}
 			temp := template.Must(template.ParseFiles("template/user.html"))

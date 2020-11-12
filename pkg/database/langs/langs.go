@@ -19,6 +19,7 @@ func All() []Langs {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 
 	var ls []Langs
 	for rows.Next() {

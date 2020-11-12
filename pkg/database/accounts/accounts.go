@@ -2,7 +2,7 @@ package accounts
 
 import (
 	"log"
-	//"fmt"
+	"fmt"
 	"errors"
 	"time"
 	"strconv"
@@ -22,12 +22,19 @@ type Accounts struct {
 	Sex int `json:"sex"`
 	UserType string `json:"user_type"`
 	Langs []langs.Langs `json:"langs"`
-	CreatedAt	string `json:"created_at"`
+	CreatedAt string `json:"created_at"`
 }
 
 type AccountTokens struct {
 	Id int `json:"id"`
 	Token string `json:"token"`
+	CreatedAt string `json:"created_at"`
+}
+
+type AccountSocial struct {
+	Id int `json:"id"`
+	TargetId int `json:"target_id"`
+	Action int `json:"action"`
 	CreatedAt string `json:"created_at"`
 }
 
@@ -51,6 +58,7 @@ func (ac *Accounts) Insert() int {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	if rows.Next() {
 		newId := -1
 		rows.Scan(&newId)
@@ -144,6 +152,7 @@ func (ac *Accounts) Get() bool {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.CreatedAt)
 		if err != nil {
@@ -172,6 +181,7 @@ func CheckMail(mail string, id int) bool {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	if rows.Next() {
 		return false
 	}
@@ -187,6 +197,7 @@ func Login(email string, pass string) (Accounts, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.CreatedAt)
 		if err != nil {
@@ -236,6 +247,7 @@ func CheckToken(token string) (Accounts, error) {
 		log.Fatal(err)
 		return Accounts{}, errors.New("select account_tokens failed")
 	}
+	defer rows.Close()
 	if rows.Next() {
 		var ac Accounts
 		err = rows.Scan(&ac.Id)
@@ -296,6 +308,7 @@ func Search(search string, user_type string) []Accounts {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
 	var acs []Accounts
 	for rows.Next() {
 		var ac Accounts
@@ -312,7 +325,76 @@ func Search(search string, user_type string) []Accounts {
 			err = rows2.Scan(&l.Id, &l.Lang)
 			ac.Langs = append(ac.Langs, l)
 		}
+		rows2.Close()
 		acs = append(acs, ac)
 	}
 	return acs
+}
+
+func Social(accountId int, action int) ([]AccountSocial, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	if action != 0 && action != 1 {
+		return make([]AccountSocial, 0), errors.New("action number is not defined")
+	}
+
+	rows, err := db.Query("select `id`, `target_id`, `action`, `created_at` from `account_social` where `id` = " + strconv.Itoa(accountId) + " and `action` = " + strconv.Itoa(action) + " order by `created_at` desc")
+	if err != nil {
+		return make([]AccountSocial, 0), errors.New("failed to select query")
+	}
+	defer rows.Close()
+	var socials []AccountSocial
+	for rows.Next() {
+		var s AccountSocial
+		_ = rows.Scan(&s.Id, &s.TargetId, &s.Action, &s.CreatedAt)
+		socials = append(socials, s)
+	}
+	return socials, nil
+}
+
+func (s *AccountSocial) Insert() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	if s.Action != 0 && s.Action != 1 {
+		return false
+	}
+
+	ins, err := db.Prepare("insert into `account_social` (`id`, `target_id`, `action`) values (?, ?, ?)")
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	ins.Exec(&s.Id, &s.TargetId, &s.Action)
+	return true
+}
+
+func (s *AccountSocial) Delete() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	del, err := db.Prepare("delete from `account_social` where `id` = ? and `target_id` = ?")
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	del.Exec(&s.Id, &s.TargetId)
+	return true
+}
+
+func CheckFollow(id int, targetId int) bool {
+	db := database.Connect()
+	defer db.Close()
+
+	rows, err := db.Query("select * from `account_social` where `action` = 0 and `id` = " + strconv.Itoa(id) + " and `target_id` = " + strconv.Itoa(targetId))
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	defer rows.Close()
+	if rows.Next() {
+		return true
+	}
+	return false
 }

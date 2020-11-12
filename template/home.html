@@ -41,11 +41,32 @@
 				background-size: cover;
 				background-position: center;
 			}
+
+			.service-title {
+				float: left;
+			}
+
+			.page-header__username {
+				color: white;
+				text-align: right;
+				margin-right: 20px;
+			}
+
+			@media screen and (max-width: 812px) {
+				.service-title {
+					float: none;
+				}
+
+				.page-header__username {
+					margin-right: 0;
+				}
+			}
 		</style>
 	</head>
 	<body>
 		<header class="page-header">
 			<div class="service-title">Live Interpreting</div>
+			<p class="page-header__username">こんにちは <span style="font-weight: bold;">{{.Name}}</span>さん</p>
 		</header>
 		<main>
 			<div id="content">
