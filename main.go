@@ -218,8 +218,8 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 					Key: aws.String("accounts/" + ac.IconImage),
 				})
 				if err != nil {
-					fmt.Println(err.Error)
-					fmt.Fprintf(w, "failed to fetch account-icon", 404)
+					fmt.Println(err)
+					http.Error(w, "failed to fetch account-icon", 404)
 				} else {
 					w.Header().Set("Content-Type", "image/png")
 					io.Copy(w, obj.Body)
