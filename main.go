@@ -564,10 +564,12 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 				Account accounts.Accounts `json:"account"`
 				Login accounts.Accounts `json:"login"`
 				IsFollow bool `json:"is_follow"`
+				IsFollower bool `json:"is_follower"`
 			}{
 				Account: ac,
 				Login: accounts.Accounts{ Id: -1 },
 				IsFollow: false,
+				IsFollower: false,
 			}
 			cookie, err := r.Cookie("accounttoken")
 			if err == nil {
@@ -575,6 +577,7 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					context.Login = loginaccount
 					context.IsFollow = accounts.CheckFollow(loginaccount.Id, ac.Id)
+					context.IsFollower = accounts.CheckFollow(ac.Id, loginaccount.Id)
 				}
 			}
 			temp := template.Must(template.ParseFiles("template/user.html"))
