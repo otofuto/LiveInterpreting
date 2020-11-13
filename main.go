@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/smtp"
 	"net/http"
 	"html/template"
 	"strconv"
@@ -33,10 +34,12 @@ func main() {
 
 	http.Handle("/st/", http.StripPrefix("/st/", http.FileServer(http.Dir("./static"))))
 	http.HandleFunc("/", IndexHandle)
+	http.HandleFunc("/favicon.ico", FaviconHandle)
 	http.HandleFunc("/Account/", AccountHandle)
 	http.HandleFunc("/AccountSocial/", AccountSocialHandle)
 	http.HandleFunc("/Login/", LoginHandle)
 	http.HandleFunc("/Logout/", LogoutHandle)
+	http.HandleFunc("/PassForgot/", PassForgotHandle)
 	http.HandleFunc("/u/", UserHandle)
 	http.HandleFunc("/edit/", EditHandle)
 	http.HandleFunc("/home/", HomeHandle)
@@ -73,6 +76,17 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "method not allowed", 405)
 	}
+}
+
+func FaviconHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/ico")
+	file, err := os.Open("./static/materials/favicon.ico")
+	if err != nil {
+		http.Error(w, "failed to open the favicon", 500)
+		return
+	}
+	defer file.Close()
+	io.Copy(w, file)
 }
 
 func AccountHandle(w http.ResponseWriter, r *http.Request) {
@@ -131,23 +145,6 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			ac.Get()
 			ac.IconImage = strconv.Itoa(newId) + "_" + fileHeader.Filename + ".png"
 			ac.Update()
-			/*save, err := os.Create("./static/img/accounts/" + ac.IconImage)
-			if err != nil {
-				fmt.Println("ファイル確保失敗")
-				ac.Delete()
-				http.Error(w, "upload failed", 500)
-				return
-			}
-			defer save.Close()
-
-			err = png.Encode(save, img)
-			if err != nil {
-				fmt.Println("ファイル保存失敗")
-				ac.Delete()
-				http.Error(w, "upload failed", 500)
-				os.Exit(1)
-				return
-			}*/
 
 			pr, pw := io.Pipe()
 			go func() {
@@ -213,6 +210,11 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "parameter 'email' is required", 400)
 			}
 		} else if strings.HasPrefix(mode, "Search") {
+			ac := LoginAccount(r)
+			if ac.Id == -1 {
+				http.Error(w, "not logined", 403)
+				return
+			}
 			search := r.FormValue("search")
 			userType := r.FormValue("user_type")
 			if search == "" && userType == "" {
@@ -223,7 +225,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "user_type value is not allowed", 400)
 				return
 			}
-			acs := accounts.Search(search, userType)
+			acs := accounts.Search(search, userType, ac.Id)
 			bytes, err := json.Marshal(acs)
 			if err != nil {
 				log.Fatal(err)
@@ -575,6 +577,47 @@ func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodPost {
+		r.ParseMultipartForm(32 << 20)
+		ac := accounts.Accounts {Email: r.FormValue("email")}
+		if ac.GetFromEmail() {
+			newPass := accounts.NewPass()
+			ac.Password = newPass
+			if ac.Update() {
+				auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
+
+				msg := []byte("" +
+					"From: LiveInterpreting\r\n" +
+					"To: " + ac.Name + "さま\r\n" +
+					"Subject: パスワードをリセットしました\r\n\r\n" +
+					"ご利用のアカウントのパスワードをリセットしました。\r\n" +
+					"下記パスワードでログインし、パスワードの再設定を行ってください。\r\n" +
+					newPass + "\r\n" +
+					"\r\n")
+
+				err := smtp.SendMail(os.Getenv("MAIL_SERVER") + ":465", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to send email (" + newPass + ")", 500)
+					return
+				}
+
+				fmt.Println(w, "true")
+			} else {
+				http.Error(w, "failed to update password", 500)
+			}
+		} else {
+			http.Error(w, "email is not regitered", 400)
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
 func UserHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -693,4 +736,16 @@ func LangHandle(w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Error(w, "method not allowed.", 405)
 	}
+}
+
+func LoginAccount(r *http.Request) accounts.Accounts {
+	cookie, err := r.Cookie("accounttoken")
+	if err != nil {
+		return accounts.Accounts{Id: -1}
+	}
+	ac, err := accounts.CheckToken(cookie.Value)
+	if err != nil {
+		return accounts.Accounts{Id: -1}
+	}
+	return ac
 }

@@ -173,6 +173,35 @@ func (ac *Accounts) Get() bool {
 	return false
 }
 
+func (ac *Accounts) GetFromEmail() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `created_at` from `accounts` where `email` = '" + database.Escape(ac.Email) + "'")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	if rows.Next() {
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.CreatedAt)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rows, err = db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		if err != nil {
+			log.Fatal(err)
+		}
+		ac.Langs = make([]langs.Langs, 0)
+		for rows.Next() {
+			var l langs.Langs
+			err = rows.Scan(&l.Id, &l.Lang)
+			ac.Langs = append(ac.Langs, l)
+		}
+		return true
+	}
+	return false
+}
+
 func CheckMail(mail string, id int) bool {
 	db := database.Connect()
 	defer db.Close()
@@ -193,7 +222,7 @@ func Login(email string, pass string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `created_at` from `accounts` where `email` = '" + email + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `created_at` from `accounts` where `email` = '" + database.Escape(email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -240,9 +269,9 @@ func CheckToken(token string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	db.Query("delete from `account_tokens` where `created_at` <= subtime(now(), '168:00:00') and `token` = '" + token + "'")
+	db.Query("delete from `account_tokens` where `created_at` <= subtime(now(), '168:00:00') and `token` = '" + database.Escape(token) + "'")
 	//168hour = 24h * 7days
-	rows, err := db.Query("select `id` from `account_tokens` where `created_at` > subtime(now(), '168:00:00') and `token` = '" + token + "'")
+	rows, err := db.Query("select `id` from `account_tokens` where `created_at` > subtime(now(), '168:00:00') and `token` = '" + database.Escape(token) + "'")
 	if err != nil {
 		log.Fatal(err)
 		return Accounts{}, errors.New("select account_tokens failed")
@@ -271,7 +300,7 @@ func DeleteToken(token string) {
 	db := database.Connect()
 	defer db.Close()
 
-	db.Query("delete from `account_tokens` where `token` = '" + token + "'")
+	db.Query("delete from `account_tokens` where `token` = '" + database.Escape(token) + "'")
 }
 
 func passHash(pass string) string {
@@ -282,12 +311,20 @@ func passHash(pass string) string {
 	return string(hash)
 }
 
+func NewPass() string {
+	hash, err := bcrypt.GenerateFromPassword([]byte(time.Now().Format("yyyyMMddHHmmss")), 10)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(hash)[:20]
+}
+
 func checkPass(hash string, pass string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
 	return err == nil
 }
 
-func Search(search string, user_type string) []Accounts {
+func Search(search string, user_type string, id int) []Accounts {
 	db := database.Connect()
 	defer db.Close()
 
@@ -300,6 +337,16 @@ func Search(search string, user_type string) []Accounts {
 			user_type += " and "
 		}
 		search = "`created_at` >= subtime(now(), '168:00:00')"
+	} else if search == "follow" {
+		if user_type != "" {
+			user_type += " and "
+		}
+		search = "`id` in (select `target_id` from `account_social` where `id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
+	} else if search == "follower" {
+		if user_type != "" {
+			user_type += " and "
+		}
+		search = "`id` in (select `id` from `account_social` where `target_id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
 	} else {
 		search = ""
 	}
