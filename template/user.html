@@ -79,7 +79,7 @@
 						<button class="button" onclick="location = '/edit/';">アカウント情報を編集する</button>
 						{{ else }}
 							{{ if .IsFollow }}
-						<button class="button" onclick="unfollow(this)">フォロー解除</button>
+						<button class="button" onclick="unfollow(this)" style="background-color: var(--color1); color: white;">✔フォロー中</button>
 							{{ else }}
 						<button class="button" onclick="follow(this)">フォロー</button>
 							{{ end }}
@@ -109,7 +109,9 @@
 						return false;
 				}).then(result => {
 					if (result) {
-						btn.innerText = "フォロー解除";
+						btn.innerText = "✔フォロー中";
+						btn.style.backgroundColor = "var(--color1)";
+						btn.style.color = "white";
 						btn.setAttribute("onclick", "unfollow(this)");
 					} else {
 						alert('フォローに失敗しました。');
@@ -132,6 +134,7 @@
 				}).then(result => {
 					if (result) {
 						btn.innerText = "フォロー";
+						btn.removeAttribute("style");
 						btn.setAttribute("onclick", "follow(this)");
 					} else {
 						alert('フォロー解除に失敗しました。');

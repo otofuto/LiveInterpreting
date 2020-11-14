@@ -100,12 +100,12 @@ func (ac *Accounts) Update() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	upd, err := db.Prepare("update `accounts` set `name` = ?, `email` = ?, `password` = ?, `icon_image` = ?, `description` = ?, `sex` = ?, `user_type` = ? where `id` = ?")
+	upd, err := db.Prepare("update `accounts` set `name` = ?, `email` = ?, `icon_image` = ?, `description` = ?, `sex` = ?, `user_type` = ? where `id` = ?")
 	if err != nil {
 		log.Fatal(err)
 		return false
 	}
-	upd.Exec(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Id)
+	upd.Exec(&ac.Name, &ac.Email, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Id)
 	db.Query("delete from `account_langs` where `id` = " + strconv.Itoa(ac.Id))
 	for _, v := range ac.Langs {
 		ins, err := db.Prepare("insert into `account_langs` (`id`, `lang_id`) values (?, ?)")
@@ -116,6 +116,19 @@ func (ac *Accounts) Update() bool {
 		}
 		ins.Exec(ac.Id, v.Id)
 	}
+	return true
+}
+
+func (ac *Accounts) PassUpdate() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	upd, err := db.Prepare("update `accounts` set `password` = ? where `id` = ?")
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	upd.Exec(passHash(ac.Password), &ac.Id)
 	return true
 }
 

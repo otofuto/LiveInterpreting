@@ -587,7 +587,7 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 		if ac.GetFromEmail() {
 			newPass := accounts.NewPass()
 			ac.Password = newPass
-			if ac.Update() {
+			if ac.PassUpdate() {
 				auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
 
 				msg := []byte("" +
