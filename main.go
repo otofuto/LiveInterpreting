@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/nfnt/resize"
+	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 )
@@ -309,21 +310,8 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				//140角にリサイズ
 				img = resize.Resize(140, 140, img, resize.Lanczos3)
 
+				oldImage := ac.IconImage
 				ac.IconImage = strconv.Itoa(ac.Id) + "_" + fileHeader.Filename + ".png"
-				/*save, err := os.Create("./static/img/accounts/" + ac.IconImage)
-				if err != nil {
-					fmt.Println("ファイル確保失敗")
-					http.Error(w, "upload failed", 500)
-					return
-				}
-				defer save.Close()
-
-				err = png.Encode(save, img)
-				if err != nil {
-					fmt.Println("ファイル保存失敗")
-					http.Error(w, "upload failed", 500)
-					return
-				}*/
 
 				pr, pw := io.Pipe()
 				go func() {
@@ -352,6 +340,18 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "upload failed", 500)
 					os.Exit(1)
 					return
+				}
+
+				if oldImage != ac.IconImage {
+					svc := s3.New(sess)
+					input := &s3.DeleteObjectInput {
+						Bucket: aws.String(os.Getenv("S3_BUCKET")),
+						Key: aws.String("accounts/" + oldImage),
+					}
+					_, err := svc.DeleteObject(input)
+					if err != nil {
+						errorData.Insert("Delete file from s3 failed.", "accounts/" + oldImage)
+					}
 				}
 			}
 
