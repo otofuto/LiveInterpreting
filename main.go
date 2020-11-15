@@ -141,7 +141,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			//正方形にトリム
 			img = ToSquare(img)
 			//140角にリサイズ
-			img = resize.Resize(140, 140, img, resize.Lanczos3)
+			img = resize.Resize(300, 300, img, resize.Lanczos3)
 
 			ac.Get()
 			ac.IconImage = strconv.Itoa(newId) + "_" + fileHeader.Filename + ".png"
@@ -308,7 +308,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				//正方形にトリム
 				img = ToSquare(img)
 				//140角にリサイズ
-				img = resize.Resize(140, 140, img, resize.Lanczos3)
+				img = resize.Resize(300, 300, img, resize.Lanczos3)
 
 				oldImage := ac.IconImage
 				ac.IconImage = strconv.Itoa(ac.Id) + "_" + fileHeader.Filename + ".png"
