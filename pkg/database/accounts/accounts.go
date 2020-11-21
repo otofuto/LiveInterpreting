@@ -50,7 +50,7 @@ func (ac *Accounts) Insert() int {
 	db := database.Connect()
 	defer db.Close()
 
-	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`) values (?, ?, ?, ?, ?, ?, ?)")
+	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 		return -1
@@ -104,7 +104,7 @@ func (ac *Accounts) Update() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	upd, err := db.Prepare("update `accounts` set `name` = ?, `email` = ?, `icon_image` = ?, `description` = ?, `sex` = ?, `user_type` = ?, `url2` = ?, `url3` = ?, `hourly_wage` = ? where `id` = ?")
+	upd, err := db.Prepare("update `accounts` set `name` = ?, `email` = ?, `icon_image` = ?, `description` = ?, `sex` = ?, `user_type` = ?, `url1` = ?, `url2` = ?, `url3` = ?, `hourly_wage` = ? where `id` = ?")
 	if err != nil {
 		log.Fatal(err)
 		return false

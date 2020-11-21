@@ -73,6 +73,22 @@
 						</select>
 						<lavel class="input-label">性別</lavel>
 					</div>
+					<div class="field">
+						<input type="url" name="url1" class="input" placeholder="自由に入力できます" maxlength="255">
+						<label class="input-label">URL1</label>
+					</div>
+					<div class="field">
+						<input type="url" name="url2" class="input" placeholder="自由に入力できます" maxlength="255">
+						<label class="input-label">URL2</label>
+					</div>
+					<div class="field">
+						<input type="url" name="url3" class="input" placeholder="自由に入力できます" maxlength="255">
+						<label class="input-label">URL3</label>
+					</div>
+					<div class="field">
+						<input type="text" name="hourly_wage" class="input" maxlength="255">
+						<label class="input-label">最低時給</label>
+					</div>
 					<input type="submit" style="display: none;" name="sub">
 				</form>
 				<button class="button" onclick="document.fm.sub.click()">次へ</button>
@@ -108,7 +124,11 @@
 					"name": document.fm.name.value,
 					"description": document.fm.description.value,
 					"email": document.fm.email.value,
-					"sex": document.fm.sex.value
+					"sex": document.fm.sex.value,
+					"url1": document.fm.url1.value,
+					"url2": document.fm.url2.value,
+					"url3": document.fm.url3.value,
+					"hourly_wage": document.fm.hourly_wage.value
 				};
 				sessionStorage.setItem("signup", JSON.stringify(obj));
 				location = "./lang/";

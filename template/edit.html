@@ -191,6 +191,9 @@
 
 			function update() {
 				var pass = prompt("パスワードを入力してください。");
+				if (pass == "") return;
+				btnUpdate.innerText = "送信中";
+				btnUpdate.setAttribute("disabled", "");
 				var data = new FormData();
 				data.append("email", "{{.Email}}");
 				data.append("password", pass);
@@ -206,6 +209,8 @@
 				}).then(login => {
 					if (login == null) {
 						alert("パスワードが間違っています。");
+						btnUpdate.innerText = "更新";
+						btnUpdate.removeAttribute("disabled");
 					} else {
 						data = new FormData();
 						data.append("name", document.fm.name.value);
@@ -220,8 +225,6 @@
 								langarray.push(l.value);
 						});
 						data.append("langs", JSON.stringify(langarray));
-						btnUpdate.innerText = "送信中";
-						btnUpdate.setAttribute("disabled", "");
 						fetch('/Account/', {
 							method: "put",
 							body: data,
@@ -234,11 +237,13 @@
 								alert("更新に失敗しました。");
 							} else {
 								alert("アカウント情報を更新しました。");
-								btnUpdate.innerText = "更新";
-								btnUpdate.removeAttribute("disabled");
 							}
+							btnUpdate.innerText = "更新";
+							btnUpdate.removeAttribute("disabled");
 						}).catch(err => {
 							alert("更新に失敗しました。");
+							btnUpdate.innerText = "更新";
+							btnUpdate.removeAttribute("disabled");
 						});
 					}
 				});

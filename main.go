@@ -244,6 +244,10 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			ac := accounts.Accounts { Id: id }
 			if ac.Get() {
+				if ac.IconImage == "" {
+					http.Error(w, "icon is not registered.", 404)
+					return
+				}
 				sess := session.Must(session.NewSession(&aws.Config{
 					Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
 					Region: aws.String(os.Getenv("S3_REGION")),
