@@ -108,6 +108,10 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			Email: r.FormValue("email"),
 			Sex: sex,
 			Password: r.FormValue("password"),
+			Url1: r.FormValue("url1"),
+			Url2: r.FormValue("url2"),
+			Url3: r.FormValue("url3"),
+			HourlyWage: r.FormValue("hourly_wage"),
 		}
 		if ac.UserType == "interpreter" {
 			err = ac.SetLangs(r.FormValue("langs"))
@@ -285,6 +289,9 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			ac.Name = r.FormValue("name")
 			ac.Description = r.FormValue("description")
 			ac.Email = r.FormValue("email")
+			ac.Url1 = r.FormValue("url1")
+			ac.Url2 = r.FormValue("url2")
+			ac.Url3 = r.FormValue("url3")
 
 			if r.FormValue("langs") != "" {
 				err = ac.SetLangs(r.FormValue("langs"))
