@@ -77,7 +77,7 @@
 						{{ end }}
 						{{ if eq .Login.Id .Account.Id }}
 						<button class="button" onclick="location = '/edit/';">アカウント情報を編集する</button>
-						{{ else }}
+						{{ else if ne .Login.Id -1 }}
 							{{ if .IsFollow }}
 						<button class="button" onclick="unfollow(this)" style="background-color: var(--color1); color: white;">✔フォロー中</button>
 							{{ else }}

@@ -27,6 +27,7 @@ type Accounts struct {
 	HourlyWage string `json:"hourly_wage"`
 	Langs []langs.Langs `json:"langs"`
 	CreatedAt string `json:"created_at"`
+	Enabled int `json:"enabled"`
 }
 
 type AccountTokens struct {
@@ -76,6 +77,7 @@ func (ac *Accounts) Insert() int {
 			}
 			ins.Exec(newId, v.Id)
 		}
+		ac.Enabled = 1
 		return newId
 	}
 	return -1
@@ -161,17 +163,37 @@ func (ac *Accounts) Delete() bool {
 	return true
 }
 
+func (ac *Accounts) Disabled() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	upd, err := db.Prepare("update `accounts` set `enabled` = 0 where `id` = ?")
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	upd.Exec(&ac.Id)
+	upd, err = db.Prepare("delete from `account_tokens` where `id` = ?")
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	upd.Exec(&ac.Id)
+	ac.Enabled = 0
+	return true
+}
+
 func (ac *Accounts) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at` from `accounts` where `id` = " + strconv.Itoa(ac.Id))
+	rows, err := db.Query("select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `id` = " + strconv.Itoa(ac.Id))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt)
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -194,13 +216,13 @@ func (ac *Accounts) GetFromEmail() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at` from `accounts` where `email` = '" + database.Escape(ac.Email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `email` = '" + database.Escape(ac.Email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt)
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -239,13 +261,13 @@ func Login(email string, pass string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at` from `accounts` where `email` = '" + database.Escape(email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `email` = '" + database.Escape(email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt)
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
 		if err != nil {
 			//log.Fatal(err)
 			return ac, errors.New("failed select in login")

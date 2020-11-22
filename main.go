@@ -374,6 +374,23 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			fmt.Fprintf(w, string(bytes))
 		}
+	} else if r.Method == http.MethodDelete {
+		ac := LoginAccount(r)
+		if ac.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		ac.Get()
+		_, err := accounts.Login(ac.Email, r.FormValue("password"))
+		if err != nil {
+			http.Error(w, "unmatched password", 400)
+			return
+		}
+		if ac.Disabled() {
+			fmt.Fprintf(w, "true")
+		} else {
+			fmt.Fprintf(w, "false")
+		}
 	} else {
 		http.Error(w, "method not allowed.", 405)
 	}
@@ -399,16 +416,9 @@ func AccountSocialHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "action value is not defined", 400)
 			return
 		}
-		cookie, err := r.Cookie("accounttoken")
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
-			return
-		}
-		ac, err := accounts.CheckToken(cookie.Value)
-		if err != nil {
-			http.Error(w, "checktoken err", 403)
-			fmt.Println(err)
+		ac := LoginAccount(r)
+		if ac.Id == -1 {
+			http.Error(w, "not logined", 403)
 		} else {
 			social := accounts.AccountSocial {
 				Id: ac.Id,
@@ -428,16 +438,9 @@ func AccountSocialHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		cookie, err := r.Cookie("accounttoken")
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
-			return
-		}
-		ac, err := accounts.CheckToken(cookie.Value)
-		if err != nil {
-			http.Error(w, "checktoken err", 403)
-			fmt.Println(err)
+		ac := LoginAccount(r)
+		if ac.Id == -1 {
+			http.Error(w, "not logined", 403)
 		} else {
 			socials, err := accounts.Social(ac.Id, action)
 			if err != nil {
@@ -457,16 +460,9 @@ func AccountSocialHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "target_id is not integer", 400)
 			return
 		}
-		cookie, err := r.Cookie("accounttoken")
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
-			return
-		}
-		ac, err := accounts.CheckToken(cookie.Value)
-		if err != nil {
-			http.Error(w, "checktoken err", 403)
-			fmt.Println(err)
+		ac := LoginAccount(r)
+		if ac.Id == -1 {
+			http.Error(w, "not logined", 403)
 		} else {
 			social := accounts.AccountSocial {
 				Id: ac.Id,
@@ -643,6 +639,15 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 			Id: accountId,
 		}
 		if ac.Get() {
+			if ac.Enabled == 0 {
+				temp := template.Must(template.ParseFiles("template/disableduser.html"))
+
+				if err := temp.Execute(w, "");
+				err != nil {
+					log.Fatal(err)
+				}
+				return
+			}
 			ac.Password = "";
 			context := struct {
 				Account accounts.Accounts `json:"account"`
