@@ -9,6 +9,17 @@
 		<title>ダイレクトメッセージ - {{ .Account.Name }}さん | LiveInterpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
+			#accountinfo {
+				display: block;
+				position: fixed;
+				left: 76%;
+				top: var(--header-height);
+				width: calc(23% - 20px);
+				padding: 10px;
+				border-radius: 10px;
+				box-shadow: 0 0 10px gray;
+			}
+
 			#content {
 				width: 50%;
 				min-height: 150px;
@@ -26,6 +37,13 @@
 			}
 
 			@media screen and (max-width: 812px) {
+				#accountinfo {
+					width: calc(96% - 20px);
+					left: 2%;
+					position: relative;
+					margin-bottom: 20px;
+				}
+
 				#content {
 					width: 100%;
 				}
@@ -66,6 +84,11 @@
 			<div class="service-title">Live Interpreting</div>
 		</header>
 		<main>
+			<div id="accountinfo">
+				<div class="icon-disp" style="background-image: url('/Account/img/{{ .Account.Id }}');" onclick="location = '/u/{{ .Account.Id }}';"></div>
+				<p style="font-weight: bold;">{{ .Account.Name }}</p>
+				<pre>{{ .Account.Description }}</pre>
+			</div>
 			<div id="content">
 				{{ range .DM }}
 				<div class="msg">
@@ -114,6 +137,63 @@
 					alert('送信に失敗しました。');
 				});
 			}
+
+			function connectWs() {
+				var chatId = "dm{{ if gt .Login.Id .Account.Id }}{{ .Account.Id }}_{{ .Login.Id }}{{ else }}{{ .Login.Id }}_{{ .Account.Id }}{{ end }}";
+				ws = new WebSocket("ws://localhost:5000/ws/" + chatId);
+
+				ws.onopen = () => {
+					console.log("ws connected.");
+				}
+
+				ws.onmessage = (message) => {
+					var data = JSON.parse(message.data);
+					var msg = document.createElement("div");
+					msg.setAttribute("class", "msg");
+					document.getElementById("content").appendChild(msg);
+
+					var div = document.createElement("div");
+					msg.appendChild(div);
+
+					var iconDisp = document.createElement("div");
+					iconDisp.setAttribute("class", "icon-disp");
+					iconDisp.style.backgroundImage = "url('/Account/img/" + data.from + "')";
+					iconDisp.setAttribute("onclick", "location = '/u/" + data.from + "';");
+					div.appendChild(iconDisp);
+
+					var inline = document.createElement("div");
+					inline.style.display = "inline-block";
+					div.appendChild(inline);
+
+					var p1 = document.createElement("p");
+					p1.innerText = data.from == {{ .Login.Id }} ? "{{ .Login.Name }}" : "{{ .Account.Name }}";
+					inline.appendChild(p1);
+
+					var p2 = document.createElement("p");
+					p2.style.color = "gray";
+					p2.innerText = data.created_at;
+					inline.appendChild(p2);
+
+					var pre = document.createElement("pre");
+					pre.innerText = data.message;
+					msg.appendChild(pre);
+
+					msg.scrollIntoView(true);
+				}
+
+				ws.onclose = () => {
+					connectWs();
+				}
+			}
+
+			function sendMessage(str) {
+				var msg = {
+					"message": str
+				};
+				ws.send(JSON.stringify(msg));
+			}
+
+			connectWs();
 		</script>
 	</body>
 </html>

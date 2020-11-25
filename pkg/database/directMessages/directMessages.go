@@ -46,6 +46,14 @@ func (dm *DirectMessages) Insert() int {
 	defer ins.Close()
 	ins.Exec(&dm.From, &dm.To, newId, &dm.Message)
 
+	rows, err = db.Query("select `created_at` from `direct_messages` where `from` = " + strconv.Itoa(dm.From) + " and `to` = " + strconv.Itoa(dm.To) + " and `id` = " + strconv.Itoa(newId))
+	if err != nil {
+		log.Println(err)
+	}
+	if rows.Next() {
+		rows.Scan(&dm.CreatedAt)
+	}
+
 	return newId
 }
 

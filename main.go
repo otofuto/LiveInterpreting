@@ -14,6 +14,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	"image/png"
+	"github.com/gorilla/websocket"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -27,6 +28,18 @@ import (
 )
 
 var port string
+
+//WebSocket関係
+var clients = make(map[*websocket.Conn]string)
+var broadcast = make(chan SocketMessage)
+var upgrader = websocket.Upgrader{}
+
+type SocketMessage struct {
+	Message string `json:"message"`
+	From int `json:"from"`
+	CreatedAt string `json:"created_at"`
+	ChatId string `json:"chat_id"`
+}
 
 func main() {
 	port = os.Getenv("PORT")
@@ -47,6 +60,9 @@ func main() {
 	http.HandleFunc("/home/", HomeHandle)
 	http.HandleFunc("/Lang/", LangHandle)
 	http.HandleFunc("/directmessages/", DMHandle)
+
+	http.HandleFunc("/ws/", SocketHandle)
+	go handleMessages()
 
 	log.Println("Listening on port: " + port)
 	log.Fatal(http.ListenAndServe(":" + port, nil))
@@ -247,7 +263,14 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			ac := accounts.Accounts { Id: id }
 			if ac.Get() {
 				if ac.IconImage == "" {
-					http.Error(w, "icon is not registered.", 404)
+					file, err := os.Open("./materials/defaulticon.png")
+					if err != nil {
+						http.Error(w, "icon image was not registered.", 404)
+						return
+					}
+					defer file.Close()
+					w.Header().Set("Content-Type", "image/png")
+					io.Copy(w, file);
 					return
 				}
 				sess := session.Must(session.NewSession(&aws.Config{
@@ -271,7 +294,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "account not found", 400)
 			}
-		}else {
+		} else {
 			http.Error(w, "なに？", 404)
 		}
 	} else if r.Method == http.MethodPut {
@@ -842,11 +865,68 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "insert failed", 500)
 				return
 			}
+			chatId := "dm"
+			if ac.Id < login.Id {
+				chatId += strconv.Itoa(ac.Id) + "_" + strconv.Itoa(login.Id)
+			} else {
+				chatId += strconv.Itoa(login.Id) + "_" + strconv.Itoa(ac.Id)
+			}
+			msg := SocketMessage {
+				Message: dm.Message,
+				From: dm.From,
+				CreatedAt: dm.CreatedAt,
+				ChatId: chatId,
+			}
+			for client, id := range clients {
+				if id == chatId {
+					client.WriteJSON(msg)
+				}
+			}
 			fmt.Fprintf(w, strconv.Itoa(newId))
 		} else {
 			http.Error(w, "user not found.", 404)
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func SocketHandle(w http.ResponseWriter, r *http.Request) {
+	upgrader.CheckOrigin = func (r2 * http.Request) bool { return true }
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer ws.Close();
+
+	clients[ws] = r.URL.Path[len("/ws/"):]
+
+	for {
+		var msg SocketMessage
+		err := ws.ReadJSON(&msg)
+		if err != nil {
+			log.Printf("error: %v", err)
+			delete(clients, ws)
+			break
+		}
+		msg.ChatId = r.URL.Path[len("/ws/"):]
+		broadcast <- msg
+	}
+}
+
+func handleMessages() {
+	for {
+		msg := <- broadcast
+		for client, id := range clients {
+			if id == msg.ChatId {
+				err := client.WriteJSON(msg)
+				if err != nil {
+					log.Printf("error: %v", err)
+					client.Close()
+					delete(clients, client)
+				}
+			}
+		}
 	}
 }
