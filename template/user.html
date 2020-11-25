@@ -71,22 +71,23 @@
 						{{ .Lang }}<br>
 						{{ end }}
 					</p>{{ end }}
-					<div style="width: 100%; text-align: right;">
-						{{ if and (ne .Login.Id .Account.Id) (.IsFollower) }}
-						<span>フォローされています</span>
-						{{ end }}
-						{{ if eq .Login.Id .Account.Id }}
-						<button class="button" onclick="location = '/edit/';">アカウント情報を編集する</button>
-						{{ else if ne .Login.Id -1 }}
-							{{ if .IsFollow }}
-						<button class="button" onclick="unfollow(this)" style="background-color: var(--color1); color: white;">✔フォロー中</button>
-							{{ else }}
-						<button class="button" onclick="follow(this)">フォロー</button>
-							{{ end }}
-						<button class="button">通報</button>
-						{{ end }}
-					</div>
 				</header>
+				<div style="width: 100%; text-align: right;">
+					{{ if and (ne .Login.Id .Account.Id) (.IsFollower) }}
+					<span>フォローされています</span>
+					{{ end }}
+					{{ if eq .Login.Id .Account.Id }}
+					<button class="button" onclick="location = '/edit/';">アカウント情報を編集する</button>
+					{{ else if ne .Login.Id -1 }}
+						{{ if .IsFollow }}
+					<button class="button" onclick="unfollow(this)" style="background-color: var(--color1); color: white;">✔フォロー中</button>
+						{{ else }}
+					<button class="button" onclick="follow(this)">フォロー</button>
+						{{ end }}
+					<button class="button" onclick="location = '/directmessages/{{ .Account.Id }}';">ダイレクトメッセージを送る</button>
+					<button class="button">通報</button>
+					{{ end }}
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">

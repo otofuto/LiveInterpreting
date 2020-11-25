@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>ダイレクトメッセージ - {{ .Account.Name }}さん | LiveInterpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<style>
+			#content {
+				width: 50%;
+				min-height: 150px;
+				margin: 0 auto;
+				border: solid 1px gray;
+				text-align: center;
+				font-family: 'M PLUS Rounded 1c', sans-serif;
+			}
+
+			#inputMessage {
+				display: block;
+				width: 50%;
+				margin: 0 auto;
+				border: solid 1px gray;
+			}
+
+			@media screen and (max-width: 812px) {
+				#content {
+					width: 100%;
+				}
+
+				#inputMessage {
+					width: 100%;
+				}
+			}
+
+			.msg {
+				border-bottom: solid 1px black;
+				text-align: left;
+			}
+
+			.icon-disp {
+				position: relative;
+				display: inline-block;
+				width: 75px;
+				height: 75px;
+				margin-right: 20px;
+				vertical-align: top;
+				border-radius: 5px;
+				background-size: cover;
+				background-position: center;
+				background-color: lightgray;
+			}
+
+			#textarea {
+				display: block;
+				width: 90%;
+				height: 150px;
+				margin: 30px auto;
+			}
+		</style>
+	</head>
+	<body>
+		<header class="page-header">
+			<div class="service-title">Live Interpreting</div>
+		</header>
+		<main>
+			<div id="content">
+				{{ range .DM }}
+				<div class="msg">
+					<div>
+						<div class="icon-disp" style="background-image: url('/Account/img/{{ .From }}');" onclick="location = '/u/{{ .From }}';"></div>
+						<div style="display: inline-block;">
+							<p>{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
+							<p style="color: gray;">{{ .CreatedAt }}</p>
+						</div>
+					</div>
+					<pre>{{ .Message }}</pre>
+				</div>
+				{{ end }}
+			</div>
+			<div id="inputMessage">
+				<form name="fm" onsubmit="return false;">
+					<textarea name="message" id="textarea"></textarea>
+					<button class="button" style="display: block; margin: 0 auto; width: 300px; margin-bottom: 30px;" onclick="send()">ダイレクトメッセージを送信</button>
+				</form>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2020 Live InterPreting - Powered by OTFT</label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script>
+			function send() {
+				var data = new FormData(document.fm);
+				fetch('/directmessages/{{ .Account.Id }}', {
+					method: "post",
+					body: data,
+					credentials: "include"
+				}).then(res => {
+					if (res.status == 200)
+						return res.json();
+					else
+						return null;
+				}).then(result => {
+					if (result == null) {
+						alert('送信に失敗しました。');
+					} else {
+						document.fm.message.value = "";
+					}
+				}).catch(err => {
+					console.error(err);
+					alert('送信に失敗しました。');
+				});
+			}
+		</script>
+	</body>
+</html>

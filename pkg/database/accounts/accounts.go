@@ -189,17 +189,20 @@ func (ac *Accounts) Get() bool {
 
 	rows, err := db.Query("select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `id` = " + strconv.Itoa(ac.Id))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return false
 	}
 	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return false
 		}
 		rows, err = db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return false
 		}
 		ac.Langs = make([]langs.Langs, 0)
 		for rows.Next() {
@@ -261,7 +264,7 @@ func Login(email string, pass string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `email` = '" + database.Escape(email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}

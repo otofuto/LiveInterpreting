@@ -23,6 +23,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
+	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 )
 
 var port string
@@ -45,6 +46,7 @@ func main() {
 	http.HandleFunc("/edit/", EditHandle)
 	http.HandleFunc("/home/", HomeHandle)
 	http.HandleFunc("/Lang/", LangHandle)
+	http.HandleFunc("/directmessages/", DMHandle)
 
 	log.Println("Listening on port: " + port)
 	log.Fatal(http.ListenAndServe(":" + port, nil))
@@ -764,4 +766,87 @@ func LoginAccount(r *http.Request) accounts.Accounts {
 		return accounts.Accounts{Id: -1}
 	}
 	return ac
+}
+
+func DMHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodGet {
+		login := LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		accountId, err := strconv.Atoi(r.URL.Path[len("/directmessages/"):])
+		if err != nil {
+			http.Error(w, "<h1>このページはまだ作成されていません。</h1>", 404)
+		} else {
+			ac := accounts.Accounts {
+				Id: accountId,
+			}
+			if ac.Get() {
+				ac.Password = "";
+				ac.Email = "";
+				dms, err := directMessages.List(login.Id, ac.Id)
+				if err != nil {
+					http.Error(w, "failed to list your direct messages.", 500)
+					return
+				}
+				context := struct {
+					Account accounts.Accounts `json:"account"`
+					Login accounts.Accounts `json:"login"`
+					DM []directMessages.DirectMessages `json:"dm"`
+				}{
+					Account: ac,
+					Login: login,
+					DM: dms,
+				}
+				temp := template.Must(template.ParseFiles("template/dm.html"))
+
+				if err := temp.Execute(w, context);
+				err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				http.Error(w, "このユーザーは存在しません。", 404)
+			}
+		}
+	} else if r.Method == http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		if r.FormValue("message") == "" {
+			http.Error(w, "parameter 'message' is not allowed empty.", 400)
+			return
+		}
+		login := LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		accountId, err := strconv.Atoi(r.URL.Path[len("/directmessages/"):])
+		if err != nil {
+			http.Error(w, "accountId was not designationed.", 400)
+			return
+		}
+		ac := accounts.Accounts {
+			Id: accountId,
+		}
+		if ac.Get() {
+			dm := directMessages.DirectMessages {
+				From: login.Id,
+				To: ac.Id,
+				Message: r.FormValue("message"),
+			}
+			newId := dm.Insert()
+			if newId == -1 {
+				http.Error(w, "insert failed", 500)
+				return
+			}
+			fmt.Fprintf(w, strconv.Itoa(newId))
+		} else {
+			http.Error(w, "user not found.", 404)
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
 }
