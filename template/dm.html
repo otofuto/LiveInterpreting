@@ -140,8 +140,8 @@
 
 			function connectWs() {
 				var chatId = "dm{{ if gt .Login.Id .Account.Id }}{{ .Account.Id }}_{{ .Login.Id }}{{ else }}{{ .Login.Id }}_{{ .Account.Id }}{{ end }}";
-				//ws = new WebSocket(("https:" == document.location.protocol ? "wss://" : "ws://") + window.location.host + "/ws/" + chatId);
-				ws = new WebSocket("wss://" + window.location.host + "/ws/" + chatId);
+				ws = new WebSocket(("https:" == document.location.protocol ? "wss://" : "ws://") + window.location.host + "/ws/" + chatId);
+				//ws = new WebSocket("wss://" + window.location.host + "/ws/" + chatId);
 
 				ws.onopen = () => {
 					console.log("ws connected.");
