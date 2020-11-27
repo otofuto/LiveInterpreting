@@ -594,7 +594,7 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 
 			rootUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//") + 2] + r.Host
 			msg := []byte("" +
-				"From: Live interpreting\r\n" +
+				"From: info@otft.info\r\n" +
 				encodeSubject("パスワードをリセットしました") +
 				"MIME-Version: 1.0\r\n" +
 				"Content-Type: text/html; charset=\"utf-8\"\r\n" +
