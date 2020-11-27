@@ -35,7 +35,7 @@
 					<input type="email" class="input" id="email" required>
 					<lavel class="input-label">メールアドレス</lavel>
 				</div>
-				<button class="button" onclick="send()">送信</button>
+				<button class="button" onclick="send()" id="btn">送信</button>
 				<p id="resultMsg"></p>
 			</div>
 		</main>
@@ -45,6 +45,8 @@
 		<script src="/st/js/master.js"></script>
 		<script>
 			function send() {
+				btn.innerText = "送信中";
+				btn.setAttribute("disabled", "");
 				var data = new FormData();
 				data.append("email", email.value);
 				fetch('/PassForgot/', {
@@ -56,6 +58,8 @@
 					else
 						return false;
 				}).then(result => {
+					btn.innerText = "送信";
+					btn.removeAttribute("disabled");
 					if (result) {
 						resultMsg.innerText = "メールを送信しました。\nメールを確認し、リセット用URLよりパスワードの再設定を行ってください。";
 					} else {

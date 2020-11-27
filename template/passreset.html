@@ -63,7 +63,7 @@
 					<label id="passUnmatch"></label>
 					<input type="submit" style="display: none;" name="sub">
 				</form>
-				<button class="button" onclick="document.fm.sub.click()">決定</button>
+				<button class="button" onclick="document.fm.sub.click()" id="btn">決定</button>
 				<p id="resultMsg"></p>
 			</div>
 		</main>
@@ -81,6 +81,8 @@
 					}, 400);
 				} else {
 					passUnmatch.innerText = "";
+					btn.innerText = "送信中";
+					btn.setAttribute("disabled", "");
 					var data = new FormData(document.fm);
 					fetch('/Account/passreset/', {
 						method: "put",
@@ -91,6 +93,8 @@
 						else
 							return false;
 					}).then(result => {
+						btn.innerText = "決定";
+						btn.removeAttribute("disabled");
 						if (result) {
 							resultMsg.innerText = "パスワードを設定しました。";
 							setTimeout(() => {
