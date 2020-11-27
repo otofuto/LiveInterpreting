@@ -3,20 +3,15 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/smtp"
+	"strings"
 	"net/http"
 	"html/template"
 	"strconv"
-	"strings"
 	"os"
 	"io"
 	"encoding/json"
-	"image"
-	_ "image/jpeg"
-	"image/png"
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
-	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
@@ -122,8 +117,7 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 			if ac.Enabled == 0 {
 				temp := template.Must(template.ParseFiles("template/disableduser.html"))
 
-				if err := temp.Execute(w, "");
-				err != nil {
+				if err := temp.Execute(w, ""); err != nil {
 					log.Fatal(err)
 				}
 				return
@@ -168,22 +162,23 @@ func EditHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
-		cookie, err := r.Cookie("accounttoken")
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
+		ac := account.LoginAccount(r)
+		if ac.Id == -1 {
+			http.Error(w, "not logined", 403)
 			return
 		}
-		ac, err := accounts.CheckToken(cookie.Value)
+		mode := r.URL.Path[len("/edit/"):]
 		ac.Get()
-		if err != nil {
-			http.Error(w, "checktoken err", 403)
-			fmt.Println(err)
+		if strings.HasPrefix(mode, "pass") {
+			temp := template.Must(template.ParseFiles("template/passreset.html"))
+
+			if err := temp.Execute(w, ac); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			temp := template.Must(template.ParseFiles("template/edit.html"))
 
-			if err := temp.Execute(w, ac);
-			err != nil {
+			if err := temp.Execute(w, ac); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -209,8 +204,7 @@ func HomeHandle(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		} else {
 			temp := template.Must(template.ParseFiles("template/home.html"))
-			if err := temp.Execute(w, ac);
-			err != nil {
+			if err := temp.Execute(w, ac); err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -234,24 +228,12 @@ func LangHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func LoginAccount(r *http.Request) accounts.Accounts {
-	cookie, err := r.Cookie("accounttoken")
-	if err != nil {
-		return accounts.Accounts{Id: -1}
-	}
-	ac, err := accounts.CheckToken(cookie.Value)
-	if err != nil {
-		return accounts.Accounts{Id: -1}
-	}
-	return ac
-}
-
 func DMHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
-		login := LoginAccount(r)
+		login := account.LoginAccount(r)
 		if login.Id == -1 {
 			http.Error(w, "not logined", 403)
 			return
@@ -296,7 +278,7 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "parameter 'message' is not allowed empty.", 400)
 			return
 		}
-		login := LoginAccount(r)
+		login := account.LoginAccount(r)
 		if login.Id == -1 {
 			http.Error(w, "not logined", 403)
 			return

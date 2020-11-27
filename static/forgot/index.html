@@ -30,12 +30,13 @@
 		<main>
 			<div id="content">
 				<h1>パスワードをリセットします</h1>
-				<p>登録したメールアドレスに仮パスワードを送信します。</p>
+				<p>登録したメールアドレスにパスワードリセット用のURLを送信します。</p>
 				<div class="field">
 					<input type="email" class="input" id="email" required>
 					<lavel class="input-label">メールアドレス</lavel>
 				</div>
 				<button class="button" onclick="send()">送信</button>
+				<p id="resultMsg"></p>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -56,9 +57,10 @@
 						return false;
 				}).then(result => {
 					if (result) {
-						alert('メール送ったよ');
+						resultMsg.innerText = "メールを送信しました。\nメールを確認し、リセット用URLよりパスワードの再設定を行ってください。";
 					} else {
-						alert('失敗したわ');
+						resultMsg.innerText = "失敗";
+						alert('メールの送信に失敗しました。');
 					}
 				});
 			}

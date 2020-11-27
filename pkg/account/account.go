@@ -3,12 +3,16 @@ package account
 import (
 	"log"
 	"fmt"
+	"bytes"
 	"strings"
 	"strconv"
+	"net/smtp"
 	"net/http"
+	"html/template"
 	"os"
 	"io"
 	"encoding/json"
+	"encoding/base64"
 	"image"
 	_ "image/jpeg"
 	"image/png"
@@ -18,8 +22,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/otofuto/LiveInterpreting/main"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
+	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 )
 
 func AccountHandle(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +151,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "parameter 'email' is required", 400)
 			}
 		} else if strings.HasPrefix(mode, "Search") {
-			ac := main.LoginAccount(r)
+			ac := LoginAccount(r)
 			if ac.Id == -1 {
 				http.Error(w, "not logined", 403)
 				return
@@ -213,105 +217,114 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if r.Method == http.MethodPut {
 		r.ParseMultipartForm(32 << 20)
-		cookie, err := r.Cookie("accounttoken")
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Failed to get cookie 'accounttoken'.", 403)
-			return
-		}
-		ac, err := accounts.CheckToken(cookie.Value)
-		ac.Get()
-		if err != nil {
-			http.Error(w, "checktoken err", 403)
-			fmt.Println(err)
+		ac := LoginAccount(r)
+		if ac.Id == -1 {
+			http.Error(w, "not logined", 403)
 		} else {
-			if !accounts.CheckMail(ac.Email, ac.Id) {
-				http.Error(w, "email already registered", 400)
-				return
-			}
-			ac.Name = r.FormValue("name")
-			ac.Description = r.FormValue("description")
-			ac.Email = r.FormValue("email")
-			ac.Url1 = r.FormValue("url1")
-			ac.Url2 = r.FormValue("url2")
-			ac.Url3 = r.FormValue("url3")
-
-			if r.FormValue("langs") != "" {
-				err = ac.SetLangs(r.FormValue("langs"))
-				if err != nil {
-					http.Error(w, "langs is not json", 400)
+			mode := r.URL.Path[len("/Account/"):]
+			if strings.HasPrefix(mode, "passreset") {
+				newPass := r.FormValue("pass")
+				if newPass == "" {
+					http.Error(w, "pass is not allowed empty.", 400)
 					return
 				}
-			}
-
-			file, fileHeader, err := r.FormFile("icon_image")
-			if err == nil {
-				defer file.Close()
-
-				img, _, err := image.Decode(file)
-				if err != nil {
-					fmt.Println("画像取得失敗")
-					http.Error(w, "image.Decode failed", 500)
+				ac.Password = newPass
+				if ac.PassUpdate() {
+					fmt.Fprintf(w, "true")
+				} else {
+					http.Error(w, "failed to update", 500)
+				}
+			} else {
+				ac.Get()
+				if !accounts.CheckMail(ac.Email, ac.Id) {
+					http.Error(w, "email already registered", 400)
 					return
 				}
+				ac.Name = r.FormValue("name")
+				ac.Description = r.FormValue("description")
+				ac.Email = r.FormValue("email")
+				ac.Url1 = r.FormValue("url1")
+				ac.Url2 = r.FormValue("url2")
+				ac.Url3 = r.FormValue("url3")
+				ac.HourlyWage = r.FormValue("hourly_wage")
 
-				//正方形にトリム
-				img = ToSquare(img)
-				//140角にリサイズ
-				img = resize.Resize(300, 300, img, resize.Lanczos3)
-
-				oldImage := ac.IconImage
-				ac.IconImage = strconv.Itoa(ac.Id) + "_" + fileHeader.Filename + ".png"
-
-				pr, pw := io.Pipe()
-				go func() {
-					err = png.Encode(pw, img)
+				if r.FormValue("langs") != "" {
+					err := ac.SetLangs(r.FormValue("langs"))
 					if err != nil {
-						log.Fatal(err)
+						http.Error(w, "langs is not json", 400)
+						return
 					}
-					pw.Close()
-				}()
-
-				sess := session.Must(session.NewSession(&aws.Config{
-					Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
-					Region: aws.String(os.Getenv("S3_REGION")),
-				}))
-
-				uploader := s3manager.NewUploader(sess)
-				_, err = uploader.Upload(&s3manager.UploadInput{
-					Bucket: aws.String(os.Getenv("S3_BUCKET")),
-					Key: aws.String("accounts/" + ac.IconImage),
-					Body: pr,
-				})
-				if err != nil {
-					fmt.Println("S3アップロード失敗")
-					fmt.Println(err)
-					ac.Delete()
-					http.Error(w, "upload failed", 500)
-					os.Exit(1)
-					return
 				}
 
-				if oldImage != ac.IconImage {
-					svc := s3.New(sess)
-					input := &s3.DeleteObjectInput {
+				file, fileHeader, err := r.FormFile("icon_image")
+				if err == nil {
+					defer file.Close()
+
+					img, _, err := image.Decode(file)
+					if err != nil {
+						fmt.Println("画像取得失敗")
+						http.Error(w, "image.Decode failed", 500)
+						return
+					}
+
+					//正方形にトリム
+					img = ToSquare(img)
+					//140角にリサイズ
+					img = resize.Resize(300, 300, img, resize.Lanczos3)
+
+					oldImage := ac.IconImage
+					ac.IconImage = strconv.Itoa(ac.Id) + "_" + fileHeader.Filename + ".png"
+
+					pr, pw := io.Pipe()
+					go func() {
+						err = png.Encode(pw, img)
+						if err != nil {
+							log.Fatal(err)
+						}
+						pw.Close()
+					}()
+
+					sess := session.Must(session.NewSession(&aws.Config{
+						Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
+						Region: aws.String(os.Getenv("S3_REGION")),
+					}))
+
+					uploader := s3manager.NewUploader(sess)
+					_, err = uploader.Upload(&s3manager.UploadInput{
 						Bucket: aws.String(os.Getenv("S3_BUCKET")),
-						Key: aws.String("accounts/" + oldImage),
-					}
-					_, err := svc.DeleteObject(input)
+						Key: aws.String("accounts/" + ac.IconImage),
+						Body: pr,
+					})
 					if err != nil {
-						errorData.Insert("Delete file from s3 failed.", "accounts/" + oldImage)
+						fmt.Println("S3アップロード失敗")
+						fmt.Println(err)
+						ac.Delete()
+						http.Error(w, "upload failed", 500)
+						os.Exit(1)
+						return
+					}
+
+					if oldImage != ac.IconImage {
+						svc := s3.New(sess)
+						input := &s3.DeleteObjectInput {
+							Bucket: aws.String(os.Getenv("S3_BUCKET")),
+							Key: aws.String("accounts/" + oldImage),
+						}
+						_, err := svc.DeleteObject(input)
+						if err != nil {
+							errorData.Insert("Delete file from s3 failed.", "accounts/" + oldImage)
+						}
 					}
 				}
-			}
 
-			ac.Update()
+				ac.Update()
 
-			bytes, err := json.Marshal(ac)
-			if err != nil {
-				log.Fatal(err)
+				bytes, err := json.Marshal(ac)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Fprintf(w, string(bytes))
 			}
-			fmt.Fprintf(w, string(bytes))
 		}
 	} else if r.Method == http.MethodDelete {
 		ac := LoginAccount(r)
@@ -523,6 +536,51 @@ func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//文字化け対策参考:
+//http://psychedelicnekopunch.com/archives/1922
+
+func encodeSubject(subject string) string {
+    // UTF8 文字列を指定文字数で分割する
+    b := bytes.NewBuffer([]byte(""))
+    strs := []string{}
+    length := 13
+    for k, c := range strings.Split(subject, "") {
+        b.WriteString(c)
+        if k%length == length-1 {
+            strs = append(strs, b.String())
+            b.Reset()
+        }
+    }
+    if b.Len() > 0 {
+        strs = append(strs, b.String())
+    }
+    // MIME エンコードする
+    b2 := bytes.NewBuffer([]byte(""))
+    b2.WriteString("Subject:")
+    for _, line := range strs {
+        b2.WriteString(" =?utf-8?B?")
+        b2.WriteString(base64.StdEncoding.EncodeToString([]byte(line)))
+        b2.WriteString("?=\r\n")
+    }
+    return b2.String()
+}
+
+
+// 本文を 76 バイト毎に CRLF を挿入して返す
+func encodeBody(body string) string {
+    b := bytes.NewBufferString(body)
+    s := base64.StdEncoding.EncodeToString(b.Bytes())
+    b2 := bytes.NewBuffer([]byte(""))
+    for k, c := range strings.Split(s, "") {
+        b2.WriteString(c)
+        if k % 76 == 75 {
+            b2.WriteString("\r\n")
+        }
+    }
+    return b2.String()
+
+}
+
 func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -531,35 +589,75 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 		r.ParseMultipartForm(32 << 20)
 		ac := accounts.Accounts {Email: r.FormValue("email")}
 		if ac.GetFromEmail() {
-			newPass := accounts.NewPass()
-			ac.Password = newPass
-			if ac.PassUpdate() {
-				auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
+			token := accounts.PassResetToken(ac.Id)
+			auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
 
-				msg := []byte("" +
-					"From: LiveInterpreting\r\n" +
-					"To: " + ac.Name + "さま\r\n" +
-					"Subject: パスワードをリセットしました\r\n\r\n" +
-					"ご利用のアカウントのパスワードをリセットしました。\r\n" +
-					"下記パスワードでログインし、パスワードの再設定を行ってください。\r\n" +
-					newPass + "\r\n" +
-					"\r\n")
+			rootUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//") + 2] + r.Host
+			msg := []byte("" +
+				"From: Live interpreting\r\n" +
+				encodeSubject("パスワードをリセットしました") +
+				"MIME-Version: 1.0\r\n" +
+				"Content-Type: text/html; charset=\"utf-8\"\r\n" +
+				"Content-Transfer-Encoding: base64\r\n" +
+				"\r\n" +
+				encodeBody(
+					"<p>いつもLive interpretingをご利用いただきありがとうございます。</p>" +
+					"<p>下記URLへアクセスし、パスワードの再設定を行ってください。</p>" +
+					"<p><a href=\"" + rootUrl + "/PassForgot/?t=" + token + "\">" + rootUrl + "/PassForgot/?t=" + token + "</a></p>\r\n") +
+				"\r\n")
 
-				err := smtp.SendMail(os.Getenv("MAIL_SERVER") + ":465", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
-				if err != nil {
-					log.Println(err)
-					http.Error(w, "failed to send email (" + newPass + ")", 500)
-					return
-				}
-
-				fmt.Println(w, "true")
-			} else {
-				http.Error(w, "failed to update password", 500)
+			err := smtp.SendMail(os.Getenv("MAIL_SERVER") + ":587", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
+			if err != nil {
+				log.Println(err)
+				log.Println(rootUrl + "/PassForgot/?t=" + token)
+				http.Error(w, "failed to send email", 500)
+				return
 			}
+
+			fmt.Fprintf(w, "true")
 		} else {
 			http.Error(w, "email is not regitered", 400)
+		}
+	} else if r.Method == http.MethodGet {
+		if r.FormValue("t") == "" {
+			http.Error(w, "token is necessary", 400)
+			return
+		}
+		ac := accounts.CheckPassResetToken(r.FormValue("t"))
+		if ac.Id != -1 {
+			token := ac.CreateToken()
+
+			cookie := &http.Cookie {
+				Name: "accounttoken",
+				Value: token,
+				Path: "/",
+				HttpOnly: true,
+				MaxAge: 3600 * 24 * 7,
+			}
+			http.SetCookie(w, cookie)
+
+			w.Header().Set("Content-Type", "text/html")
+			temp := template.Must(template.ParseFiles("template/passreset.html"))
+
+			if err := temp.Execute(w, ac); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			http.Error(w, "トークンが無効です。再度トークンを発行してお試しください。", 400)
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
 	}
+}
+
+func LoginAccount(r *http.Request) accounts.Accounts {
+	cookie, err := r.Cookie("accounttoken")
+	if err != nil {
+		return accounts.Accounts{Id: -1}
+	}
+	ac, err := accounts.CheckToken(cookie.Value)
+	if err != nil {
+		return accounts.Accounts{Id: -1}
+	}
+	return ac
 }

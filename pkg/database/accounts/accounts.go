@@ -129,11 +129,13 @@ func (ac *Accounts) PassUpdate() bool {
 	db := database.Connect()
 	defer db.Close()
 
+	db.Query("delete from `pass_reset` where `id` = " + strconv.Itoa(ac.Id))
 	upd, err := db.Prepare("update `accounts` set `password` = ? where `id` = ?")
 	if err != nil {
 		log.Println(err)
 		return false
 	}
+	defer upd.Close()
 	upd.Exec(passHash(ac.Password), &ac.Id)
 	return true
 }
@@ -219,13 +221,13 @@ func (ac *Accounts) GetFromEmail() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `email` = '" + database.Escape(ac.Email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(ac.Email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -353,12 +355,49 @@ func passHash(pass string) string {
 	return string(hash)
 }
 
-func NewPass() string {
+func PassResetToken(id int) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(time.Now().Format("yyyyMMddHHmmss")), 10)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(hash)[:20]
+	token := string(hash)[8:28]
+	db := database.Connect()
+	defer db.Close()
+
+	db.Query("delete from `pass_reset` where `id` = " + strconv.Itoa(id))
+	ins, err := db.Prepare("insert into `pass_reset` (`id`, `token`) values (?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ins.Close()
+	ins.Exec(id, token)
+	return token
+}
+
+func CheckPassResetToken(token string) Accounts {
+	db := database.Connect()
+	defer db.Close()
+
+	//24時間以上経っている場合は削除する
+	db.Query("delete from `pass_reset` where `created_at` <= subtime(now(), '24:00:00')")
+
+	rows, err := db.Query("select `id` from `pass_reset` where `token` = '" + database.Escape(token) + "'")
+	if err != nil {
+		log.Println(err)
+		return Accounts { Id: -1 }
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var ac Accounts
+		err = rows.Scan(&ac.Id)
+		if err != nil {
+			return Accounts { Id: -1 }
+		}
+		ac.Get()
+		return ac
+	}
+	return Accounts { Id: -1 }
 }
 
 func checkPass(hash string, pass string) bool {
@@ -393,7 +432,7 @@ func Search(search string, user_type string, id int) []Accounts {
 		search = ""
 	}
 
-	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at` from `accounts` where " + user_type + search)
+	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at` from `accounts` where `enabled` = 1 and " + user_type + search)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -428,7 +467,7 @@ func Social(accountId int, action int) ([]AccountSocial, error) {
 		return make([]AccountSocial, 0), errors.New("action number is not defined")
 	}
 
-	rows, err := db.Query("select `id`, `target_id`, `action`, `created_at` from `account_social` where `id` = " + strconv.Itoa(accountId) + " and `action` = " + strconv.Itoa(action) + " order by `created_at` desc")
+	rows, err := db.Query("select `id`, `target_id`, `action`, `created_at` from `account_social` where `id` = " + strconv.Itoa(accountId) + " and `action` = " + strconv.Itoa(action) + " and `target_id` not in (select `id` from `accounts` where `enabled` = 0) order by `created_at` desc")
 	if err != nil {
 		return make([]AccountSocial, 0), errors.New("failed to select query")
 	}
