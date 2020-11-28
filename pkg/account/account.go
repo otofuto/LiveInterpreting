@@ -539,7 +539,7 @@ func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 //文字化け対策参考:
 //http://psychedelicnekopunch.com/archives/1922
 
-func encodeSubject(subject string) string {
+func encodeHeader(code string, subject string) string {
     // UTF8 文字列を指定文字数で分割する
     b := bytes.NewBuffer([]byte(""))
     strs := []string{}
@@ -556,7 +556,7 @@ func encodeSubject(subject string) string {
     }
     // MIME エンコードする
     b2 := bytes.NewBuffer([]byte(""))
-    b2.WriteString("Subject:")
+    b2.WriteString(code + ":")
     for _, line := range strs {
         b2.WriteString(" =?utf-8?B?")
         b2.WriteString(base64.StdEncoding.EncodeToString([]byte(line)))
@@ -594,8 +594,9 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 
 			rootUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//") + 2] + r.Host
 			msg := []byte("" +
-				"From: info@otft.info\r\n" +
-				encodeSubject("パスワードをリセットしました") +
+				"From: Live interpreting<" + os.Getenv("MAIL_ADDRESS") + ">\r\n" +
+				"To: " + ac.Name + "<" + ac.Email + ">\r\n" +
+				encodeHeader("Subject", "パスワードをリセットしました") +
 				"MIME-Version: 1.0\r\n" +
 				"Content-Type: text/html; charset=\"utf-8\"\r\n" +
 				"Content-Transfer-Encoding: base64\r\n" +
