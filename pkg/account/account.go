@@ -596,7 +596,7 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 			msg := []byte("" +
 				"From: Live interpreting<" + os.Getenv("MAIL_ADDRESS") + ">\r\n" +
 				"To: " + ac.Name + "<" + ac.Email + ">\r\n" +
-				encodeHeader("Subject", "パスワードをリセットしました") +
+				encodeHeader("Subject", "パスワードをリセットしてください") +
 				"MIME-Version: 1.0\r\n" +
 				"Content-Type: text/html; charset=\"utf-8\"\r\n" +
 				"Content-Transfer-Encoding: base64\r\n" +

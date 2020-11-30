@@ -102,3 +102,17 @@ func List(me int, to int) ([]DirectMessages, error) {
 	}
 	return ret, nil
 }
+
+func (dm *DirectMessages) Read() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	upd, err := db.Prepare("update `direct_messages` set `read` = 1 where `from` = ? and `to` = ? and `id` = ?")
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	defer upd.Close()
+	upd.Exec(&dm.From, &dm.To, &dm.Id)
+	return true
+}

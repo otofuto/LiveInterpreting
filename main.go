@@ -27,6 +27,7 @@ var upgrader = websocket.Upgrader{}
 type SocketMessage struct {
 	Message string `json:"message"`
 	From int `json:"from"`
+	Id int `json:"id"`
 	CreatedAt string `json:"created_at"`
 	ChatId string `json:"chat_id"`
 }
@@ -311,6 +312,7 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 			msg := SocketMessage {
 				Message: dm.Message,
 				From: dm.From,
+				Id: newId,
 				CreatedAt: dm.CreatedAt,
 				ChatId: chatId,
 			}
@@ -322,6 +324,43 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, strconv.Itoa(newId))
 		} else {
 			http.Error(w, "user not found.", 404)
+		}
+	} else if r.Method == http.MethodPut {
+		after := r.URL.Path[len("/directmessages/"):]
+		if strings.Index(after, "/") > 0 {
+			from, err := strconv.Atoi(after[:strings.Index(after, "/")])
+			if err != nil {
+				http.Error(w, "not integer", 400)
+				return
+			}
+			after = after[strings.Index(after, "/") + 1:]
+			if strings.Index(after, "/") > 0 {
+				to, err := strconv.Atoi(after[:strings.Index(after, "/")])
+				if err != nil {
+					http.Error(w, "not integer", 400)
+					return
+				}
+				after = after[strings.Index(after, "/") + 1:]
+				id, err := strconv.Atoi(after)
+				if err != nil {
+					http.Error(w, "not integer", 400)
+					return
+				}
+				dm := directMessages.DirectMessages {
+					From: from,
+					To: to,
+					Id: id,
+				}
+				if dm.Read() {
+					fmt.Fprintf(w, "true")
+				} else {
+					http.Error(w, "failed to update dm to read", 500)
+				}
+			} else {
+				http.Error(w, "path: '/directmessages/from/to/chat_id'", 400)
+			}
+		} else {
+			http.Error(w, "path: '/directmessages/from/to/chat_id'", 400)
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)

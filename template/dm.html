@@ -78,6 +78,10 @@
 				height: 150px;
 				margin: 30px auto;
 			}
+
+			pre {
+				white-space: pre-wrap;
+			}
 		</style>
 	</head>
 	<body>
@@ -150,6 +154,7 @@
 
 				ws.onmessage = message => {
 					var data = JSON.parse(message.data);
+					console.log(data);
 					var msg = document.createElement("div");
 					msg.setAttribute("class", "msg");
 					document.getElementById("content").appendChild(msg);
@@ -179,6 +184,10 @@
 					var pre = document.createElement("pre");
 					pre.innerText = data.message;
 					msg.appendChild(pre);
+
+					fetch('/directmessages/' + data.from + '/{{ .Account.Id }}/' + data.id, {
+						method: "put"
+					});
 
 					msg.scrollIntoView(true);
 				}

@@ -78,6 +78,7 @@ main {
 	margin: 10px;
 	font-family: 'M PLUS Rounded 1c', sans-serif;
 	user-select: none;
+	background-color: -internal-light-dark(rgb(239, 239, 239), rgb(59, 59, 59));
 }
 
 .button:focus {
@@ -122,6 +123,7 @@ main {
 	border: solid 2px var(--color2);
 	padding: 0 8px;
 	border-radius: 3px;
+	font-size: 16px;
 }
 
 .textarea {
@@ -135,4 +137,5 @@ main {
 	border: solid 2px var(--color2);
 	padding: 18px 8px 8px 8px;
 	border-radius: 3px;
+	font-size: 16px;
 }
