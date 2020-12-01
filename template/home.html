@@ -61,6 +61,32 @@
 					margin-right: 0;
 				}
 			}
+
+			#notifCheck:checked + #notifications {
+				max-height: 300px;
+				overflow: auto;
+			}
+
+			#notifications {
+				width: 100%;
+				max-height: 0;
+				background-color: lightgray;
+				overflow: hidden;
+				transition: all 250ms 0ms ease;
+			}
+
+			.notif {
+				border: solid 1px gray;
+			}
+
+			.notif-from {
+				background-repeat: no-repeat;
+				background-size: cover;
+				background-position: center;
+				width: 45px;
+				height: 45px;
+				display: inline-block;
+			}
 		</style>
 	</head>
 	<body>
@@ -73,6 +99,9 @@
 				<h1>ホーム</h1>
 				<button class="button" onclick="location = '/u/{{.Id}}';">マイページ</button>
 				<button class="button" onclick="logout();">ログアウト</button>
+				<h2 id="notifBtn">通知</h2>
+				<input type="checkbox" style="display: none;" id="notifCheck">
+				<div id="notifications"></div>
 				<h2>▽新着ユーザー▽</h2>
 				<div id="newaccounts"></div>
 				<h2>▽フォロー▽</h2>
@@ -86,6 +115,56 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
+			fetch('/Notifications/')
+			.then(res => res.json())
+			.then(notifs => {
+				if (notifs != null) {
+					Array.from(notifs).forEach(notif => {
+						notifications.appendChild(createNotif(notif));
+					});
+					notifBtn.innerText = "通知(" + Object.keys(notifs).length + ")";
+					notifBtn.addEventListener('click', () => {
+						notifCheck.click();
+					});
+				}
+			});
+
+			function createNotif(notif) {
+				var div = document.createElement("div");
+				div.setAttribute("class", "notif");
+				div.addEventListener('click', () => {
+					location = '/directmessages/' + notif.from;
+				});
+
+				var notifType = document.createElement("div");
+				notifType.innerText = getNotifTypeMessage(notif.type);
+				div.appendChild(notifType);
+
+				var notifFrom = document.createElement("div");
+				notifFrom.setAttribute("class", "notif-from");
+				notifFrom.style.backgroundImage = "url('/Account/img/" + notif.from + "')";
+				notifType.appendChild(notifFrom);
+
+				var notifText = document.createElement("div");
+				notifText.innerText = notif.text;
+				div.appendChild(notifText);
+
+				return div;
+			}
+
+			function getNotifTypeMessage(ntype) {
+				var ret = "";
+				switch (ntype) {
+					case 'dm':
+						ret = "ダイレクトメッセージが届いています";
+						break;
+					default:
+						ret = "不明なメッセージ";
+						break;
+				}
+				return ret;
+			}
+
 			fetch('/Account/Search/?search=new')
 			.then(res => res.json())
 			.then(accounts => {

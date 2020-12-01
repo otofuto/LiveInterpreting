@@ -4,7 +4,7 @@
 		<meta charset="utf-8">
 		<meta name="description" content="">
 		<meta name="keywords" content="">
-		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
 		<title>ダイレクトメッセージ - {{ .Account.Name }}さん | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
@@ -111,7 +111,7 @@
 			<div id="inputMessage">
 				<form name="fm" onsubmit="return false;">
 					<textarea name="message" id="textarea"></textarea>
-					<button class="button" style="display: block; margin: 0 auto; width: 300px; margin-bottom: 30px;" onclick="send()">ダイレクトメッセージを送信</button>
+					<button class="button" style="display: block; margin: 0 auto; width: 300px; margin-bottom: 30px;" onclick="send(this)">ダイレクトメッセージを送信</button>
 				</form>
 			</div>
 		</main>
@@ -120,7 +120,9 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			function send() {
+			function send(elm) {
+				elm.innerText = "送信中";
+				elm.setAttribute("disabled", "");
 				var data = new FormData(document.fm);
 				fetch('/directmessages/{{ .Account.Id }}', {
 					method: "post",
@@ -132,6 +134,8 @@
 					else
 						return null;
 				}).then(result => {
+					elm.innerText = "ダイレクトメッセージを送信";
+					elm.removeAttribute("disabled");
 					if (result == null) {
 						alert('送信に失敗しました。');
 					} else {
@@ -185,9 +189,11 @@
 					pre.innerText = data.message;
 					msg.appendChild(pre);
 
-					fetch('/directmessages/' + data.from + '/{{ .Account.Id }}/' + data.id, {
-						method: "put"
-					});
+					if (data.from != {{ .Account.Id }}) {
+						fetch('/directmessages/' + data.from + '/{{ .Account.Id }}/' + data.id, {
+							method: "put"
+						});
+					}
 
 					msg.scrollIntoView(true);
 				}

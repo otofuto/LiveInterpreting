@@ -14,6 +14,7 @@ type DirectMessages struct {
 	Id int `json:"id"`
 	Message string `json:"message"`
 	CreatedAt string `json:"created_at"`
+	Read bool `json:"read"`
 }
 
 func (dm *DirectMessages) Insert() int {
@@ -61,14 +62,14 @@ func (dm *DirectMessages) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `from`, `to`, `id`, `message`, `created_at` from `direct_messages` where `from` = " + strconv.Itoa(dm.From) + " and `to` = " + strconv.Itoa(dm.To) + " and `id` = " + strconv.Itoa(dm.Id))
+	rows, err := db.Query("select `from`, `to`, `id`, `message`, `created_at`, `read` from `direct_messages` where `from` = " + strconv.Itoa(dm.From) + " and `to` = " + strconv.Itoa(dm.To) + " and `id` = " + strconv.Itoa(dm.Id))
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&dm.From, &dm.To, &dm.Id, &dm.Message, &dm.CreatedAt)
+		err = rows.Scan(&dm.From, &dm.To, &dm.Id, &dm.Message, &dm.CreatedAt, &dm.Read)
 		if err != nil {
 			log.Println(err)
 			return false
@@ -82,7 +83,7 @@ func List(me int, to int) ([]DirectMessages, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `from`, `to`, `id`, `message`, `created_at` from `direct_messages` where " +
+	rows, err := db.Query("select `from`, `to`, `id`, `message`, `created_at`, `read` from `direct_messages` where " +
 		"(`from` = " + strconv.Itoa(me) + " and `to` = " + strconv.Itoa(to) + ") or " +
 		"(`from` = " + strconv.Itoa(to) + " and `to` = " + strconv.Itoa(me) + ") order by `created_at`")
 	if err != nil {
@@ -93,7 +94,7 @@ func List(me int, to int) ([]DirectMessages, error) {
 	var ret []DirectMessages
 	for rows.Next() {
 		var dm DirectMessages
-		err = rows.Scan(&dm.From, &dm.To, &dm.Id, &dm.Message, &dm.CreatedAt)
+		err = rows.Scan(&dm.From, &dm.To, &dm.Id, &dm.Message, &dm.CreatedAt, &dm.Read)
 		if err != nil {
 			log.Println(err)
 			return make([]DirectMessages, 0), errors.New("rows scan failed at directMessages.List")
@@ -103,7 +104,7 @@ func List(me int, to int) ([]DirectMessages, error) {
 	return ret, nil
 }
 
-func (dm *DirectMessages) Read() bool {
+func (dm *DirectMessages) SetRead() bool {
 	db := database.Connect()
 	defer db.Close()
 

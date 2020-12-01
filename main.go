@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
+	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
@@ -47,6 +48,8 @@ func main() {
 	http.HandleFunc("/Login/", account.LoginHandle)
 	http.HandleFunc("/Logout/", account.LogoutHandle)
 	http.HandleFunc("/PassForgot/", account.PassForgotHandle)
+
+	http.HandleFunc("/Notifications/", NotificationsHandle)
 
 	http.HandleFunc("/u/", UserHandle)
 	http.HandleFunc("/edit/", EditHandle)
@@ -99,6 +102,43 @@ func FaviconHandle(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	io.Copy(w, file)
+}
+
+func NotificationsHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodGet {
+		db := database.Connect()
+		defer db.Close()
+
+		type Notif struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+			Date string `json:"date"`
+			From int `json:"from"`
+		}
+		var notifs []Notif
+		rows, err := db.Query("select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 order by `created_at` desc")
+		if err != nil {
+			http.Error(w, "failed to get DM", 500)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			n := Notif { Type: "dm" }
+			err = rows.Scan(&n.Text, &n.Date, &n.From)
+			notifs = append(notifs, n)
+		}
+		bytes, err := json.Marshal(notifs)
+		if err != nil {
+			http.Error(w, "failed to marshal objects to json", 500)
+			return
+		}
+		fmt.Fprintf(w, string(bytes))
+	} else {
+		http.Error(w, "method not alloed.", 405)
+	}
 }
 
 func UserHandle(w http.ResponseWriter, r *http.Request) {
@@ -269,6 +309,11 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 				err != nil {
 					log.Fatal(err)
 				}
+				for _, dm := range dms {
+					if !dm.Read {
+						dm.SetRead()
+					}
+				}
 			} else {
 				http.Error(w, "このユーザーは存在しません。", 404)
 			}
@@ -351,10 +396,15 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 					To: to,
 					Id: id,
 				}
-				if dm.Read() {
-					fmt.Fprintf(w, "true")
+				ac := account.LoginAccount(r)
+				if ac.Id == to {
+					if dm.SetRead() {
+						fmt.Fprintf(w, "true")
+					} else {
+						http.Error(w, "failed to update dm to read", 500)
+					}
 				} else {
-					http.Error(w, "failed to update dm to read", 500)
+					http.Error(w, "your account is not allowed.", 403)
 				}
 			} else {
 				http.Error(w, "path: '/directmessages/from/to/chat_id'", 400)
