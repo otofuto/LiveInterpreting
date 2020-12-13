@@ -604,7 +604,13 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 				encodeBody(
 					"<p>いつもLive interpretingをご利用いただきありがとうございます。</p>" +
 					"<p>下記URLへアクセスし、パスワードの再設定を行ってください。</p>" +
-					"<p><a href=\"" + rootUrl + "/PassForgot/?t=" + token + "\">" + rootUrl + "/PassForgot/?t=" + token + "</a></p>\r\n") +
+					"<p><a href=\"" + rootUrl + "/PassForgot/?t=" + token + "\">" + rootUrl + "/PassForgot/?t=" + token + "</a></p>" +
+					"<p><br></p>" +
+					"<p><br></p>" +
+					"<p>このメールは配信専用です。<br>ご返信頂いても確認および返信は出来かねますのでご了承ください。<p>" +
+					"<p><br></p>" +
+					"<p>Live interpreting</p>" +
+					"\r\n") +
 				"\r\n")
 
 			err := smtp.SendMail(os.Getenv("MAIL_SERVER") + ":587", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)

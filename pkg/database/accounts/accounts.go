@@ -28,6 +28,7 @@ type Accounts struct {
 	Langs []langs.Langs `json:"langs"`
 	CreatedAt string `json:"created_at"`
 	Enabled int `json:"enabled"`
+	LastLogined string `json:"last_logined"`
 }
 
 type AccountTokens struct {
@@ -58,6 +59,7 @@ func (ac *Accounts) Insert() int {
 	}
 	ac.Password = passHash(ac.Password)
 	ins.Exec(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage)
+	ins.Close()
 
 	rows, err := db.Query("select last_insert_id()")
 	if err != nil {
@@ -76,6 +78,7 @@ func (ac *Accounts) Insert() int {
 				return -3
 			}
 			ins.Exec(newId, v.Id)
+			ins.Close()
 		}
 		ac.Enabled = 1
 		return newId
@@ -189,14 +192,14 @@ func (ac *Accounts) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `id` = " + strconv.Itoa(ac.Id))
+	rows, err := db.Query("select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `id` = " + strconv.Itoa(ac.Id))
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
 			log.Println(err)
 			return false
@@ -221,13 +224,13 @@ func (ac *Accounts) GetFromEmail() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(ac.Email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(ac.Email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -266,13 +269,13 @@ func Login(email string, pass string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(email) + "'")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled)
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
 			//log.Fatal(err)
 			return ac, errors.New("failed select in login")
@@ -432,7 +435,7 @@ func Search(search string, user_type string, id int) []Accounts {
 		search = ""
 	}
 
-	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at` from `accounts` where `enabled` = 1 and " + user_type + search)
+	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + search)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -440,7 +443,7 @@ func Search(search string, user_type string, id int) []Accounts {
 	var acs []Accounts
 	for rows.Next() {
 		var ac Accounts
-		err = rows.Scan(&ac.Id, &ac.Name, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt)
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -525,4 +528,17 @@ func CheckFollow(id int, targetId int) bool {
 		return true
 	}
 	return false
+}
+
+func (ac *Accounts) UpdateLastLogin() {
+	db := database.Connect()
+	defer db.Close()
+
+	upd, err := db.Prepare("update `accounts` set `last_logined` = now() where `id` = ?")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer upd.Close()
+	upd.Exec(&ac.Id)
 }

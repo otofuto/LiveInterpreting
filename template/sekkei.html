@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="author" content="OTFT">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+	<meta name="robots" content="noindex,nofollow">
+	<title>設計 | Live interpreting</title>
+	<style>
+		body {
+			font-size: 16px;
+		}
+
+		th {
+			border-right: solid 1px black;
+			border-bottom: solid 2px black;
+		}
+
+		td {
+			border-right: solid 1px gray;
+			border-bottom: solid 1px gray;
+		}
+
+		.box {
+			position: relative;
+			display: inline-block;
+			margin: 18px;
+		}
+
+		.box__content {
+			position: relative;
+			border: solid 1px;
+			padding: 10px;
+			left: 0px;
+			top: 8px;
+		}
+
+		.box__name {
+			position: absolute;
+			left: 10px;
+			top: 0px;
+			background-color: white;
+			padding: 0 5px;
+		}
+	</style>
+</head>
+<body>
+	<h1>設計</h1>
+	<div class="box">
+		<div class="box__content">
+			<p>"当サービス": Live interpreting</p>
+			<p>"配信者": いずれかのライブ配信サービスでライブ配信を行っているユーザー</p>
+			<p>"通訳者": 同時通訳をできるユーザー</p>
+			<p>"視聴者": 配信者が行うライブ配信の視聴者</p>
+		</div>
+		<label class="box__name">用語</label>
+	</div>
+	<h2>基本設計</h2>
+	<h3>ユーザー操作</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>順番</th>
+				<th>誰が</th>
+				<th>どうする</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>ライブ配信を行っている人または同時通訳をできる人</td>
+				<td>自分のアカウントを作成する</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>通訳者を当サービス上で探す</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>通訳者に同時通訳の見積もり依頼を送信する</td>
+			</tr>
+			<tr>
+				<td>通訳者</td>
+				<td>見積もり内容に関しての質門をダイレクトメッセージ(以下 DM)にて送信する</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>DMにて通訳者と相談する</td>
+			</tr>
+			<tr>
+				<td>通訳者</td>
+				<td>見積り依頼に対して見積もりを返信する</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>受け取った見積もり内容で購入する</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>当サービスに対し、購入金額の全額を支払う</td>
+			</tr>
+			<tr>
+				<td>配信者及び通訳者</td>
+				<td>トークルーム上にてライブ配信に向けての事前打ち合わせをする</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>任意の配信プラットフォームにてライブ配信を開始する</td>
+			</tr>
+			<tr>
+				<td>通訳者</td>
+				<td>配信者のライブ配信を見ながら同時通訳をし、テキストまたは音声にて当サービス上でこれを配信する</td>
+			</tr>
+			<tr>
+				<td>視聴者</td>
+				<td>配信者から当サービスの通訳ページのURLを伝えてもらい、当サービス上で同時通訳を視聴する</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>ライブ配信の終了後、通訳者との取引を終了する</td>
+			</tr>
+			<tr>
+				<td>配信者</td>
+				<td>通訳者の評価とコメントを入力する</td>
+			</tr>
+			<tr>
+				<td>通訳者</td>
+				<td>配信者の評価とコメントを入力する</td>
+			</tr>
+			<tr>
+				<td>通訳者</td>
+				<td>売上の振り込み申請をする</td>
+			</tr>
+		</tbody>
+	</table>
+	<h3>機能一覧</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>番号</th>
+				<th>機能名</th>
+				<th>使用するテーブル</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>アカウント作成</td>
+				<td>accounts, account_langs</td>
+			</tr>
+			<tr>
+				<td>アカウント情報編集</td>
+				<td>accounts, account_langs</td>
+			</tr>
+			<tr>
+				<td>アカウントパスワードリセット</td>
+				<td>accounts</td>
+			</tr>
+			<tr>
+				<td>アカウント削除</td>
+				<td>accounts</td>
+			</tr>
+			<tr>
+				<td>アカウントログイン</td>
+				<td>account_tokens</td>
+			</tr>
+			<tr>
+				<td>アカウントログアウト</td>
+				<td>account_tokens</td>
+			</tr>
+			<tr>
+				<td>パスワードを忘れたとき用のパスワードリセット</td>
+				<td>pass_reset</td>
+			</tr>
+			<tr>
+				<td>他アカウントフォロー</td>
+				<td>account_social</td>
+			</tr>
+			<tr>
+				<td>他アカウントフォロー解除</td>
+				<td>account_social</td>
+			</tr>
+			<tr>
+				<td>他アカウントブロック</td>
+				<td>account_social</td>
+			</tr>
+			<tr>
+				<td>他アカウント通報</td>
+				<td>未定</td>
+			</tr>
+			<tr>
+				<td>ダイレクトメッセージ</td>
+				<td>direct_messages</td>
+			</tr>
+			<tr>
+				<td>見積もり依頼作成</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>見積もり依頼編集</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>見積もり依頼キャンセル</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>見積もり作成</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>見積もり編集</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>見積もり辞退</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>購入</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>取引終了</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>配信者評価、コメント</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>通訳者評価、コメント</td>
+				<td>trans</td>
+			</tr>
+			<tr>
+				<td>決済</td>
+				<td>未定</td>
+			</tr>
+			<tr>
+				<td>トークルーム</td>
+				<td>talkrooms</td>
+			</tr>
+			<tr>
+				<td>通知</td>
+				<td>direct_messages, talkrooms, trans</td>
+			</tr>
+			<tr>
+				<td>通訳テキスト入力</td>
+				<td>未定</td>
+			</tr>
+			<tr>
+				<td>通訳文チャット形式表示</td>
+				<td>未定</td>
+			</tr>
+			<tr>
+				<td>通訳文クロマキー表示</td>
+				<td>未定</td>
+			</tr>
+			<tr>
+				<td>通訳音声入力</td>
+				<td>未定</td>
+			</tr>
+			<tr>
+				<td>通訳音声出力</td>
+				<td>未定</td>
+			</tr>
+		</tbody>
+	</table>
+	<h3>画面遷移</h3>
+	<h2>詳細設計</h2>
+	<script>
+		Array.from(document.getElementsByTagName("tbody")).forEach(tbl => {
+			var i = 0;
+			Array.from(tbl.getElementsByTagName("tr")).forEach(tr => {
+				i++;
+				var td = document.createElement("td");
+				td.innerText = i;
+				tr.prepend(td);
+			});
+		});
+	</script>
+</body>
+</html>

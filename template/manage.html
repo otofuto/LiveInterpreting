@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="author" content="OTFT">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+	<meta name="robots" content="noindex,nofollow">
+	<title>開発用ドキュメント | Live interpreting</title>
+</head>
+<body>
+	<form name="fm" onsubmit="sub(); return false;">
+		<p>パスワードを入力してください。</p>
+		<p><input type="password" name="pass"></p>
+		<p><input type="submit" value="進む"></p>
+	</form>
+	<script>
+		function sub() {
+			fetch('/document/', {
+				method: "post",
+				body: new FormData(document.fm),
+				credentials: "include"
+			}).then(res => {
+				if (res.status == 200)
+					return res.json();
+				else return false;
+			}).then(result => {
+				if (result) {
+					console.log(result);
+					location.reload();
+				} else {
+					alert("失敗しました。");
+				}
+			}).catch(err => {
+				console.error(err);
+				alert("失敗しました。");
+			});
+		}
+	</script>
+</body>
+</html>

@@ -57,6 +57,8 @@ func main() {
 	http.HandleFunc("/Lang/", LangHandle)
 	http.HandleFunc("/directmessages/", DMHandle)
 
+	http.HandleFunc("/document/", documentHandle)
+
 	http.HandleFunc("/ws/", SocketHandle)
 	go handleMessages()
 
@@ -175,14 +177,12 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 				IsFollow: false,
 				IsFollower: false,
 			}
-			cookie, err := r.Cookie("accounttoken")
-			if err == nil {
-				loginaccount, err := accounts.CheckToken(cookie.Value)
-				if err == nil {
-					context.Login = loginaccount
-					context.IsFollow = accounts.CheckFollow(loginaccount.Id, ac.Id)
-					context.IsFollower = accounts.CheckFollow(ac.Id, loginaccount.Id)
-				}
+			loginaccount := account.LoginAccount(r)
+			if loginaccount.Id != -1 {
+				context.Login = loginaccount
+				context.IsFollow = accounts.CheckFollow(loginaccount.Id, ac.Id)
+				context.IsFollower = accounts.CheckFollow(ac.Id, loginaccount.Id)
+				loginaccount.UpdateLastLogin()
 			}
 			temp := template.Must(template.ParseFiles("template/user.html"))
 
@@ -212,17 +212,16 @@ func EditHandle(w http.ResponseWriter, r *http.Request) {
 		ac.Get()
 		if strings.HasPrefix(mode, "pass") {
 			temp := template.Must(template.ParseFiles("template/passreset.html"))
-
 			if err := temp.Execute(w, ac); err != nil {
 				log.Fatal(err)
 			}
 		} else {
 			temp := template.Must(template.ParseFiles("template/edit.html"))
-
 			if err := temp.Execute(w, ac); err != nil {
 				log.Fatal(err)
 			}
 		}
+		ac.UpdateLastLogin()
 	} else {
 		http.Error(w, "method not allowed.", 405)
 	}
@@ -233,22 +232,16 @@ func HomeHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
-		cookie, err := r.Cookie("accounttoken")
-		if err != nil {
-			fmt.Println(err)
+		ac := account.LoginAccount(r)
+		if ac.Id == -1 {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-		ac, err := accounts.CheckToken(cookie.Value)
-		if err != nil {
-			http.Redirect(w, r, "/", 302)
-			fmt.Println(err)
-		} else {
-			temp := template.Must(template.ParseFiles("template/home.html"))
-			if err := temp.Execute(w, ac); err != nil {
-				log.Fatal(err)
-			}
+		temp := template.Must(template.ParseFiles("template/home.html"))
+		if err := temp.Execute(w, ac); err != nil {
+			log.Fatal(err)
 		}
+		ac.UpdateLastLogin()
 	} else {
 		http.Error(w, "method not allowed", 405)
 	}
@@ -305,10 +298,10 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 				}
 				temp := template.Must(template.ParseFiles("template/dm.html"))
 
-				if err := temp.Execute(w, context);
-				err != nil {
+				if err := temp.Execute(w, context); err != nil {
 					log.Fatal(err)
 				}
+				login.UpdateLastLogin()
 				for _, dm := range dms {
 					if !dm.Read {
 						dm.SetRead()
@@ -414,6 +407,45 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func documentHandle(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/html")
+		cookie, err := r.Cookie("manage")
+		if err != nil {
+			temp := template.Must(template.ParseFiles("template/manage.html"))
+			if err = temp.Execute(w, ""); err != nil {
+				log.Fatal(err)
+			}
+		} else if cookie.Value == "ok" {
+			temp := template.Must(template.ParseFiles("template/sekkei.html"))
+			if err := temp.Execute(w, ""); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			temp := template.Must(template.ParseFiles("template/manage.html"))
+			if err = temp.Execute(w, ""); err != nil {
+				log.Fatal(err)
+			}
+		}
+	} else if r.Method == http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		r.ParseMultipartForm(32 << 20)
+		if r.FormValue("pass") == "v!a@7osV7RBmJto" || r.FormValue("pass") == "nozomikawaii" {
+			cookie := &http.Cookie {
+				Name: "manage",
+				Value: "ok",
+				Path: "/",
+				HttpOnly: true,
+				MaxAge: 3600 * 24 * 3,
+			}
+			http.SetCookie(w, cookie)
+			fmt.Fprintf(w, "true")
+		} else {
+			http.Error(w, "false", 400)
+		}
 	}
 }
 
