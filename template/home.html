@@ -90,10 +90,13 @@
 		</style>
 	</head>
 	<body>
-		<header class="page-header">
-			<div class="service-title">Live interpreting</div>
-			<p class="page-header__username">こんにちは <span style="font-weight: bold;">{{.Name}}</span>さん</p>
-		</header>
+		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Name}}</span>さん";
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="content">
 				<h1>ホーム</h1>
