@@ -1,13 +1,38 @@
-var pageHeader = document.createElement("header");
+let pageHeader = document.createElement("header");
 pageHeader.setAttribute("class", "page-header");
 
-var serviceTitle = document.createElement("div");
+let innerHeader = document.createElement('div');
+innerHeader.setAttribute('class', 'inner-header');
+pageHeader.appendChild(innerHeader);
+
+let humb = document.createElement('label');
+humb.setAttribute('class', 'header-humb');
+humb.setAttribute('for', 'humbCheck');
+innerHeader.appendChild(humb);
+
+let humbCheck = document.createElement('input');
+humbCheck.id = 'humbCheck';
+humbCheck.style.display = 'none';
+humbCheck.setAttribute('type', 'checkbox');
+humb.appendChild(humbCheck);
+
+humbCheck.addEventListener('change', elm => {
+	let sidemenu = document.getElementById('sidemenu');
+	if (sidemenu == null) return;
+	if (elm.target.checked) sidemenu.style.height = 'auto';
+	else sidemenu.removeAttribute('style');
+});
+
+let serviceTitle = document.createElement("div");
 serviceTitle.setAttribute("class", "service-title");
-serviceTitle.innerText = "Live interpreting";
-pageHeader.appendChild(serviceTitle);
+innerHeader.appendChild(serviceTitle);
+
+let logoImg = document.createElement('img');
+logoImg.src = '/st/materials/logo.svg#logo';
+serviceTitle.appendChild(logoImg);
 
 document.body.appendChild(pageHeader);
 
 function appendHeader(elm) {
-	pageHeader.appendChild(elm);
+	innerHeader.appendChild(elm);
 }

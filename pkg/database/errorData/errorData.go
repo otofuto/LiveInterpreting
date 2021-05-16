@@ -13,5 +13,6 @@ func Insert(title string, message string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer ins.Close()
 	ins.Exec(title, message)
 }

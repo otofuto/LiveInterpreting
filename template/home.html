@@ -9,19 +9,6 @@
 		<title>Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
-			#content {
-				width: 50%;
-				margin: 0 auto;
-				text-align: center;
-				font-family: 'M PLUS Rounded 1c', sans-serif;
-			}
-
-			@media screen and (max-width: 812px) {
-				#content {
-					width: 100%;
-				}
-			}
-
 			.account {
 				display: inline-block;
 				width: 150px;
@@ -98,9 +85,18 @@
 			appendHeader(p);
 		</script>
 		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'">ホーム</div>
+				<div onclick="location = '/inbox/'">受信BOX</div>
+				<div onclick="location = '/mypage/'">マイページ</div>
+				<div onclick="location = '/follows/'">フォロー</div>
+				<div onclick="location = '/mypage/lives/'">配信登録</div>
+				<div onclick="location = '/search/'">翻訳者を探す</div>
+				<div onclick="logout()">ログアウト</div>
+			</div>
 			<div id="content">
 				<h1>ホーム</h1>
-				<button class="button" onclick="location = '/u/{{.Id}}';">マイページ</button>
+				<button class="button" onclick="location = '/u/{{.Id}}';">自分のユーザーページ</button>
 				<button class="button" onclick="logout();">ログアウト</button>
 				<h2 id="notifBtn">通知</h2>
 				<input type="checkbox" style="display: none;" id="notifCheck">

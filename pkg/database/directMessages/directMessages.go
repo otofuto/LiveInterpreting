@@ -47,12 +47,14 @@ func (dm *DirectMessages) Insert() int {
 	defer ins.Close()
 	ins.Exec(&dm.From, &dm.To, newId, &dm.Message)
 
-	rows, err = db.Query("select `created_at` from `direct_messages` where `from` = " + strconv.Itoa(dm.From) + " and `to` = " + strconv.Itoa(dm.To) + " and `id` = " + strconv.Itoa(newId))
+	rows2, err := db.Query("select `created_at` from `direct_messages` where `from` = " + strconv.Itoa(dm.From) + " and `to` = " + strconv.Itoa(dm.To) + " and `id` = " + strconv.Itoa(newId))
 	if err != nil {
 		log.Println(err)
+		return -1
 	}
-	if rows.Next() {
-		rows.Scan(&dm.CreatedAt)
+	defer rows2.Close()
+	if rows2.Next() {
+		rows2.Scan(&dm.CreatedAt)
 	}
 
 	return newId

@@ -578,7 +578,6 @@ func encodeBody(body string) string {
         }
     }
     return b2.String()
-
 }
 
 func PassForgotHandle(w http.ResponseWriter, r *http.Request) {

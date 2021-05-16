@@ -18,6 +18,7 @@ func All() []Langs {
 	rows, err := db.Query("select `id`, `lang` from `langs` order by `id`")
 	if err != nil {
 		log.Fatal(err)
+		return make([]Langs, 0)
 	}
 	defer rows.Close()
 

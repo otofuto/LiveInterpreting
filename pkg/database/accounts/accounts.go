@@ -54,7 +54,7 @@ func (ac *Accounts) Insert() int {
 
 	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return -1
 	}
 	ac.Password = passHash(ac.Password)
@@ -63,7 +63,7 @@ func (ac *Accounts) Insert() int {
 
 	rows, err := db.Query("select last_insert_id()")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
@@ -74,7 +74,7 @@ func (ac *Accounts) Insert() int {
 			ins, err = db.Prepare("insert into `account_langs` (`id`, `lang_id`) values (?, ?)")
 			if err != nil {
 				ac.Delete()
-				log.Fatal(err)
+				log.Println(err)
 				return -3
 			}
 			ins.Exec(newId, v.Id)
@@ -111,19 +111,26 @@ func (ac *Accounts) Update() bool {
 
 	upd, err := db.Prepare("update `accounts` set `name` = ?, `email` = ?, `icon_image` = ?, `description` = ?, `sex` = ?, `user_type` = ?, `url1` = ?, `url2` = ?, `url3` = ?, `hourly_wage` = ? where `id` = ?")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return false
 	}
+	defer upd.Close()
 	upd.Exec(&ac.Name, &ac.Email, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.Id)
-	db.Query("delete from `account_langs` where `id` = " + strconv.Itoa(ac.Id))
+	r, err := db.Query("delete from `account_langs` where `id` = " + strconv.Itoa(ac.Id))
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	defer r.Close()
 	for _, v := range ac.Langs {
 		ins, err := db.Prepare("insert into `account_langs` (`id`, `lang_id`) values (?, ?)")
 		if err != nil {
 			ac.Delete()
-			log.Fatal(err)
+			log.Println(err)
 			return false
 		}
 		ins.Exec(ac.Id, v.Id)
+		ins.Close()
 	}
 	return true
 }
@@ -147,24 +154,27 @@ func (ac *Accounts) Delete() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	upd, err := db.Prepare("delete from `accounts` where `id` = ?")
+	upd1, err := db.Prepare("delete from `accounts` where `id` = ?")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return false
 	}
-	upd.Exec(&ac.Id)
-	upd, err = db.Prepare("delete from `account_tokens` where `id` = ?")
+	upd1.Exec(&ac.Id)
+	upd1.Close()
+	upd2, err := db.Prepare("delete from `account_tokens` where `id` = ?")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return false
 	}
-	upd.Exec(&ac.Id)
-	upd, err = db.Prepare("delete from `account_langs` where `id` = ?")
+	upd2.Exec(&ac.Id)
+	upd2.Close()
+	upd3, err := db.Prepare("delete from `account_langs` where `id` = ?")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return false
 	}
-	upd.Exec(&ac.Id)
+	upd3.Exec(&ac.Id)
+	upd3.Close()
 	return true
 }
 
@@ -178,12 +188,14 @@ func (ac *Accounts) Disabled() bool {
 		return false
 	}
 	upd.Exec(&ac.Id)
-	upd, err = db.Prepare("delete from `account_tokens` where `id` = ?")
+	upd.Close()
+	upd2, err := db.Prepare("delete from `account_tokens` where `id` = ?")
 	if err != nil {
 		log.Println(err)
 		return false
 	}
-	upd.Exec(&ac.Id)
+	upd2.Exec(&ac.Id)
+	upd2.Close()
 	ac.Enabled = 0
 	return true
 }
@@ -204,15 +216,16 @@ func (ac *Accounts) Get() bool {
 			log.Println(err)
 			return false
 		}
-		rows, err = db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
 		if err != nil {
 			log.Println(err)
 			return false
 		}
+		defer rows2.Close()
 		ac.Langs = make([]langs.Langs, 0)
-		for rows.Next() {
+		for rows2.Next() {
 			var l langs.Langs
-			err = rows.Scan(&l.Id, &l.Lang)
+			err = rows2.Scan(&l.Id, &l.Lang)
 			ac.Langs = append(ac.Langs, l)
 		}
 		return true
@@ -226,22 +239,23 @@ func (ac *Accounts) GetFromEmail() bool {
 
 	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(ac.Email) + "'")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
-		rows, err = db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
+		defer rows2.Close()
 		ac.Langs = make([]langs.Langs, 0)
-		for rows.Next() {
+		for rows2.Next() {
 			var l langs.Langs
-			err = rows.Scan(&l.Id, &l.Lang)
+			err = rows2.Scan(&l.Id, &l.Lang)
 			ac.Langs = append(ac.Langs, l)
 		}
 		return true
@@ -255,7 +269,8 @@ func CheckMail(mail string, id int) bool {
 
 	rows, err := db.Query("select `id` from `accounts` where `email` = '" + database.Escape(mail) + "' and `id` != " + strconv.Itoa(id))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return false
 	}
 	defer rows.Close()
 	if rows.Next() {
@@ -271,13 +286,14 @@ func Login(email string, pass string) (Accounts, error) {
 
 	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(email) + "'")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return Accounts{}, errors.New("failed to select login")
 	}
 	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
-			//log.Fatal(err)
+			log.Println(err)
 			return ac, errors.New("failed select in login")
 		}
 		if !checkPass(ac.Password, pass) {
@@ -305,8 +321,10 @@ func (ac *Accounts) CreateToken() string {
 	}
 	ins, err := db.Prepare("insert into `account_tokens` (`id`, `token`) values (?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return ""
 	}
+	defer ins.Close()
 	ins.Exec(&accounttoken.Id, &accounttoken.Token)
 
 	return token
@@ -316,11 +334,16 @@ func CheckToken(token string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	db.Query("delete from `account_tokens` where `created_at` <= subtime(now(), '168:00:00') and `token` = '" + database.Escape(token) + "'")
+	del, err := db.Query("delete from `account_tokens` where `created_at` <= subtime(now(), '168:00:00') and `token` = '" + database.Escape(token) + "'")
+	if err != nil {
+		log.Println(err)
+		return Accounts{}, errors.New("failed to delete old tokens")
+	}
+	defer del.Close()
 	//168hour = 24h * 7days
 	rows, err := db.Query("select `id` from `account_tokens` where `created_at` > subtime(now(), '168:00:00') and `token` = '" + database.Escape(token) + "'")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return Accounts{}, errors.New("select account_tokens failed")
 	}
 	defer rows.Close()
@@ -328,7 +351,7 @@ func CheckToken(token string) (Accounts, error) {
 		var ac Accounts
 		err = rows.Scan(&ac.Id)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 			return Accounts{}, errors.New("failed scan row in tokens")
 		}
 		if ac.Get() {
@@ -347,13 +370,15 @@ func DeleteToken(token string) {
 	db := database.Connect()
 	defer db.Close()
 
-	db.Query("delete from `account_tokens` where `token` = '" + database.Escape(token) + "'")
+	del, _ := db.Query("delete from `account_tokens` where `token` = '" + database.Escape(token) + "'")
+	del.Close()
 }
 
 func passHash(pass string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), 10)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return ""
 	}
 	return string(hash)
 }
@@ -361,16 +386,19 @@ func passHash(pass string) string {
 func PassResetToken(id int) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(time.Now().Format("yyyyMMddHHmmss")), 10)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return ""
 	}
 	token := string(hash)[8:28]
 	db := database.Connect()
 	defer db.Close()
 
-	db.Query("delete from `pass_reset` where `id` = " + strconv.Itoa(id))
+	del, _ := db.Query("delete from `pass_reset` where `id` = " + strconv.Itoa(id))
+	defer del.Close()
 	ins, err := db.Prepare("insert into `pass_reset` (`id`, `token`) values (?, ?)")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return ""
 	}
 	defer ins.Close()
 	ins.Exec(id, token)
@@ -382,7 +410,8 @@ func CheckPassResetToken(token string) Accounts {
 	defer db.Close()
 
 	//24時間以上経っている場合は削除する
-	db.Query("delete from `pass_reset` where `created_at` <= subtime(now(), '24:00:00')")
+	del, _ := db.Query("delete from `pass_reset` where `created_at` <= subtime(now(), '24:00:00')")
+	defer del.Close()
 
 	rows, err := db.Query("select `id` from `pass_reset` where `token` = '" + database.Escape(token) + "'")
 	if err != nil {
@@ -437,19 +466,22 @@ func Search(search string, user_type string, id int) []Accounts {
 
 	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + search)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return make([]Accounts, 0)
 	}
 	defer rows.Close()
-	var acs []Accounts
+	acs := make([]Accounts, 0)
 	for rows.Next() {
 		var ac Accounts
 		err = rows.Scan(&ac.Id, &ac.Name, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return make([]Accounts, 0)
 		}
 		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return make([]Accounts, 0)
 		}
 		for rows2.Next() {
 			var l langs.Langs
@@ -475,7 +507,7 @@ func Social(accountId int, action int) ([]AccountSocial, error) {
 		return make([]AccountSocial, 0), errors.New("failed to select query")
 	}
 	defer rows.Close()
-	var socials []AccountSocial
+	socials := make([]AccountSocial, 0)
 	for rows.Next() {
 		var s AccountSocial
 		_ = rows.Scan(&s.Id, &s.TargetId, &s.Action, &s.CreatedAt)
@@ -497,6 +529,7 @@ func (s *AccountSocial) Insert() bool {
 		fmt.Println(err)
 		return false
 	}
+	defer ins.Close()
 	ins.Exec(&s.Id, &s.TargetId, &s.Action)
 	return true
 }
@@ -510,6 +543,7 @@ func (s *AccountSocial) Delete() bool {
 		fmt.Println(err)
 		return false
 	}
+	defer del.Close()
 	del.Exec(&s.Id, &s.TargetId)
 	return true
 }
