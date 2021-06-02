@@ -18,28 +18,33 @@
 				padding: 10px;
 				border-radius: 10px;
 				box-shadow: 0 0 10px gray;
+				background-color: white;
 			}
 
 			#content {
 				width: 50%;
 				min-height: 150px;
 				margin: 0 auto;
-				border: solid 1px gray;
+				border: solid 1px lightgray;
 				text-align: center;
 				font-family: 'M PLUS Rounded 1c', sans-serif;
 			}
 
 			#inputMessage {
 				display: block;
-				width: 50%;
+				width: 100%;
 				margin: 0 auto;
-				border: solid 1px gray;
 			}
 
 			@media screen and (max-width: 812px) {
+				main {
+					flex-wrap: wrap;
+					justify-content: center;
+				}
+
 				#accountinfo {
 					width: calc(96% - 20px);
-					left: 2%;
+					left: auto;
 					top: 0;
 					position: relative;
 					margin-bottom: 20px;
@@ -55,16 +60,18 @@
 			}
 
 			.msg {
-				border-bottom: solid 1px black;
+				border-bottom: solid 1px lightgray;
 				text-align: left;
+				padding: 5px;
+				box-sizing: border-box;
 			}
 
 			.icon-disp {
 				position: relative;
 				display: inline-block;
-				width: 75px;
-				height: 75px;
-				margin-right: 20px;
+				width: 48px;
+				height: 48px;
+				margin-right: 10px;
 				vertical-align: top;
 				border-radius: 5px;
 				background-size: cover;
@@ -82,39 +89,56 @@
 			pre {
 				white-space: pre-wrap;
 			}
+
+			.user-name {
+				cursor: pointer;
+			}
+
+			.user-name:hover {
+				text-decoration: underline;
+			}
 		</style>
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
 		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'">ホーム</div>
+				<div onclick="location = '/inbox/'">受信BOX</div>
+				<div onclick="location = '/mypage/'">マイページ</div>
+				<div onclick="location = '/follows/'">フォロー</div>
+				<div onclick="location = '/mypage/lives/'">配信登録</div>
+				<div onclick="location = '/search/'">翻訳者を探す</div>
+				<div onclick="logout()">ログアウト</div>
+			</div>
 			<div id="accountinfo">
 				<div class="icon-disp" style="background-image: url('/Account/img/{{ .Account.Id }}');" onclick="location = '/u/{{ .Account.Id }}';"></div>
-				<p style="font-weight: bold;">{{ .Account.Name }}</p>
+				<p style="font-weight: bold;" class="user-name">{{ .Account.Name }}</p>
 				<pre>{{ .Account.Description }}</pre>
 			</div>
 			<div id="content">
 				{{ range .DM }}
 				<div class="msg">
-					<div>
+					<div style="display: flex;">
 						<div class="icon-disp" style="background-image: url('/Account/img/{{ .From }}');" onclick="location = '/u/{{ .From }}';"></div>
-						<div style="display: inline-block;">
-							<p>{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
+						<div style="display: inline-flex; justify-content: space-between; width: 100%;">
+							<p class="user-name">{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
 							<p style="color: gray;">{{ .CreatedAt }}</p>
 						</div>
 					</div>
 					<pre>{{ .Message }}</pre>
 				</div>
 				{{ end }}
-			</div>
-			<div id="inputMessage">
-				<form name="fm" onsubmit="return false;">
-					<textarea name="message" id="textarea"></textarea>
-					<button class="button" style="display: block; margin: 0 auto; width: 300px; margin-bottom: 30px;" onclick="send(this)">ダイレクトメッセージを送信</button>
-				</form>
+				<div id="inputMessage">
+					<form name="fm" onsubmit="return false;">
+						<textarea name="message" id="textarea" placeholder="メッセージを入力する"></textarea>
+						<button class="button" style="display: block; margin: 0 auto; width: 300px; margin-bottom: 30px;" onclick="send(this)">ダイレクトメッセージを送信</button>
+					</form>
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
-			<label>© 2020 Live interpreting - Powered by OTFT</label>
+			<label>© 2021 Live interpreting - Powered by OTFT</label>
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>

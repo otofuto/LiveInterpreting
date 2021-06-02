@@ -51,9 +51,11 @@ body {
 	display: inline-block;
 	color: white;
 	margin-left: 10px;
-	max-width: 270px;
-	width: 270px;
+	max-width: 280px;
+	width: 280px;
 	height: auto;
+	padding: 5px;
+	box-sizing: border-box;
 }
 
 @media screen and (max-width: 812px) {
