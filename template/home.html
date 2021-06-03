@@ -81,22 +81,22 @@
 		<script>
 			var p = document.createElement("p");
 			p.setAttribute("class", "page-header__username");
-			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Name}}</span>さん";
+			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Login.Name}}</span>さん";
 			appendHeader(p);
 		</script>
 		<main>
 			<div id="sidemenu">
-				<div onclick="location = '/home/'">ホーム</div>
+				<div onclick="location = '/home/'" class="selected">ホーム</div>
 				<div onclick="location = '/inbox/'">受信BOX</div>
 				<div onclick="location = '/mypage/'">マイページ</div>
-				<div onclick="location = '/follows/'">フォロー</div>
+				<div onclick="location = '/mypage/follows/'">フォロー</div>
 				<div onclick="location = '/mypage/lives/'">配信登録</div>
 				<div onclick="location = '/search/'">翻訳者を探す</div>
 				<div onclick="logout()">ログアウト</div>
 			</div>
 			<div id="content">
-				<button class="button" onclick="location = '/u/{{.Id}}';">自分のユーザーページ</button>
-				<button class="button" onclick="logout();">ログアウト</button>
+				<h2>ライブ中</h2>
+				<h2>本日の配信</h2>
 				<h2 id="notifBtn">通知</h2>
 				<input type="checkbox" style="display: none;" id="notifCheck">
 				<div id="notifications"></div>
@@ -113,8 +113,7 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			fetch('/Notifications/')
-			.then(res => res.json())
+			get('/Notifications/')
 			.then(notifs => {
 				if (notifs != null) {
 					Array.from(notifs).forEach(notif => {
@@ -128,22 +127,22 @@
 			});
 
 			function createNotif(notif) {
-				var div = document.createElement("div");
+				let div = document.createElement("div");
 				div.setAttribute("class", "notif");
 				div.addEventListener('click', () => {
 					location = '/directmessages/' + notif.from;
 				});
 
-				var notifType = document.createElement("div");
+				let notifType = document.createElement("div");
 				notifType.innerText = getNotifTypeMessage(notif.type);
 				div.appendChild(notifType);
 
-				var notifFrom = document.createElement("div");
+				let notifFrom = document.createElement("div");
 				notifFrom.setAttribute("class", "notif-from");
 				notifFrom.style.backgroundImage = "url('/Account/img/" + notif.from + "')";
 				notifType.appendChild(notifFrom);
 
-				var notifText = document.createElement("div");
+				let notifText = document.createElement("div");
 				notifText.innerText = notif.text;
 				div.appendChild(notifText);
 
@@ -151,7 +150,7 @@
 			}
 
 			function getNotifTypeMessage(ntype) {
-				var ret = "";
+				let ret = "";
 				switch (ntype) {
 					case 'dm':
 						ret = "ダイレクトメッセージが届いています";
@@ -163,24 +162,21 @@
 				return ret;
 			}
 
-			fetch('/Account/Search/?search=new')
-			.then(res => res.json())
+			get('/Account/Search/?search=new')
 			.then(accounts => {
 				Array.from(accounts).forEach(ac => {
 					newaccounts.appendChild(createAccount(ac));
 				});
 			});
 
-			fetch('/Account/Search/?search=follow')
-			.then(res => res.json())
+			get('/Account/Search/?search=follow')
 			.then(accounts => {
 				Array.from(accounts).forEach(ac => {
 					follows.appendChild(createAccount(ac));
 				});
 			});
 
-			fetch('/Account/Search/?search=follower')
-			.then(res => res.json())
+			get('/Account/Search/?search=follower')
 			.then(accounts => {
 				Array.from(accounts).forEach(ac => {
 					followers.appendChild(createAccount(ac));
@@ -188,7 +184,7 @@
 			});
 
 			function createAccount(ac) {
-				var acbox = document.createElement("div");
+				let acbox = document.createElement("div");
 				acbox.setAttribute("class", "account");
 				if (ac.user_type == "influencer") {
 					acbox.style.backgroundColor = "var(--color1)";
@@ -196,16 +192,16 @@
 					acbox.style.backgroundColor = "var(--color2)";
 				}
 
-				var iconDisp = document.createElement("div");
+				let iconDisp = document.createElement("div");
 				iconDisp.setAttribute("class", "iconDisp");
 				iconDisp.style.backgroundImage = "url('/Account/img/" + ac.id + "')";
 				acbox.appendChild(iconDisp);
 
-				var namelabel = document.createElement("div");
+				let namelabel = document.createElement("div");
 				namelabel.innerText = ac.name;
 				acbox.appendChild(namelabel);
 
-				var datelabel = document.createElement("label");
+				let datelabel = document.createElement("label");
 				datelabel.style.fontSize = "80%";
 				datelabel.innerText = ac.created_at;
 				acbox.appendChild(datelabel);
@@ -215,24 +211,6 @@
 				});
 
 				return acbox;
-			}
-
-			function logout() {
-				fetch('/Logout/', {
-					method: "post",
-					credentials: "include"
-				}).then(res => {
-					if (res.status == 200)
-						return {};
-					else
-						return null;
-				}).then(result => {
-					if (result != null) {
-						location = "/";
-					} else {
-						alert('エラーによりログアウトに失敗しました。');
-					}
-				});
 			}
 		</script>
 	</body>

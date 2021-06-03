@@ -25,6 +25,13 @@ var clients = make(map[*websocket.Conn]string)
 var broadcast = make(chan SocketMessage)
 var upgrader = websocket.Upgrader{}
 
+type TempContext struct {
+	Login accounts.Accounts `json:"login"`
+	User accounts.Accounts `json:"user"`
+	Users []accounts.Accounts `json:"users"`
+	Message string `json:"message"`
+	Messages []directMessages.DirectMessages `json:"direct_messages"`
+}
 type SocketMessage struct {
 	Message string `json:"message"`
 	From int `json:"from"`
@@ -52,10 +59,11 @@ func main() {
 	http.HandleFunc("/Notifications/", NotificationsHandle)
 
 	http.HandleFunc("/u/", UserHandle)
-	http.HandleFunc("/edit/", EditHandle)
+	http.HandleFunc("/mypage/", MypageHandle)
 	http.HandleFunc("/home/", HomeHandle)
 	http.HandleFunc("/Lang/", LangHandle)
 	http.HandleFunc("/directmessages/", DMHandle)
+	http.HandleFunc("/search/", SearchHandle)
 
 	http.HandleFunc("/document/", documentHandle)
 
@@ -76,7 +84,8 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 			temp := template.Must(template.ParseFiles("template/index.html"))
 			if err := temp.Execute(w, "");
 			err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				http.Error(w, "error", 500)
 			}
 			return
 		}
@@ -85,7 +94,9 @@ func IndexHandle(w http.ResponseWriter, r *http.Request) {
 			temp := template.Must(template.ParseFiles("template/index.html"))
 			if err := temp.Execute(w, "");
 			err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				http.Error(w, "error", 500)
+				return
 			}
 		} else {
 			http.Redirect(w, r, "/home/", 302)
@@ -161,7 +172,8 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 				temp := template.Must(template.ParseFiles("template/disableduser.html"))
 
 				if err := temp.Execute(w, ""); err != nil {
-					log.Fatal(err)
+					log.Println(err)
+					http.Error(w, "error", 500)
 				}
 				return
 			}
@@ -188,7 +200,9 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 
 			if err := temp.Execute(w, context);
 			err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				http.Error(w, "error", 500)
+				return
 			}
 		} else {
 			http.Error(w, "このユーザーは存在しません。", 404)
@@ -198,32 +212,43 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func EditHandle(w http.ResponseWriter, r *http.Request) {
+func MypageHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
-		ac := account.LoginAccount(r)
-		if ac.Id == -1 {
-			http.Error(w, "not logined", 403)
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Redirect(w, r, "/", 303)
 			return
 		}
-		mode := r.URL.Path[len("/edit/"):]
-		ac.Get()
-		if strings.HasPrefix(mode, "pass") {
-			temp := template.Must(template.ParseFiles("template/passreset.html"))
-			if err := temp.Execute(w, ac); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			temp := template.Must(template.ParseFiles("template/edit.html"))
-			if err := temp.Execute(w, ac); err != nil {
-				log.Fatal(err)
+		msg := ""
+		filename := r.URL.Path[len("/mypage/"):]
+		if filename == "" {
+			filename = "index"
+		}
+		if filename[len(filename) - 1:] == "/" {
+			filename = filename[:len(filename) - 1]
+		}
+		if filename == "index" {
+			login.GetView(login.Id)
+		} else if filename == "profile" {
+			if !login.Get() {
+				http.Error(w, "failed to fetch account info", 500)
+				return
 			}
 		}
-		ac.UpdateLastLogin()
+		temp := template.Must(template.ParseFiles("template/mypage/" + filename + ".html"))
+		if err := temp.Execute(w, TempContext {
+			Login: login,
+			Message: msg,
+		}); err != nil {
+			log.Println(err)
+			http.Error(w, "HTTP 500 Internal server error", 500)
+		}
+		login.UpdateLastLogin()
 	} else {
-		http.Error(w, "method not allowed.", 405)
+		http.Error(w, "method not allowed", 405)
 	}
 }
 
@@ -238,8 +263,12 @@ func HomeHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		temp := template.Must(template.ParseFiles("template/home.html"))
-		if err := temp.Execute(w, ac); err != nil {
-			log.Fatal(err)
+		if err := temp.Execute(w, TempContext {
+			Login: ac,
+		}); err != nil {
+			log.Println(err)
+			http.Error(w, "error", 500)
+			return
 		}
 		ac.UpdateLastLogin()
 	} else {
@@ -254,7 +283,9 @@ func LangHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		bytes, err := json.Marshal(langs.All())
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			http.Error(w, "error", 500)
+			return
 		}
 		fmt.Fprintf(w, string(bytes))
 	} else {
@@ -269,7 +300,7 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		login := account.LoginAccount(r)
 		if login.Id == -1 {
-			http.Error(w, "not logined", 403)
+			http.Redirect(w, r, "/", 303)
 			return
 		}
 		accountId, err := strconv.Atoi(r.URL.Path[len("/directmessages/"):])
@@ -297,9 +328,10 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 					DM: dms,
 				}
 				temp := template.Must(template.ParseFiles("template/dm.html"))
-
 				if err := temp.Execute(w, context); err != nil {
-					log.Fatal(err)
+					log.Println(err)
+					http.Error(w, "error", 500)
+					return
 				}
 				login.UpdateLastLogin()
 				for _, dm := range dms {
@@ -404,6 +436,21 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			http.Error(w, "path: '/directmessages/from/to/chat_id'", 400)
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func SearchHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	if r.Method == http.MethodGet {
+		temp := template.Must(template.ParseFiles("template/search.html"))
+		if err := temp.Execute(w, TempContext {
+			Login: account.LoginAccount(r),
+		}); err != nil {
+			log.Fatal(err)
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)

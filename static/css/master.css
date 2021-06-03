@@ -103,9 +103,13 @@ main {
 	color: darkgray;
 }
 
+#sidemenu .selected {
+	color: var(--color1);
+}
+
 #content {
 	margin: 0 auto;
-	text-align: center;
+	width: 100%;
 	font-family: 'M PLUS Rounded 1c', sans-serif;
 }
 

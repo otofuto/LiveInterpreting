@@ -1,0 +1,30 @@
+#accountinfo {
+	font-family: 'M PLUS Rounded 1c', sans-serif;
+	display: flex;
+	flex-wrap: wrap;
+	text-align: left;
+	border-bottom: solid 2px gray;
+}
+
+pre {
+	font-family: 'M PLUS Rounded 1c', sans-serif;
+}
+
+@media screen and (max-width: 812px) {
+	#content {
+		width: 100%;
+	}
+}
+
+#iconDisp {
+	position: relative;
+	display: inline-block;
+	width: 110px;
+	height: 110px;
+	margin-right: 20px;
+	vertical-align: top;
+	border-radius: 5px;
+	background-size: cover;
+	background-position: center;
+	background-color: lightgray;
+}

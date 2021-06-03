@@ -233,6 +233,15 @@ func (ac *Accounts) Get() bool {
 	return false
 }
 
+func (ac *Accounts) GetView(loginid int) {
+	if ac.Get() {
+		ac.Password = ""
+		ac.Email = ""
+	} else {
+		ac.Id = -1
+	}
+}
+
 func (ac *Accounts) GetFromEmail() bool {
 	db := database.Connect()
 	defer db.Close()
