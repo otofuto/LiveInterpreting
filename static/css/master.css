@@ -154,6 +154,7 @@ main {
 	font-family: 'M PLUS Rounded 1c', sans-serif;
 	user-select: none;
 	background-color: -internal-light-dark(rgb(239, 239, 239), rgb(59, 59, 59));
+	transition: all 150ms 0ms ease;
 }
 
 .button:focus {

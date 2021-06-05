@@ -117,18 +117,20 @@
 				<pre>{{ .Account.Description }}</pre>
 			</div>
 			<div id="content">
-				{{ range .DM }}
-				<div class="msg">
-					<div style="display: flex;">
-						<div class="icon-disp" style="background-image: url('/Account/img/{{ .From }}');" onclick="location = '/u/{{ .From }}';"></div>
-						<div style="display: inline-flex; justify-content: space-between; width: 100%;">
-							<p class="user-name">{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
-							<p style="color: gray;">{{ .CreatedAt }}</p>
+				<div id="dmlist">
+					{{ range .DM }}
+					<div class="msg">
+						<div style="display: flex;">
+							<div class="icon-disp" style="background-image: url('/Account/img/{{ .From }}');" onclick="location = '/u/{{ .From }}';"></div>
+							<div style="display: inline-flex; justify-content: space-between; width: 100%;">
+								<p class="user-name">{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
+								<p style="color: gray;">{{ .CreatedAt }}</p>
+							</div>
 						</div>
+						<pre>{{ .Message }}</pre>
 					</div>
-					<pre>{{ .Message }}</pre>
+					{{ end }}
 				</div>
-				{{ end }}
 				<div id="inputMessage">
 					<form name="fm" onsubmit="return false;">
 						<textarea name="message" id="textarea" placeholder="メッセージを入力する"></textarea>
@@ -145,7 +147,7 @@
 			function send(elm) {
 				elm.innerText = "送信中";
 				elm.setAttribute("disabled", "");
-				var data = new FormData(document.fm);
+				let data = new FormData(document.fm);
 				fetch('/directmessages/{{ .Account.Id }}', {
 					method: "post",
 					body: data,
@@ -170,7 +172,7 @@
 			}
 
 			function connectWs() {
-				var chatId = "dm{{ if gt .Login.Id .Account.Id }}{{ .Account.Id }}_{{ .Login.Id }}{{ else }}{{ .Login.Id }}_{{ .Account.Id }}{{ end }}";
+				let chatId = "dm{{ if gt .Login.Id .Account.Id }}{{ .Account.Id }}_{{ .Login.Id }}{{ else }}{{ .Login.Id }}_{{ .Account.Id }}{{ end }}";
 				ws = new WebSocket((window.location.host == "live-interpreting.herokuapp.com" ? "wss://" : "ws://") + window.location.host + "/ws/" + chatId);
 				//ws = new WebSocket("wss://" + window.location.host + "/ws/" + chatId);
 
@@ -179,35 +181,35 @@
 				}
 
 				ws.onmessage = message => {
-					var data = JSON.parse(message.data);
+					let data = JSON.parse(message.data);
 					console.log(data);
-					var msg = document.createElement("div");
+					let msg = document.createElement("div");
 					msg.setAttribute("class", "msg");
-					document.getElementById("content").appendChild(msg);
+					document.getElementById("dmlist").appendChild(msg);
 
-					var div = document.createElement("div");
+					let div = document.createElement("div");
 					msg.appendChild(div);
 
-					var iconDisp = document.createElement("div");
+					let iconDisp = document.createElement("div");
 					iconDisp.setAttribute("class", "icon-disp");
 					iconDisp.style.backgroundImage = "url('/Account/img/" + data.from + "')";
 					iconDisp.setAttribute("onclick", "location = '/u/" + data.from + "';");
 					div.appendChild(iconDisp);
 
-					var inline = document.createElement("div");
+					let inline = document.createElement("div");
 					inline.style.display = "inline-block";
 					div.appendChild(inline);
 
-					var p1 = document.createElement("p");
+					let p1 = document.createElement("p");
 					p1.innerText = data.from == {{ .Login.Id }} ? "{{ .Login.Name }}" : "{{ .Account.Name }}";
 					inline.appendChild(p1);
 
-					var p2 = document.createElement("p");
+					let p2 = document.createElement("p");
 					p2.style.color = "gray";
 					p2.innerText = data.created_at;
 					inline.appendChild(p2);
 
-					var pre = document.createElement("pre");
+					let pre = document.createElement("pre");
 					pre.innerText = data.message;
 					msg.appendChild(pre);
 
@@ -226,10 +228,9 @@
 			}
 
 			function sendMessage(str) {
-				var msg = {
+				ws.send(JSON.stringify({
 					"message": str
-				};
-				ws.send(JSON.stringify(msg));
+				}));
 			}
 
 			connectWs();

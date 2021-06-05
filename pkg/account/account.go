@@ -152,10 +152,6 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		} else if strings.HasPrefix(mode, "Search") {
 			ac := LoginAccount(r)
-			if ac.Id == -1 {
-				http.Error(w, "not logined", 403)
-				return
-			}
 			search := r.FormValue("search")
 			userType := r.FormValue("user_type")
 			if search == "" && userType == "" {

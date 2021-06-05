@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
-	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
@@ -32,6 +31,7 @@ type TempContext struct {
 	Message string `json:"message"`
 	Messages []directMessages.DirectMessages `json:"direct_messages"`
 }
+
 type SocketMessage struct {
 	Message string `json:"message"`
 	From int `json:"from"`
@@ -122,26 +122,16 @@ func NotificationsHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
-		db := database.Connect()
-		defer db.Close()
-
-		type Notif struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-			Date string `json:"date"`
-			From int `json:"from"`
-		}
-		var notifs []Notif
-		rows, err := db.Query("select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 order by `created_at` desc")
-		if err != nil {
-			http.Error(w, "failed to get DM", 500)
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
 			return
 		}
-		defer rows.Close()
-		for rows.Next() {
-			n := Notif { Type: "dm" }
-			err = rows.Scan(&n.Text, &n.Date, &n.From)
-			notifs = append(notifs, n)
+		notifs, err := login.GetNotifs()
+		if err != nil {
+			http.Error(w, "failed to fetch notifications", 500)
+			log.Println(err)
+			return
 		}
 		bytes, err := json.Marshal(notifs)
 		if err != nil {
@@ -258,10 +248,6 @@ func HomeHandle(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		ac := account.LoginAccount(r)
-		if ac.Id == -1 {
-			http.Redirect(w, r, "/", 302)
-			return
-		}
 		temp := template.Must(template.ParseFiles("template/home.html"))
 		if err := temp.Execute(w, TempContext {
 			Login: ac,

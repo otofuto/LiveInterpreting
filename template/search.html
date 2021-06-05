@@ -24,6 +24,22 @@
 			#langs label {
 				display: block;
 			}
+
+			#langSearchBtn {
+				background-color: var(--color1);
+				color: white;
+				width: 0px;
+				padding: 0px;
+				overflow: hidden;
+				white-space: nowrap;
+				margin: 0;
+			}
+
+			#langSearchBtn.disp {
+				padding: 10px 20px;
+				width: auto;
+				margin: 10px;
+			}
 		</style>
 	</head>
 	<body>
@@ -31,22 +47,29 @@
 		<script>
 			var p = document.createElement("p");
 			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
 			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Login.Name}}</span>さん";
+			{{ end }}
 			appendHeader(p);
 		</script>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'">ホーム</div>
+				{{ if ne .Login.Id -1 }}
 				<div onclick="location = '/inbox/'">受信BOX</div>
 				<div onclick="location = '/mypage/'">マイページ</div>
 				<div onclick="location = '/mypage/follows/'">フォロー</div>
 				<div onclick="location = '/mypage/lives/'">配信登録</div>
+				{{ end }}
 				<div onclick="location = '/search/'" class="selected">翻訳者を探す</div>
+				{{ if ne .Login.Id -1 }}
 				<div onclick="logout()">ログアウト</div>
+				{{ end }}
 			</div>
 			<div id="content">
 				<div style="text-align: right;">
 					<button class="button" onclick="openLangs()">言語を選択</button>
+					<button class="button" onclick="langSearch()" id="langSearchBtn">言語を決定</button>
 					<button class="button">並び替え</button>
 					<div>
 						<div id="langs" data-opened="false"></div>
@@ -82,9 +105,11 @@
 					langs.style.height = '200px';
 					langs.style.overflow = 'auto';
 					langs.style.padding = '10px';
+					document.getElementById('langSearchBtn').setAttribute('class', 'button disp');
 				} else {
 					langs.setAttribute('data-opened', false);
 					langs.removeAttribute('style');
+					document.getElementById('langSearchBtn').setAttribute('class', 'button');
 				}
 			}
 		</script>

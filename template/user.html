@@ -20,12 +20,16 @@
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'">ホーム</div>
+				{{ if ne .Login.Id -1 }}
 				<div onclick="location = '/inbox/'">受信BOX</div>
 				<div onclick="location = '/mypage/'">マイページ</div>
-				<div onclick="location = '/mypage/mypage/follows/'">フォロー</div>
+				<div onclick="location = '/mypage/follows/'">フォロー</div>
 				<div onclick="location = '/mypage/lives/'">配信登録</div>
+				{{ end }}
 				<div onclick="location = '/search/'">翻訳者を探す</div>
+				{{ if ne .Login.Id -1 }}
 				<div onclick="logout()">ログアウト</div>
+				{{ end }}
 			</div>
 			<div id="content">
 				<header id="accountinfo">
@@ -46,6 +50,7 @@
 					</p>{{ end }}
 				</header>
 				<div style="width: 100%; text-align: right;">
+					{{ if ne .Login.Id -1 }}
 					{{ if and (ne .Login.Id .Account.Id) (.IsFollower) }}
 					<span>フォローされています</span>
 					{{ end }}
@@ -57,6 +62,7 @@
 						{{ end }}
 					<button class="button" onclick="location = '/directmessages/{{ .Account.Id }}';">ダイレクトメッセージを送る</button>
 					<button class="button" style="background-color: red; color: white;">通報</button>
+					{{ end }}
 					{{ end }}
 				</div>
 			</div>

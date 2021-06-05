@@ -44,6 +44,13 @@ type AccountSocial struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type Notif struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+	Date string `json:"date"`
+	From int `json:"from"`
+}
+
 func (ac *Accounts) Insert() int {
 	if CheckMail(ac.Email, -1) == false {
 		return -2
@@ -584,4 +591,22 @@ func (ac *Accounts) UpdateLastLogin() {
 	}
 	defer upd.Close()
 	upd.Exec(&ac.Id)
+}
+
+func (ac *Accounts) GetNotifs() ([]Notif, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	var notifs []Notif
+	rows, err := db.Query("select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc")
+	if err != nil {
+		return notifs, errors.New("failed to get DM")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		n := Notif { Type: "dm" }
+		err = rows.Scan(&n.Text, &n.Date, &n.From)
+		notifs = append(notifs, n)
+	}
+	return notifs, nil
 }
