@@ -64,6 +64,7 @@ func main() {
 	http.HandleFunc("/Lang/", LangHandle)
 	http.HandleFunc("/directmessages/", DMHandle)
 	http.HandleFunc("/search/", SearchHandle)
+	http.HandleFunc("/reqtrans/", ReqTransHandle)
 
 	http.HandleFunc("/document/", documentHandle)
 
@@ -440,6 +441,46 @@ func SearchHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func ReqTransHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	if r.Method == http.MethodGet {
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Redirect(w, r, "/", 303)
+			return
+		}
+		msg := ""
+		filename := r.URL.Path[len("/reqtrans/"):]
+		if filename[len(filename) - 1:] == "/" {
+			filename = filename[:len(filename) - 1]
+		}
+		uid, err := strconv.Atoi(filename)
+		if err != nil {
+			http.Error(w, "user id was not set", 400)
+			return
+		}
+		ac := accounts.Accounts { Id: uid }
+		if ac.Get() {
+			filename = "index"
+		} else {
+			http.Redirect(w, r, "/home/", 303)
+			return
+		}
+		temp := template.Must(template.ParseFiles("template/reqtrans/" + filename + ".html"))
+		if err := temp.Execute(w, TempContext {
+			Login: login,
+			User: ac,
+			Message: msg,
+		}); err != nil {
+			log.Println(err)
+			http.Error(w, "HTTP 500 Internal server error", 500)
+		}
+	} else {
+		http.Error(w, "method not allowed.", 405)
 	}
 }
 

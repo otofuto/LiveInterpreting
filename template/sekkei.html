@@ -42,6 +42,10 @@
 			background-color: white;
 			padding: 0 5px;
 		}
+
+		input[type="checkbox"]:checked + .tbl {
+			display: none;
+		}
 	</style>
 </head>
 <body>
@@ -56,8 +60,9 @@
 		<label class="box__name">用語</label>
 	</div>
 	<h2>基本設計</h2>
-	<h3>ユーザー操作</h3>
-	<table>
+	<h3><label for="tbl1">▽</label>ユーザー操作</h3>
+	<input type="checkbox" id="tbl1" style="display: none;">
+	<table class="tbl">
 		<thead>
 			<tr>
 				<th>順番</th>
@@ -132,8 +137,9 @@
 			</tr>
 		</tbody>
 	</table>
-	<h3>機能一覧</h3>
-	<table>
+	<h3><label for="tbl2">▽</label>機能一覧</h3>
+	<input type="checkbox" id="tbl2" style="display: none;">
+	<table class="tbl">
 		<thead>
 			<tr>
 				<th>番号</th>

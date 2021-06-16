@@ -61,6 +61,9 @@
 					<button class="button" onclick="follow(this)">フォロー</button>
 						{{ end }}
 					<button class="button" onclick="location = '/directmessages/{{ .Account.Id }}';">ダイレクトメッセージを送る</button>
+					{{ if eq .Account.UserType "interpreter" }}
+					<button class="button" onclick="location = '/reqtrans/{{ .Account.Id }}';">見積もり依頼</button>
+					{{ end }}
 					<button class="button" style="background-color: red; color: white;">通報</button>
 					{{ end }}
 					{{ end }}
