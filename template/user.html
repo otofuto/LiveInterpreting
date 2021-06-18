@@ -40,14 +40,14 @@
 						<div style="font-size: 120%; font-weight: bold;">{{.Account.Name}}</div>
 						<span>{{ if eq .Account.Sex 0 }}男性{{ else if eq .Account.Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
 						<span>{{ if eq .Account.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
-						<span>{{.Account.CreatedAt}}に登録</span>
+						<span><script>let createdAt = new Date('{{.Account.CreatedAt}}'); document.write(createdAt.getFullYear() + '年 ' + (createdAt.getMonth() + 1) + '月 ' + createdAt.getDate() + '日');</script>に登録</span>
 					</div>
+					<div style="width: 100%;"><pre>{{.Account.Description}}</pre></div>
 					<div style="width: 100%;">
 						{{ if ne .Account.Url1 "" }}<p><a href="{{ .Account.Url1 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url1 }}</a></p>{{ end }}
 						{{ if ne .Account.Url2 "" }}<p><a href="{{ .Account.Url2 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url2 }}</a></p>{{ end }}
 						{{ if ne .Account.Url3 "" }}<p><a href="{{ .Account.Url3 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url3 }}</a></p>{{ end }}
 					</div>
-					<div style="width: 100%;"><pre>{{.Account.Description}}</pre></div>
 					{{ if ne (len .Account.Langs) 0 }}
 						<p>使用出来る言語: </p>
 						<p>
