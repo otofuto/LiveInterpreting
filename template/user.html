@@ -29,6 +29,8 @@
 				<div onclick="location = '/search/'">翻訳者を探す</div>
 				{{ if ne .Login.Id -1 }}
 				<div onclick="logout()">ログアウト</div>
+				{{ else }}
+				<div onclick="location = '/st/login/'">ログイン</div>
 				{{ end }}
 			</div>
 			<div id="content">
@@ -62,7 +64,7 @@
 						{{ end }}
 					<button class="button" onclick="location = '/directmessages/{{ .Account.Id }}';">ダイレクトメッセージを送る</button>
 					{{ if eq .Account.UserType "interpreter" }}
-					<button class="button" onclick="location = '/reqtrans/{{ .Account.Id }}';">見積もり依頼</button>
+					<button class="button" onclick="location = '/trans/req/{{ .Account.Id }}';">見積もり依頼</button>
 					{{ end }}
 					<button class="button" style="background-color: red; color: white;">通報</button>
 					{{ end }}

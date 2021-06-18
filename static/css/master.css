@@ -200,6 +200,11 @@ main {
 	padding: 0 8px;
 	border-radius: 3px;
 	font-size: 16px;
+	transition: all 100ms 0ms ease;
+}
+
+.input:focus {
+	border: solid 2px #d16218;
 }
 
 .textarea {
@@ -214,4 +219,9 @@ main {
 	padding: 18px 8px 8px 8px;
 	border-radius: 3px;
 	font-size: 16px;
+	transition: all 100ms 0ms ease;
+}
+
+.textarea:focus {
+	border: solid 2px #d16218;
 }

@@ -13,8 +13,11 @@ type Trans struct {
 	LiveTime int `json:"live_time"`
 	Lang int `json:"lang"`
 	RequestType int `json:"request_type"`
+	RequestTitle string `json:"request_title"`
 	Request string `json:"request"`
+	BudgetRange int `json:"budget_range"`
 	RequestCancel int `json:"request_cancel"`
+	EstimateLimitDate string `json:"estimate_limit_date"`
 	Price int `json:"price"`
 	EstimateDate string `json:"estimate_date"`
 	ResponseType int `json:"response_type"`
@@ -32,13 +35,13 @@ func (tr *Trans) Insert() (int, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	ins, err := db.Prepare("insert into `trans` (`from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, `request`, `price`, `estimate_date`) values (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	ins, err := db.Prepare("insert into `trans` (`from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, `request_title`, `request`, `budget_range`, `estimate_limit_date`, `price`, `estimate_date`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return -1, errors.New("insert trans failed at trans.Insert")
 	}
 	defer ins.Close()
-	ins.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType, &tr.Request, &tr.Price, &tr.EstimateDate)
+	ins.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType, &tr.RequestTitle, &tr.Request, &tr.BudgetRange, &tr.EstimateLimitDate, &tr.Price, &tr.EstimateDate)
 
 	rows, err := db.Query("select last_insert_id()")
 	if err != nil {
@@ -64,6 +67,7 @@ func (tr *Trans) Update() error {
 		"update `trans` set " +
 		"`from` = ?, `to` = ?, `live_start` = ?, `live_time` = ?, `lang` = ?, " +
 		"`request_type` = ?, `request` = ?, `request_cancel` = ?, `price` = ?, " +
+		"`request_title` = ?, `budget_range` = ?, `estimate_limit_date` = ?, " +
 		"`estimate_date` = ?, `response_type` = ?, `response` = ?, `buy_date` = ?, " +
 		"`finished_date` = ?, `cancel_date` = ?, `from_eval` = ?, `from_comment` = ?, " +
 		"`to_eval` = ?, `to_comment` = ? where `id` = ?")
@@ -72,5 +76,9 @@ func (tr *Trans) Update() error {
 		return errors.New("failed to update trans at trans.Update")
 	}
 	defer upd.Close()
-	upd.Exec(&tr.From, &tr.To, &tr.LiveStart)
+	err = upd.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType, &tr.Request, &tr.RequestCancel, &tr.Price, &tr.RequestTitle, &tr.BudgetRange, &tr.EstimateLimitDate, &tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate, &tr.FinishedDate, &tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment)
+	if err != nil {
+		return err
+	}
+	return nil
 }

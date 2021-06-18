@@ -43,8 +43,15 @@
 			padding: 0 5px;
 		}
 
+		.tbl {
+			display: block;
+			background-color: whitesmoke;
+			overflow: hidden;
+			height: 22px;
+		}
+
 		input[type="checkbox"]:checked + .tbl {
-			display: none;
+			height: auto;
 		}
 	</style>
 </head>
@@ -60,7 +67,7 @@
 		<label class="box__name">用語</label>
 	</div>
 	<h2>基本設計</h2>
-	<h3><label for="tbl1">▽</label>ユーザー操作</h3>
+	<h3><label for="tbl1">▽ユーザー操作</label></h3>
 	<input type="checkbox" id="tbl1" style="display: none;">
 	<table class="tbl">
 		<thead>
@@ -137,7 +144,7 @@
 			</tr>
 		</tbody>
 	</table>
-	<h3><label for="tbl2">▽</label>機能一覧</h3>
+	<h3><label for="tbl2">▽機能一覧</label></h3>
 	<input type="checkbox" id="tbl2" style="display: none;">
 	<table class="tbl">
 		<thead>
@@ -273,6 +280,19 @@
 	<h3>ワイヤーフレーム</h3>
 	<p><a href="https://docs.google.com/spreadsheets/d/1UoB0GBHnZL7gqhWkJe7t5wGQ_1zu5XNxkcGZn0HDDbQ/edit?ts=609bffcd#gid=0" target="_blank">spreadsheets</a></p>
 	<h2>詳細設計</h2>
+	<h3><label for="tbl3">▽見積もり依頼の内容</label></h3>
+	<input type="checkbox" id="tbl3" style="display: none;">
+	<ul class="tbl">
+		<li>送信元ID</li>
+		<li>送信先ID</li>
+		<li>依頼タイトル</li>
+		<li>依頼詳細</li>
+		<li>予算範囲</li>
+		<li>提案期限</li>
+		<li>言語</li>
+		<li>配信日時</li>
+		<li>配信時間</li>
+	</ul>
 	<script>
 		Array.from(document.getElementsByTagName("tbody")).forEach(tbl => {
 			var i = 0;

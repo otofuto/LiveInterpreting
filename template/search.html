@@ -64,6 +64,8 @@
 				<div onclick="location = '/search/'" class="selected">翻訳者を探す</div>
 				{{ if ne .Login.Id -1 }}
 				<div onclick="logout()">ログアウト</div>
+				{{ else }}
+				<div onclick="location = '/st/login/'">ログイン</div>
 				{{ end }}
 			</div>
 			<div id="content">

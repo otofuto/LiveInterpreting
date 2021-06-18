@@ -64,7 +64,7 @@ func main() {
 	http.HandleFunc("/Lang/", LangHandle)
 	http.HandleFunc("/directmessages/", DMHandle)
 	http.HandleFunc("/search/", SearchHandle)
-	http.HandleFunc("/reqtrans/", ReqTransHandle)
+	http.HandleFunc("/trans/", TransHandle)
 
 	http.HandleFunc("/document/", documentHandle)
 
@@ -444,7 +444,7 @@ func SearchHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ReqTransHandle(w http.ResponseWriter, r *http.Request) {
+func TransHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	if r.Method == http.MethodGet {
@@ -454,23 +454,29 @@ func ReqTransHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		msg := ""
-		filename := r.URL.Path[len("/reqtrans/"):]
+		filename := r.URL.Path[len("/trans/"):]
 		if filename[len(filename) - 1:] == "/" {
 			filename = filename[:len(filename) - 1]
 		}
-		uid, err := strconv.Atoi(filename)
-		if err != nil {
-			http.Error(w, "user id was not set", 400)
-			return
-		}
-		ac := accounts.Accounts { Id: uid }
-		if ac.Get() {
-			filename = "index"
+		ac := accounts.Accounts { Id: -1 }
+		if strings.HasPrefix(filename, "req/") {
+			uid, err := strconv.Atoi(filename[len("req/"):])
+			if err != nil {
+				http.Error(w, "user id was not set", 400)
+				return
+			}
+			ac.Id = uid
+			if ac.Get() {
+				filename = "req"
+			} else {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
 		} else {
-			http.Redirect(w, r, "/home/", 303)
+			http.Error(w, "page not found", 404)
 			return
 		}
-		temp := template.Must(template.ParseFiles("template/reqtrans/" + filename + ".html"))
+		temp := template.Must(template.ParseFiles("template/trans/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext {
 			Login: login,
 			User: ac,
