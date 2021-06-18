@@ -146,10 +146,14 @@ function formDisabled(form, dis) {
 		Array.from(form.getElementsByTagName('textarea')).forEach(elm => elm.setAttribute('disabled', ''));
 		Array.from(form.getElementsByTagName('button')).forEach(elm => elm.setAttribute('disabled', ''));
 		Array.from(form.getElementsByTagName('select')).forEach(elm => elm.setAttribute('disabled', ''));
+        Array.from(form.querySelectorAll('input[type="checkbox"]')).forEach(elm => elm.setAttribute('onclick', 'return false;'));
+        Array.from(form.querySelectorAll('input[type="radiobutton"]')).forEach(elm => elm.setAttribute('onclick', 'return false;'));
 	} else {
 		Array.from(form.getElementsByTagName('input')).forEach(elm => elm.removeAttribute('disabled'));
 		Array.from(form.getElementsByTagName('textarea')).forEach(elm => elm.removeAttribute('disabled'));
 		Array.from(form.getElementsByTagName('button')).forEach(elm => elm.removeAttribute('disabled'));
 		Array.from(form.getElementsByTagName('select')).forEach(elm => elm.removeAttribute('disabled'));
+        Array.from(form.querySelectorAll('input[type="checkbox"]')).forEach(elm => elm.removeAttribute('onclick'));
+        Array.from(form.querySelectorAll('input[type="radiobutton"]')).forEach(elm => elm.removeAttribute('onclick'));
 	}
 }

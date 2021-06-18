@@ -168,6 +168,11 @@ main {
 .button:active {
 	box-shadow: 2px 2px 2px black inset;
 }
+.button[disabled] {
+	background-color: dimgray !important;
+	color: whitesmoke !important;
+	box-shadow: none !important;
+}
 
 .field {
 	width: 300px;

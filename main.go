@@ -445,9 +445,8 @@ func SearchHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func TransHandle(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-
 	if r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/html")
 		login := account.LoginAccount(r)
 		if login.Id == -1 {
 			http.Redirect(w, r, "/", 303)
@@ -484,6 +483,33 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
+		}
+	} else if r.Method == http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+
+		mode := r.URL.Path[len("/trans/"):]
+		if mode == "" {
+			http.Error(w, "なんだてめぇ", 404)
+			return
+		}
+		if strings.HasPrefix(mode, "req/") {
+			uid, err := strconv.Atoi(mode[len("req/"):])
+			if err != nil {
+				http.Error(w, "user id is not integer", 400)
+				return
+			}
+			ac := accounts.Accounts { Id: uid }
+			if !ac.Get() {
+				http.Error(w, "user not found", 404)
+				return
+			}
+		} else {
+			http.Error(w, "user not designation", 404)
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)

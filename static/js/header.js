@@ -1,3 +1,5 @@
+let base = document.createElement('div');
+
 let pageHeader = document.createElement("header");
 pageHeader.setAttribute("class", "page-header");
 
@@ -27,11 +29,17 @@ let serviceTitle = document.createElement("div");
 serviceTitle.setAttribute("class", "service-title");
 innerHeader.appendChild(serviceTitle);
 
-let logoImg = document.createElement('img');
-logoImg.src = '/st/materials/logo.svg#logo';
+let logoImg = document.createElement('svg');
+logoImg.style.width = "100%";
+logoImg.style.height = "100%";
+logoImg.setAttribute('fill', 'white');
+let use = document.createElement('use');
+use.setAttribute('xlink:href', '/st/materials/logo.svg#logo');
+logoImg.appendChild(use);
 serviceTitle.appendChild(logoImg);
 
-document.body.appendChild(pageHeader);
+base.appendChild(pageHeader);
+document.write(base.innerHTML);
 
 function appendHeader(elm) {
 	innerHeader.appendChild(elm);

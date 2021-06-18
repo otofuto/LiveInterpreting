@@ -36,9 +36,8 @@
 					</div>
 					<label id="loginresult"></label>
 					<span>パスワードをお忘れの方は<a href="/st/forgot/">こちら</a></span>
-					<input type="submit" style="display: none;" name="sub">
+					<div><button class="button">ログイン</button></div>
 				</form>
-				<button class="button" onclick="document.fm.sub.click()">ログイン</button>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -47,9 +46,11 @@
 		<script src="/st/js/master.js"></script>
 		<script>
 			function login() {
+				let data = new FormData(document.fm);
+				formDisabled(document.fm, true);
 				fetch('/Login/', {
 					method: "post",
-					body: new FormData(document.fm),
+					body: data,
 					credentials: "same-origin"
 				}).then(res => {
 					if (res.status == 200)
@@ -58,12 +59,14 @@
 						return null;
 				}).then(result => {
 					if (result == null) {
+						formDisabled(document.fm, false);
 						loginresult.innerText = "ログインできませんでした\n";
 					} else {
 						loginresult.innerText = "ログイン成功\n";
 						location = "/home/";
 					}
 				}).catch(err => {
+					formDisabled(document.fm, false);
 					loginresult.innerText = "エラーによりログインに失敗しました。\n";
 				});
 			}

@@ -8,6 +8,7 @@
 		<meta name="robots" content="noindex,nofollow">
 		<title>見積もり依頼 | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
 		</style>
 	</head>
@@ -28,45 +29,49 @@
 				<h3>{{ .User.Name }}さんに見積もり依頼をします。</h3>
 				<form name="fm" onsubmit="sub(); return false;">
 					<div class="field">
-						<input type="datetime-local" class="input" name="live_start">
+						<input type="datetime-local" class="input" name="live_start" required>
 						<label class="input-label">配信日時</label>
 					</div>
 					<div class="field">
-						<input type="time" class="input" name="live_time">
+						<input type="time" class="input" name="live_time" value="01:00" required>
 						<label class="input-label">配信時間</label>
 					</div>
 					<div class="field">
-						<select name="lang" class="input"></select>
+						<select name="lang" class="input" required>
+							{{ range .User.Langs }}
+							<option value="{{ .Id }}">{{ .Lang }}</option>
+							{{ end }}
+						</select>
 						<label class="input-label">通訳言語</label>
 					</div>
 					<div class="field">
 						<div class="textarea" style="height: auto;">
-							<label><input type="radio" name="request_type" value="0">テキスト</label>
+							<label><input type="radio" name="request_type" value="0" checked>テキスト</label>
 							<label><input type="radio" name="request_type" value="1">音声</label>
 							<label><input type="radio" name="request_type" value="2">両方</label>
 						</div>
 						<label class="input-label">通訳形態</label>
 					</div>
 					<div class="field">
-						<input type="text" class="input" maxlength="255" name="request_title">
+						<input type="text" class="input" maxlength="255" name="request_title" required>
 						<label class="input-label">依頼タイトル</label>
 					</div>
 					<div class="field">
-						<textarea name="request" class="textarea"></textarea>
+						<textarea name="request" class="textarea" required></textarea>
 						<label class="input-label">依頼詳細</label>
 					</div>
 					<div class="field">
-						<select name="budget_range" class="input">
+						<select name="budget_range" class="input" required>
 							<option value="0">相談して決めたい</option>
 						</select>
 						<label class="input-label">予算範囲</label>
 					</div>
 					<div class="field">
-						<input type="date" class="input" name="estimate_limit_date">
+						<input type="date" class="input" name="estimate_limit_date" required>
 						<label class="input-label">提案期限</label>
 					</div>
 					<div style="text-align: center;">
-						<button class="button">見積を送信</button>
+						<button class="button" style="background-color: var(--color1); color: white">見積依頼を送信</button>
 					</div>
 				</form>
 			</div>
@@ -77,7 +82,11 @@
 		<script src="/st/js/master.js"></script>
 		<script>
 			function sub() {
-				//
+				let data = new FormData(document.fm);
+				formDisabled(document.fm, true);
+				setTimeout(() => {
+					formDisabled(document.fm, false);
+				}, 5000);
 			}
 		</script>
 	</body>
