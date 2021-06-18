@@ -197,10 +197,11 @@
 					div.appendChild(iconDisp);
 
 					let inline = document.createElement("div");
-					inline.style.display = "inline-block";
+					inline.style.cssText = "display: inline-flex; justify-content: space-between; width: 100%;";
 					div.appendChild(inline);
 
 					let p1 = document.createElement("p");
+					p1.setAttribute('class', 'user-name');
 					p1.innerText = data.from == {{ .Login.Id }} ? "{{ .Login.Name }}" : "{{ .Account.Name }}";
 					inline.appendChild(p1);
 
