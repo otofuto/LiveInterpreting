@@ -84,9 +84,20 @@
 			function sub() {
 				let data = new FormData(document.fm);
 				formDisabled(document.fm, true);
-				setTimeout(() => {
+				post('/trans/req/{{ .User.Id }}', data)
+				.then(res => {
+					if (res === true) {
+						alert('登録成功');
+					} else {
+						formDisabled(document.fm, false);
+						console.error(res);
+						alert("登録に失敗しました。");
+					}
+				}).catch(err => {
 					formDisabled(document.fm, false);
-				}, 5000);
+					console.error(err);
+					alert('登録に失敗しました。');
+				});
 			}
 		</script>
 	</body>

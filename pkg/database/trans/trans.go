@@ -2,6 +2,7 @@ package trans
 
 import (
 	"log"
+	"errors"
 	"github.com/otofuto/LiveInterpreting/pkg/database"
 )
 
@@ -31,31 +32,32 @@ type Trans struct {
 	ToComment string `json:"to_comment"`
 }
 
-func (tr *Trans) Insert() (int, error) {
+func (tr *Trans) Insert() error {
 	db := database.Connect()
 	defer db.Close()
 
 	ins, err := db.Prepare("insert into `trans` (`from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, `request_title`, `request`, `budget_range`, `estimate_limit_date`, `price`, `estimate_date`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
-		return -1, errors.New("insert trans failed at trans.Insert")
+		return errors.New("insert trans failed at trans.Insert")
 	}
 	defer ins.Close()
-	ins.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType, &tr.RequestTitle, &tr.Request, &tr.BudgetRange, &tr.EstimateLimitDate, &tr.Price, &tr.EstimateDate)
+	ins.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang,
+		&tr.RequestType, &tr.RequestTitle, &tr.Request, &tr.BudgetRange,
+		&tr.EstimateLimitDate, &tr.EstimateDate)
 
 	rows, err := db.Query("select last_insert_id()")
 	if err != nil {
 		log.Println(err)
-		return -1, errors.New("select last_insert_id failed at trans.Insert")
+		return errors.New("select last_insert_id failed at trans.Insert")
 	}
 	defer rows.Close()
 	if rows.Next() {
-		var newId int
-		rows.Scan(&newId)
+		rows.Scan(&tr.Id)
 
-		return newId, nil
+		return nil
 	} else {
-		return -1, errors.New("cannot get last_insert_id at trans.Insert")
+		return errors.New("cannot get last_insert_id at trans.Insert")
 	}
 }
 
@@ -76,7 +78,12 @@ func (tr *Trans) Update() error {
 		return errors.New("failed to update trans at trans.Update")
 	}
 	defer upd.Close()
-	err = upd.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType, &tr.Request, &tr.RequestCancel, &tr.Price, &tr.RequestTitle, &tr.BudgetRange, &tr.EstimateLimitDate, &tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate, &tr.FinishedDate, &tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment)
+	_, err = upd.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang,
+		&tr.RequestType, &tr.Request, &tr.RequestCancel, &tr.Price,
+		&tr.RequestTitle, &tr.BudgetRange, &tr.EstimateLimitDate,
+		&tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate,
+		&tr.FinishedDate, &tr.CancelDate, &tr.FromEval, &tr.FromComment,
+		&tr.ToEval, &tr.ToComment, &tr.Id)
 	if err != nil {
 		return err
 	}

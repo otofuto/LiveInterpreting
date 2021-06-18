@@ -15,6 +15,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
+	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
 )
 
 var port string
@@ -332,6 +333,7 @@ func DMHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if r.Method == http.MethodPost {
 		w.Header().Set("Content-Type", "application/json")
+		r.ParseMultipartForm(32 << 20)
 		if r.FormValue("message") == "" {
 			http.Error(w, "parameter 'message' is not allowed empty.", 400)
 			return
@@ -503,10 +505,64 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "user id is not integer", 400)
 				return
 			}
-			ac := accounts.Accounts { Id: uid }
-			if !ac.Get() {
+			if !accounts.CheckId(uid) {
 				http.Error(w, "user not found", 404)
 				return
+			}
+			r.ParseMultipartForm(32 << 20)
+			if (isset(r, []string {
+				"live_start",
+				"live_time",
+				"lang",
+				"request_type",
+				"request_title",
+				"request",
+				"budget_range",
+				"estimate_limit_date",
+				"estimate_date",
+			})) {
+				livetime, err := strconv.Atoi(r.FormValue("live_time"))
+				if err != nil {
+					http.Error(w, "live_time is not integer", 400)
+					return
+				}
+				lang, err := strconv.Atoi(r.FormValue("lang"))
+				if err != nil {
+					http.Error(w, "lang is not integer", 400)
+					return
+				}
+				reqtype, err := strconv.Atoi(r.FormValue("request_type"))
+				if err != nil {
+					http.Error(w, "request_type is not integer", 400)
+					return
+				}
+				budgetrange, err := strconv.Atoi(r.FormValue("budget_range"))
+				if err != nil {
+					http.Error(w, "budget_range is not integer", 400)
+					return
+				}
+				tra := trans.Trans {
+					From: login.Id,
+					To: uid,
+					LiveStart: r.FormValue("live_start"),
+					LiveTime: livetime,
+					Lang: lang,
+					RequestType: reqtype,
+					RequestTitle: r.FormValue("request_title"),
+					Request: r.FormValue("request"),
+					BudgetRange: budgetrange,
+					EstimateLimitDate: r.FormValue("estimate_limit_date"),
+					EstimateDate: r.FormValue("estimate_date"),
+				}
+				err = tra.Insert()
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to regist", 500)
+					return
+				}
+				fmt.Fprintf(w, "true");
+			} else {
+				http.Error(w, "parameters not enough", 400)
 			}
 		} else {
 			http.Error(w, "user not designation", 404)
@@ -593,4 +649,20 @@ func handleMessages() {
 			}
 		}
 	}
+}
+
+//GETでは使えない
+func isset(r *http.Request, keys []string) bool {
+	for _, v := range keys {
+		exist := false
+		for k, _ := range r.MultipartForm.Value {
+			if v == k {
+				exist = true
+			}
+		}
+		if !exist {
+			return false
+		}
+	}
+	return true
 }

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
+	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -249,13 +250,39 @@ func (ac *Accounts) GetView(loginid int) {
 	}
 }
 
+func CheckId(uid int) bool {
+	db := database.Connect()
+	defer db.Close()
+
+	if uid < 0 {
+		return false
+	}
+
+	sql := "select id from `accounts` where `enabled` = 1 and `id` = " + strconv.Itoa(uid)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println(err)
+		errorData.Insert("failed to select query in accounts.go at CheckId()", sql)
+		return false
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		return true
+	}
+	return false
+}
+
 func (ac *Accounts) GetFromEmail() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(ac.Email) + "'")
+	sql := "select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(ac.Email) + "'"
+	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println(err)
+		errorData.Insert("failed to select query in accounts.go at GetFromEmail()", sql)
+		return false
 	}
 	defer rows.Close()
 	if rows.Next() {
@@ -263,9 +290,12 @@ func (ac *Accounts) GetFromEmail() bool {
 		if err != nil {
 			log.Println(err)
 		}
-		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		sql = "select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id)
+		rows2, err := db.Query(sql)
 		if err != nil {
 			log.Println(err)
+			errorData.Insert("failed to select query in accounts.go at GetFromEmail()", sql)
+			return false
 		}
 		defer rows2.Close()
 		ac.Langs = make([]langs.Langs, 0)
@@ -283,9 +313,11 @@ func CheckMail(mail string, id int) bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id` from `accounts` where `email` = '" + database.Escape(mail) + "' and `id` != " + strconv.Itoa(id))
+	sql := "select `id` from `accounts` where `email` = '" + database.Escape(mail) + "' and `id` != " + strconv.Itoa(id)
+	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println(err)
+		errorData.Insert("failed to select query in accounts.go at CheckMail()", sql)
 		return false
 	}
 	defer rows.Close()
