@@ -18,13 +18,6 @@ humbCheck.style.display = 'none';
 humbCheck.setAttribute('type', 'checkbox');
 humb.appendChild(humbCheck);
 
-humbCheck.addEventListener('change', elm => {
-	let sidemenu = document.getElementById('sidemenu');
-	if (sidemenu == null) return;
-	if (elm.target.checked) sidemenu.style.height = 'auto';
-	else sidemenu.removeAttribute('style');
-});
-
 let serviceTitle = document.createElement("div");
 serviceTitle.setAttribute("class", "service-title");
 innerHeader.appendChild(serviceTitle);
@@ -40,6 +33,13 @@ serviceTitle.appendChild(logoImg);
 
 base.appendChild(pageHeader);
 document.write(base.innerHTML);
+
+document.getElementById('humbCheck').addEventListener('change', elm => {
+	let sidemenu = document.getElementById('sidemenu');
+	if (sidemenu == null) return;
+	if (elm.target.checked) sidemenu.style.height = 'auto';
+	else sidemenu.removeAttribute('style');
+});
 
 function appendHeader(elm) {
 	innerHeader.appendChild(elm);
