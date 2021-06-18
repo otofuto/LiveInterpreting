@@ -42,6 +42,11 @@
 						<span>{{ if eq .Account.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
 						<span>{{.Account.CreatedAt}}に登録</span>
 					</div>
+					<div style="width: 100%;">
+						{{ if ne .Account.Url1 "" }}<p><a href="{{ .Account.Url1 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url1 }}</a></p>{{ end }}
+						{{ if ne .Account.Url2 "" }}<p><a href="{{ .Account.Url2 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url2 }}</a></p>{{ end }}
+						{{ if ne .Account.Url3 "" }}<p><a href="{{ .Account.Url3 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url3 }}</a></p>{{ end }}
+					</div>
 					<div style="width: 100%;"><pre>{{.Account.Description}}</pre></div>
 					{{ if ne (len .Account.Langs) 0 }}
 						<p>使用出来る言語: </p>

@@ -96,6 +96,7 @@ main {
 #sidemenu>div {
 	margin: 20px auto;
 	cursor: pointer;
+	user-select: none;
 }
 
 #sidemenu>div:hover {
