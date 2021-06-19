@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
+		<style>
+			tr {
+				box-shadow: 0 1px 0 gray;
+			}
+
+			td:nth-of-type(1) {
+				width: fit-content;
+				padding: 4px 10px;
+				color: dimgray;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'">ホーム</div>
+				<div onclick="location = '/inbox/'">受信BOX</div>
+				<div onclick="location = '/mypage/'">マイページ</div>
+				<div onclick="location = '/mypage/follows/'">フォロー</div>
+				<div onclick="location = '/mypage/lives/'">配信登録</div>
+				<div onclick="location = '/search/'">翻訳者を探す</div>
+				<div onclick="logout()">ログアウト</div>
+			</div>
+			<div id="content">
+				<h1>依頼内容</h1>
+				<table><tbody id="tbl"></tbody></table>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2021 Live interpreting - Powered by OTFT</label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script>
+			function appendRow(k, v) {
+				let row = document.createElement('tr');
+				let td1 = document.createElement('td');
+				td1.innerText = k;
+				row.appendChild(td1);
+				let td2 = document.createElement('td');
+				td2.innerText = v;
+				row.appendChild(td2);
+				document.getElementById('tbl').appendChild(row);
+			}
+			let trans = JSON.parse("{{ .Message }}");
+			document.title = trans.request_title + ' | Live interpreting';
+			appendRow('依頼タイトル', trans.request_title);
+			appendRow('依頼詳細', trans.request);
+			appendRow('予算範囲', trans.budget_range);
+			appendRow('配信日時', trans.live_start.String);
+			appendRow('配信時間', trans.live_time.Int32);
+			appendRow('通訳言語', trans.lang);
+			appendRow('通訳形態', trans.request_type);
+			appendRow('提案期限', trans.estimate_limit_date.String);
+		</script>
+	</body>
+</html>

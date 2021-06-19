@@ -88,6 +88,10 @@
 				.then(res => {
 					if (res === true) {
 						alert('登録成功');
+						location = '/u/{{ .User.Id }}';
+					} else if (typeof res.id == 'number') {
+						alert('登録成功');
+						location = '/trans/' + res.id;
 					} else {
 						formDisabled(document.fm, false);
 						console.error(res);

@@ -10,6 +10,7 @@ import (
 	"os"
 	"io"
 	"encoding/json"
+	"database/sql"
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
@@ -474,8 +475,23 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			http.Error(w, "page not found", 404)
-			return
+			trid, err := strconv.Atoi(filename)
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans { Id: trid }
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			bytes, err := json.Marshal(tr)
+			if err != nil {
+				http.Error(w, "failed to convert trans object to json", 500)
+				return
+			}
+			msg = string(bytes)
+			filename = "index"
 		}
 		temp := template.Must(template.ParseFiles("template/trans/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext {
@@ -519,9 +535,22 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				"request",
 				"budget_range",
 				"estimate_limit_date",
-				"estimate_date",
 			})) {
-				livetime, err := strconv.Atoi(r.FormValue("live_time"))
+				livetimestr := r.FormValue("live_time")
+				if strings.Index(r.FormValue("live_time"), ":") >= 0 {
+					hour, err := strconv.Atoi(r.FormValue("live_time")[:strings.Index(r.FormValue("live_time"), ":")])
+					if err != nil {
+						http.Error(w, "live_time is invalid format", 400)
+						return
+					}
+					min, err := strconv.Atoi(r.FormValue("live_time")[strings.Index(r.FormValue("live_time"), ":") + 1:])
+					if err != nil {
+						http.Error(w, "live_time is invalid format", 400)
+						return
+					}
+					livetimestr = strconv.Itoa(hour * 60 + min)
+				}
+				livetime, err := strconv.Atoi(livetimestr)
 				if err != nil {
 					http.Error(w, "live_time is not integer", 400)
 					return
@@ -544,15 +573,14 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				tra := trans.Trans {
 					From: login.Id,
 					To: uid,
-					LiveStart: r.FormValue("live_start"),
-					LiveTime: livetime,
+					LiveStart: sql.NullString{ Valid: true, String: r.FormValue("live_start") },
+					LiveTime: sql.NullInt32{ Valid: true, Int32: int32(livetime) },
 					Lang: lang,
 					RequestType: reqtype,
 					RequestTitle: r.FormValue("request_title"),
 					Request: r.FormValue("request"),
 					BudgetRange: budgetrange,
-					EstimateLimitDate: r.FormValue("estimate_limit_date"),
-					EstimateDate: r.FormValue("estimate_date"),
+					EstimateLimitDate: sql.NullString{ Valid: true, String: r.FormValue("estimate_limit_date")},
 				}
 				err = tra.Insert()
 				if err != nil {
@@ -560,7 +588,12 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to regist", 500)
 					return
 				}
-				fmt.Fprintf(w, "true");
+				bytes, err := json.Marshal(tra);
+				if err != nil {
+					fmt.Fprintf(w, "true");
+					return
+				}
+				fmt.Fprintf(w, string(bytes));
 			} else {
 				http.Error(w, "parameters not enough", 400)
 			}
