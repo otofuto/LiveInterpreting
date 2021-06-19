@@ -519,7 +519,31 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "trans not found", 404)
 				return
 			}
-			bytes, err := json.Marshal(tr)
+			if tr.From != login.Id && tr.To != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			ac.Id = tr.To;
+			if !ac.Get() {
+				http.Error(w, "failed to get user data", 500)
+				return
+			}
+			msgobj := struct {
+				Trans trans.Trans `json:"trans"`
+				From accounts.Accounts `json:"from"`
+				To accounts.Accounts `json:"to"`
+			} {
+				Trans: tr,
+				From: accounts.Accounts {
+					Id: login.Id,
+					Name: login.Name,
+				},
+				To: accounts.Accounts {
+					Id: ac.Id,
+					Name: ac.Name,
+				},
+			}
+			bytes, err := json.Marshal(msgobj)
 			if err != nil {
 				http.Error(w, "failed to convert trans object to json", 500)
 				return

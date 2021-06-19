@@ -42,7 +42,7 @@
 						<span>{{ if eq .Account.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
 						<span><script>let createdAt = new Date('{{.Account.CreatedAt}}'); document.write(createdAt.getFullYear() + '年 ' + (createdAt.getMonth() + 1) + '月 ' + createdAt.getDate() + '日');</script>に登録</span>
 					</div>
-					<div style="width: 100%;"><pre>{{.Account.Description}}</pre></div>
+					<div style="width: 100%;"><pre style="white-space: normal;">{{.Account.Description}}</pre></div>
 					<div style="width: 100%;">
 						{{ if ne .Account.Url1 "" }}<p><a href="{{ .Account.Url1 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url1 }}</a></p>{{ end }}
 						{{ if ne .Account.Url2 "" }}<p><a href="{{ .Account.Url2 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url2 }}</a></p>{{ end }}

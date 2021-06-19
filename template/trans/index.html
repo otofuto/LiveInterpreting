@@ -35,6 +35,8 @@
 			</div>
 			<div id="content">
 				<h1>依頼内容</h1>
+				<p id="from"></p>
+				<p id="to"></p>
 				<table><tbody id="tbl"></tbody></table>
 			</div>
 		</main>
@@ -53,16 +55,18 @@
 				row.appendChild(td2);
 				document.getElementById('tbl').appendChild(row);
 			}
-			let trans = JSON.parse("{{ .Message }}");
-			document.title = trans.request_title + ' | Live interpreting';
-			appendRow('依頼タイトル', trans.request_title);
-			appendRow('依頼詳細', trans.request);
-			appendRow('予算範囲', trans.budget_range);
-			appendRow('配信日時', trans.live_start.String);
-			appendRow('配信時間', trans.live_time.Int32);
-			appendRow('通訳言語', trans.lang);
-			appendRow('通訳形態', trans.request_type);
-			appendRow('提案期限', trans.estimate_limit_date.String);
+			let msg = JSON.parse("{{ .Message }}");
+			document.title = msg.trans.request_title + ' | Live interpreting';
+			document.getElementById('from').innerText = '依頼者: ' + msg.from.name;
+			document.getElementById('to').innerText = '通訳者: ' + msg.to.name;
+			appendRow('依頼タイトル', msg.trans.request_title);
+			appendRow('依頼詳細', msg.trans.request);
+			appendRow('予算範囲', msg.trans.budget_range);
+			appendRow('配信日時', msg.trans.live_start.String);
+			appendRow('配信時間', msg.trans.live_time.Int32);
+			appendRow('通訳言語', msg.trans.lang);
+			appendRow('通訳形態', msg.trans.request_type);
+			appendRow('提案期限', msg.trans.estimate_limit_date.String);
 		</script>
 	</body>
 </html>

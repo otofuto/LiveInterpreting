@@ -157,3 +157,14 @@ function formDisabled(form, dis) {
         Array.from(form.querySelectorAll('input[type="radiobutton"]')).forEach(elm => elm.removeAttribute('onclick'));
 	}
 }
+
+function userName(uid) {
+	return new Promise((resolve, reject) => {
+		get('/Account/name/' + uid)
+		.then(res => {
+			resolve(res.name);
+		}).catch(err => {
+			reject(err);
+		});
+	});
+}

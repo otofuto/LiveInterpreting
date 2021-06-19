@@ -208,6 +208,27 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "account not found", 400)
 			}
+		} else if strings.HasPrefix(mode, "name/") {
+			uid, err := strconv.Atoi(mode[len("name/"):])
+			if err != nil {
+				http.Error(w, "user id is not integer", 400)
+				return
+			}
+			ac := accounts.Accounts{ Id: uid }
+			if ac.Get() {
+				bytes, err := json.Marshal(accounts.Accounts {
+					Id: uid,
+					Name: ac.Name,
+				})
+				if err != nil {
+					http.Error(w, "failed to convert object to json", 500)
+					return
+				}
+				fmt.Fprintf(w, string(bytes))
+			} else {
+				http.Error(w, "account not found", 404)
+				return
+			}
 		} else {
 			http.Error(w, "なに？", 404)
 		}

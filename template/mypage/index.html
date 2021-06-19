@@ -36,7 +36,7 @@
 						<span>{{ if eq .Login.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
 						<span><script>let createdAt = new Date('{{ .Login.CreatedAt }}'); document.write(createdAt.getFullYear() + '年 ' + (createdAt.getMonth() + 1) + '月 ' + createdAt.getDate() + '日');</script>に登録</span>
 					</div>
-					<div style="width: 100%;"><pre>{{.Login.Description}}</pre></div>
+					<div style="width: 100%;"><pre style="white-space: normal;">{{.Login.Description}}</pre></div>
 					<div style="width: 100%;">
 						{{ if ne .Login.Url1 "" }}<p><a href="{{ .Login.Url1 }}" target="_blank" rel="noopener noreferrer">{{ .Login.Url1 }}</a></p>{{ end }}
 						{{ if ne .Login.Url2 "" }}<p><a href="{{ .Login.Url2 }}" target="_blank" rel="noopener noreferrer">{{ .Login.Url2 }}</a></p>{{ end }}
