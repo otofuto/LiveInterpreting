@@ -13,7 +13,7 @@ type Trans struct {
 	From int `json:"from"`
 	To int `json:"to"`
 	LiveStart sql.NullString `json:"live_start"`
-	LiveTime sql.NullInt32 `json:"live_time"`
+	LiveTime sql.NullInt64 `json:"live_time"`
 	Lang int `json:"lang"`
 	RequestType int `json:"request_type"`
 	RequestTitle string `json:"request_title"`
@@ -21,16 +21,16 @@ type Trans struct {
 	BudgetRange int `json:"budget_range"`
 	RequestCancel int `json:"request_cancel"`
 	EstimateLimitDate sql.NullString `json:"estimate_limit_date"`
-	Price sql.NullInt32 `json:"price"`
+	Price sql.NullInt64 `json:"price"`
 	EstimateDate sql.NullString `json:"estimate_date"`
-	ResponseType sql.NullInt32 `json:"response_type"`
+	ResponseType sql.NullInt64 `json:"response_type"`
 	Response sql.NullString `json:"response"`
 	BuyDate sql.NullString `json:"buy_date"`
 	FinishedDate sql.NullString `json:"finished_date"`
 	CancelDate sql.NullString `json:"cancel_date"`
-	FromEval sql.NullInt32 `json:"from_eval"`
+	FromEval sql.NullInt64 `json:"from_eval"`
 	FromComment sql.NullString `json:"from_comment"`
-	ToEval sql.NullInt32 `json:"to_eval"`
+	ToEval sql.NullInt64 `json:"to_eval"`
 	ToComment sql.NullString `json:"to_comment"`
 }
 

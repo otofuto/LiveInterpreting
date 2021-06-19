@@ -574,7 +574,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					From: login.Id,
 					To: uid,
 					LiveStart: sql.NullString{ Valid: true, String: r.FormValue("live_start") },
-					LiveTime: sql.NullInt32{ Valid: true, Int32: int32(livetime) },
+					LiveTime: sql.NullInt64{ Valid: true, Int64: int64(livetime) },
 					Lang: lang,
 					RequestType: reqtype,
 					RequestTitle: r.FormValue("request_title"),
