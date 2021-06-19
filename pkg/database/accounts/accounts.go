@@ -50,6 +50,8 @@ type Notif struct {
 	Text string `json:"text"`
 	Date string `json:"date"`
 	From int `json:"from"`
+	To int `json:"to"`
+	Id int `json:"id"`
 }
 
 func (ac *Accounts) Insert() int {
@@ -632,13 +634,69 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 	var notifs []Notif
 	rows, err := db.Query("select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc")
 	if err != nil {
+		log.Println(err)
 		return notifs, errors.New("failed to get DM")
 	}
 	defer rows.Close()
 	for rows.Next() {
 		n := Notif { Type: "dm" }
 		err = rows.Scan(&n.Text, &n.Date, &n.From)
+		if err != nil {
+			log.Println(err)
+			return notifs, errors.New("failed to scan DM")
+		}
+		notifs = append(notifs, n)
+	}
+	rows2, err := db.Query("select `type`, `text`, `date`, `from`, `to`, `id` from `notifications` where `to` = " + strconv.Itoa(ac.Id) + " order by `date` desc")
+	if err != nil {
+		log.Println(err)
+		return notifs, errors.New("failed to get notifications")
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var n Notif
+		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		if err != nil {
+			log.Println(err)
+			return notifs, errors.New("failed to scan notif")
+		}
 		notifs = append(notifs, n)
 	}
 	return notifs, nil
+}
+
+func (n *Notif) Insert() error {
+	db := database.Connect()
+	defer db.Close()
+
+	ins, err := db.Prepare("insert into `notifications` (`type`, `text`, `date`, `from`, `to`, `id`) values (?, ?, now(), ?, ?, ?)")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer ins.Close()
+	_, err = ins.Exec(&n.Type, &n.Text, &n.From, &n.To, &n.Id)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNotif(from int, to int, tp string, date string) error {
+	db := database.Connect()
+	defer db.Close()
+
+	del, err := db.Prepare("delete from `notifications` where `from` = ? and `to` = ? and `type` = ? and `date` = ?")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer del.Close()
+	_, err = del.Exec(&from, &to, &tp, &date)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
 }

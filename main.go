@@ -17,6 +17,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
+	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 )
 
 var port string
@@ -142,6 +143,39 @@ func NotificationsHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Fprintf(w, string(bytes))
+	} else if r.Method == http.MethodDelete {
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		r.ParseMultipartForm(32 << 20)
+			if (isset(r, []string {
+				"from",
+				"to",
+				"type",
+				"date",
+			})) {
+				from, err := strconv.Atoi(r.FormValue("from"))
+				if err != nil {
+					http.Error(w, "from is not integer", 400)
+					return
+				}
+				to, err := strconv.Atoi(r.FormValue("to"))
+				if err != nil {
+					http.Error(w, "to is not integer", 400)
+					return
+				}
+				err = accounts.DeleteNotif(from, to, r.FormValue("type"), r.FormValue("date"))
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to delete notif", 500)
+					return
+				}
+				fmt.Fprintf(w, "true")
+			} else {
+				http.Error(w, "parametors not enough", 400)
+			}
 	} else {
 		http.Error(w, "method not alloed.", 405)
 	}
@@ -587,6 +621,18 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					log.Println(err)
 					http.Error(w, "failed to regist", 500)
 					return
+				}
+				n := accounts.Notif {
+					Type: "trans/req",
+					Text: tra.RequestTitle,
+					From: login.Id,
+					To: uid,
+					Id: tra.Id,
+				}
+				err = n.Insert()
+				if err != nil {
+					log.Println(err)
+					errorData.Insert("failed to insert notif " + strconv.Itoa(login.Id) + " to " + strconv.Itoa(uid), err.Error())
 				}
 				bytes, err := json.Marshal(tra);
 				if err != nil {

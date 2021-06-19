@@ -139,7 +139,22 @@
 				let div = document.createElement("div");
 				div.setAttribute("class", "notif");
 				div.addEventListener('click', () => {
-					location = '/directmessages/' + notif.from;
+					if (notif.type == 'dm')
+						location = '/directmessages/' + notif.from;
+					else if (notif.type.startsWith('trans/')) {
+						let data = new FormData();
+						data.append('from', notif.from);
+						data.append('to', notif.to);
+						data.append('type', notif.type);
+						data.append('date', notif.date);
+						del('/Notifications/', data)
+						.then(() => {
+							location = '/trans/' + notif.id;
+						}).catch(err => {
+							console.error(err);
+							location = '/trans/' + notif.id;
+						});
+					}
 				});
 
 				let notifType = document.createElement("div");
@@ -163,6 +178,9 @@
 				switch (ntype) {
 					case 'dm':
 						ret = "ダイレクトメッセージが届いています";
+						break;
+					case 'trans/req':
+						ret = "見積依頼が届いています";
 						break;
 					default:
 						ret = "不明なメッセージ";
