@@ -1,47 +1,48 @@
 package accounts
 
 import (
-	"log"
-	"fmt"
-	"errors"
-	"time"
-	"strconv"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/otofuto/LiveInterpreting/pkg/database"
-	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
+	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Accounts struct {
-	Id int `json:"id"`
-	Name string `json:"name"`
-	Email string `json:"email"`
-	Password string `json:"password"`
-	IconImage string `json:"icon_image"`
-	Description string `json:"description"`
-	Sex int `json:"sex"`
-	UserType string `json:"user_type"`
-	Url1 string `json:"url1"`
-	Url2 string `json:"url2"`
-	Url3 string `json:"url3"`
-	HourlyWage string `json:"hourly_wage"`
-	Langs []langs.Langs `json:"langs"`
-	CreatedAt string `json:"created_at"`
-	Enabled int `json:"enabled"`
-	LastLogined string `json:"last_logined"`
+	Id          int           `json:"id"`
+	Name        string        `json:"name"`
+	Email       string        `json:"email"`
+	Password    string        `json:"password"`
+	IconImage   string        `json:"icon_image"`
+	Description string        `json:"description"`
+	Sex         int           `json:"sex"`
+	UserType    string        `json:"user_type"`
+	Url1        string        `json:"url1"`
+	Url2        string        `json:"url2"`
+	Url3        string        `json:"url3"`
+	HourlyWage  string        `json:"hourly_wage"`
+	Langs       []langs.Langs `json:"langs"`
+	CreatedAt   string        `json:"created_at"`
+	Enabled     int           `json:"enabled"`
+	LastLogined string        `json:"last_logined"`
 }
 
 type AccountTokens struct {
-	Id int `json:"id"`
-	Token string `json:"token"`
+	Id        int    `json:"id"`
+	Token     string `json:"token"`
 	CreatedAt string `json:"created_at"`
 }
 
 type AccountSocial struct {
-	Id int `json:"id"`
-	TargetId int `json:"target_id"`
-	Action int `json:"action"`
+	Id        int    `json:"id"`
+	TargetId  int    `json:"target_id"`
+	Action    int    `json:"action"`
 	CreatedAt string `json:"created_at"`
 }
 
@@ -49,9 +50,9 @@ type Notif struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
 	Date string `json:"date"`
-	From int `json:"from"`
-	To int `json:"to"`
-	Id int `json:"id"`
+	From int    `json:"from"`
+	To   int    `json:"to"`
+	Id   int    `json:"id"`
 }
 
 func (ac *Accounts) Insert() int {
@@ -105,7 +106,7 @@ func (ac *Accounts) SetLangs(jsonstring string) error {
 	var ls []langs.Langs
 	for _, v := range ids {
 		id, _ := strconv.Atoi(v)
-		ls = append(ls, langs.Langs { Id: id })
+		ls = append(ls, langs.Langs{Id: id})
 	}
 	ac.Langs = ls
 	return nil
@@ -330,7 +331,7 @@ func CheckMail(mail string, id int) bool {
 }
 
 func Login(email string, pass string) (Accounts, error) {
-	ac := Accounts { Id: -1 }
+	ac := Accounts{Id: -1}
 	db := database.Connect()
 	defer db.Close()
 
@@ -361,12 +362,12 @@ func Login(email string, pass string) (Accounts, error) {
 }
 
 func (ac *Accounts) CreateToken() string {
-	db := database.Connect();
+	db := database.Connect()
 	defer db.Close()
 
 	token := passHash(ac.Email + time.Now().Format("yyyyMMddHHmmss"))
-	accounttoken := AccountTokens {
-		Id: ac.Id,
+	accounttoken := AccountTokens{
+		Id:    ac.Id,
 		Token: token,
 	}
 	ins, err := db.Prepare("insert into `account_tokens` (`id`, `token`) values (?, ?)")
@@ -466,7 +467,7 @@ func CheckPassResetToken(token string) Accounts {
 	rows, err := db.Query("select `id` from `pass_reset` where `token` = '" + database.Escape(token) + "'")
 	if err != nil {
 		log.Println(err)
-		return Accounts { Id: -1 }
+		return Accounts{Id: -1}
 	}
 	defer rows.Close()
 
@@ -474,12 +475,12 @@ func CheckPassResetToken(token string) Accounts {
 		var ac Accounts
 		err = rows.Scan(&ac.Id)
 		if err != nil {
-			return Accounts { Id: -1 }
+			return Accounts{Id: -1}
 		}
 		ac.Get()
 		return ac
 	}
-	return Accounts { Id: -1 }
+	return Accounts{Id: -1}
 }
 
 func checkPass(hash string, pass string) bool {
@@ -490,6 +491,11 @@ func checkPass(hash string, pass string) bool {
 func Search(search string, user_type string, id int) []Accounts {
 	db := database.Connect()
 	defer db.Close()
+
+	if search == "" && user_type == "" {
+		log.Println("search and user_type is empty")
+		return make([]Accounts, 0)
+	}
 
 	if user_type != "" {
 		user_type = "`user_type` = '" + user_type + "'"
@@ -514,9 +520,11 @@ func Search(search string, user_type string, id int) []Accounts {
 		search = ""
 	}
 
-	rows, err := db.Query("select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + search)
+	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + search
+	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println(err)
+		log.Println(sql)
 		return make([]Accounts, 0)
 	}
 	defer rows.Close()
@@ -528,9 +536,11 @@ func Search(search string, user_type string, id int) []Accounts {
 			log.Println(err)
 			return make([]Accounts, 0)
 		}
-		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		sql = "select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id)
+		rows2, err := db.Query(sql)
 		if err != nil {
 			log.Println(err)
+			log.Println(sql)
 			return make([]Accounts, 0)
 		}
 		for rows2.Next() {
@@ -639,7 +649,7 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		n := Notif { Type: "dm" }
+		n := Notif{Type: "dm"}
 		err = rows.Scan(&n.Text, &n.Date, &n.From)
 		if err != nil {
 			log.Println(err)
