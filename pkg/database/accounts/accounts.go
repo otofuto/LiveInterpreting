@@ -215,21 +215,29 @@ func (ac *Accounts) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `id` = " + strconv.Itoa(ac.Id))
+	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
+	rows, err := db.Query(sql)
 	if err != nil {
+		log.Println("accounts.go (ac *Accounts) Get()")
 		log.Println(err)
+		log.Println(sql)
 		return false
 	}
 	defer rows.Close()
 	if rows.Next() {
 		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
 		if err != nil {
+			log.Println("accounts.go (ac *Accounts) Get()")
 			log.Println(err)
+			log.Println(sql)
 			return false
 		}
-		rows2, err := db.Query("select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id))
+		sql = "select langs.id, langs.lang from `account_langs` left outer join `langs` on `lang_id` = langs.id where `account_langs`.id = " + strconv.Itoa(ac.Id)
+		rows2, err := db.Query(sql)
 		if err != nil {
+			log.Println("accounts.go (ac *Accounts) Get()")
 			log.Println(err)
+			log.Println(sql)
 			return false
 		}
 		defer rows2.Close()
@@ -237,7 +245,39 @@ func (ac *Accounts) Get() bool {
 		for rows2.Next() {
 			var l langs.Langs
 			err = rows2.Scan(&l.Id, &l.Lang)
+			if err != nil {
+				log.Println("accounts.go (ac *Accounts) Get()")
+				log.Println(err)
+				log.Println(sql)
+				return false
+			}
 			ac.Langs = append(ac.Langs, l)
+		}
+		return true
+	}
+	return false
+}
+
+func (ac *Accounts) GetLite() bool {
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "select `name`, `icon_image`, `description`, `sex`, `user_type`, `hourly_wage`, `last_logined` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) GetLite()")
+		log.Println(err)
+		log.Println(sql)
+		return false
+	}
+	defer rows.Close()
+	if rows.Next() {
+		err = rows.Scan(&ac.Name, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.HourlyWage, &ac.LastLogined)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) GetLite()")
+			log.Println(err)
+			log.Println(sql)
+			return false
 		}
 		return true
 	}
@@ -642,9 +682,12 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 	defer db.Close()
 
 	var notifs []Notif
-	rows, err := db.Query("select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc")
+	sql := "select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
+	rows, err := db.Query(sql)
 	if err != nil {
+		log.Println("accounts.go (ac *Accounts) GetNotifs()")
 		log.Println(err)
+		log.Println(sql)
 		return notifs, errors.New("failed to get DM")
 	}
 	defer rows.Close()
@@ -652,14 +695,18 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 		n := Notif{Type: "dm"}
 		err = rows.Scan(&n.Text, &n.Date, &n.From)
 		if err != nil {
+			log.Println("accounts.go (ac *Accounts) GetNotifs()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan DM")
 		}
 		notifs = append(notifs, n)
 	}
-	rows2, err := db.Query("select `type`, `text`, `date`, `from`, `to`, `id` from `notifications` where `to` = " + strconv.Itoa(ac.Id) + " order by `date` desc")
+	sql = "select `type`, `text`, `date`, `from`, `to`, `id` from `notifications` where `to` = " + strconv.Itoa(ac.Id) + " order by `date` desc"
+	rows2, err := db.Query(sql)
 	if err != nil {
+		log.Println("accounts.go (ac *Accounts) GetNotifs()")
 		log.Println(err)
+		log.Println(sql)
 		return notifs, errors.New("failed to get notifications")
 	}
 	defer rows2.Close()
@@ -667,6 +714,53 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 		var n Notif
 		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
 		if err != nil {
+			log.Println("accounts.go (ac *Accounts) GetNotifs()")
+			log.Println(err)
+			return notifs, errors.New("failed to scan notif")
+		}
+		notifs = append(notifs, n)
+	}
+	return notifs, nil
+}
+
+func (ac *Accounts) Inbox() ([]Notif, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	var notifs []Notif
+	sql := "select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println(err)
+		log.Println(sql)
+		return notifs, errors.New("failed to get DM")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		n := Notif{Type: "dm"}
+		err = rows.Scan(&n.Text, &n.Date, &n.From)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println(err)
+			return notifs, errors.New("failed to scan DM")
+		}
+		notifs = append(notifs, n)
+	}
+	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `to`, `id` from `trans` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id)
+	rows2, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println(err)
+		log.Println(sql)
+		return notifs, errors.New("failed to get notifications")
+	}
+	defer rows2.Close()
+	for rows2.Next() {
+		var n Notif
+		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) Inbox()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan notif")
 		}

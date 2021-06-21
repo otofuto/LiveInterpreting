@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>受信BOX | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
+		<style>
+			tr {
+				box-shadow: 0 1px 0 gray;
+			}
+
+			td:nth-of-type(1) {
+				width: fit-content;
+				padding: 4px 10px;
+				color: dimgray;
+			}
+
+			#notifList article {
+				display: block;
+				padding: 15px;
+				box-sizing: border-box;
+				border: none;
+				border-radius: 8px;
+				background-color: lightgray;
+				margin: 10px;
+				transition: all 70ms 0ms ease;
+			}
+
+			#notifList article:hover {
+				background-color: whitesmoke;
+				box-shadow: 0 0 20px -10px lightgray inset;
+			}
+
+			#notifList article header {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: space-between;
+			}
+
+			#notifList article header h3 {
+				margin: 0;
+				font-weight: bold;
+			}
+
+			#notifList article header span:before {
+				content: 'From: ';
+			}
+
+			#notifList article header span img {
+				max-width: 50px;
+				max-height: 50px;
+			}
+
+			#notifList article main {
+				padding: 5px;
+				box-sizing: border-box;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'">ホーム</div>
+				<div onclick="location = '/inbox/'" class="selected">受信BOX</div>
+				<div onclick="location = '/mypage/'">マイページ</div>
+				<div onclick="location = '/mypage/follows/'">フォロー</div>
+				<div onclick="location = '/mypage/lives/'">配信登録</div>
+				<div onclick="location = '/search/'">翻訳者を探す</div>
+				<div onclick="logout()">ログアウト</div>
+			</div>
+			<div id="content">
+				<h1>受信BOX</h1>
+				<div id="notifList">
+				</div>
+				<div id="ex" style="display: none;">
+					<article>
+						<header>
+							<h3>通知タイトル</h3>
+							<span>ユーザー名</span>
+						</header>
+						<main>通知内容</main>
+					</article>
+				</div>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label>© 2021 Live interpreting - Powered by OTFT</label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script>
+			function getNotifTypeMessage(ntype) {
+				let ret = "";
+				switch (ntype) {
+					case 'dm':
+						ret = "ダイレクトメッセージが届いています";
+						break;
+					case 'trans/req':
+						ret = "見積依頼が届いています";
+						break;
+					default:
+						ret = "不明なメッセージ";
+						break;
+				}
+				return ret;
+			}
+
+			let msg = JSON.parse({{ .Message }});
+			msg.notifs.forEach(n => {
+				let row = document.getElementById('ex').getElementsByTagName('article')[0].cloneNode(true);
+				row.querySelector('h3').innerText = getNotifTypeMessage(n.type);
+				row.querySelector('span').innerText = msg.accounts.find(a => a.id == n.from).name;
+				let img = document.createElement('img');
+				img.src = '/Account/img/' + n.from;
+				row.querySelector('span').appendChild(img);
+				row.querySelector('main').innerText = n.text;
+				document.getElementById('notifList').appendChild(row);
+				row.addEventListener('click', () => {
+					if (n.type == 'dm')
+						location = '/directmessages/' + n.from;
+					else if (n.type.startsWith('trans/'))
+						location = '/trans/' + n.id;
+				});
+			});
+		</script>
+	</body>
+</html>

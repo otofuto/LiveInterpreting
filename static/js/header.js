@@ -42,5 +42,5 @@ document.getElementById('humbCheck').addEventListener('change', elm => {
 });
 
 function appendHeader(elm) {
-	innerHeader.appendChild(elm);
+	document.querySelector('.inner-header').appendChild(elm);
 }
