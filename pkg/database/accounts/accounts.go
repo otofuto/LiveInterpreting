@@ -747,7 +747,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `to`, `id` from `trans` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id)
+	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `to`, `id` from `trans` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id) + " order by `request_date` desc"
 	rows2, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Inbox()")

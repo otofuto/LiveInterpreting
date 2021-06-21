@@ -1,37 +1,39 @@
 package trans
 
 import (
-	"log"
-	"errors"
-	"strconv"
 	"database/sql"
+	"errors"
+	"log"
+	"strconv"
+
 	"github.com/otofuto/LiveInterpreting/pkg/database"
 )
 
 type Trans struct {
-	Id int `json:"id"`
-	From int `json:"from"`
-	To int `json:"to"`
-	LiveStart sql.NullString `json:"live_start"`
-	LiveTime sql.NullInt64 `json:"live_time"`
-	Lang int `json:"lang"`
-	RequestType int `json:"request_type"`
-	RequestTitle string `json:"request_title"`
-	Request string `json:"request"`
-	BudgetRange int `json:"budget_range"`
-	RequestCancel int `json:"request_cancel"`
+	Id                int            `json:"id"`
+	From              int            `json:"from"`
+	To                int            `json:"to"`
+	LiveStart         sql.NullString `json:"live_start"`
+	LiveTime          sql.NullInt64  `json:"live_time"`
+	Lang              int            `json:"lang"`
+	RequestType       int            `json:"request_type"`
+	RequestTitle      string         `json:"request_title"`
+	Request           string         `json:"request"`
+	RequestDate       string         `json:"request_date"`
+	BudgetRange       int            `json:"budget_range"`
+	RequestCancel     int            `json:"request_cancel"`
 	EstimateLimitDate sql.NullString `json:"estimate_limit_date"`
-	Price sql.NullInt64 `json:"price"`
-	EstimateDate sql.NullString `json:"estimate_date"`
-	ResponseType sql.NullInt64 `json:"response_type"`
-	Response sql.NullString `json:"response"`
-	BuyDate sql.NullString `json:"buy_date"`
-	FinishedDate sql.NullString `json:"finished_date"`
-	CancelDate sql.NullString `json:"cancel_date"`
-	FromEval sql.NullInt64 `json:"from_eval"`
-	FromComment sql.NullString `json:"from_comment"`
-	ToEval sql.NullInt64 `json:"to_eval"`
-	ToComment sql.NullString `json:"to_comment"`
+	Price             sql.NullInt64  `json:"price"`
+	EstimateDate      sql.NullString `json:"estimate_date"`
+	ResponseType      sql.NullInt64  `json:"response_type"`
+	Response          sql.NullString `json:"response"`
+	BuyDate           sql.NullString `json:"buy_date"`
+	FinishedDate      sql.NullString `json:"finished_date"`
+	CancelDate        sql.NullString `json:"cancel_date"`
+	FromEval          sql.NullInt64  `json:"from_eval"`
+	FromComment       sql.NullString `json:"from_comment"`
+	ToEval            sql.NullInt64  `json:"to_eval"`
+	ToComment         sql.NullString `json:"to_comment"`
 }
 
 func (tr *Trans) Insert() error {
@@ -77,12 +79,12 @@ func (tr *Trans) Update() error {
 
 	upd, err := db.Prepare(
 		"update `trans` set " +
-		"`from` = ?, `to` = ?, `live_start` = ?, `live_time` = ?, `lang` = ?, " +
-		"`request_type` = ?, `request` = ?, `request_cancel` = ?, `price` = ?, " +
-		"`request_title` = ?, `budget_range` = ?, `estimate_limit_date` = ?, " +
-		"`estimate_date` = ?, `response_type` = ?, `response` = ?, `buy_date` = ?, " +
-		"`finished_date` = ?, `cancel_date` = ?, `from_eval` = ?, `from_comment` = ?, " +
-		"`to_eval` = ?, `to_comment` = ? where `id` = ?")
+			"`from` = ?, `to` = ?, `live_start` = ?, `live_time` = ?, `lang` = ?, " +
+			"`request_type` = ?, `request` = ?, `request_cancel` = ?, `price` = ?, " +
+			"`request_title` = ?, `budget_range` = ?, `estimate_limit_date` = ?, " +
+			"`estimate_date` = ?, `response_type` = ?, `response` = ?, `buy_date` = ?, " +
+			"`finished_date` = ?, `cancel_date` = ?, `from_eval` = ?, `from_comment` = ?, " +
+			"`to_eval` = ?, `to_comment` = ? where `id` = ?")
 	if upd != nil {
 		log.Println(err)
 		return errors.New("failed to update trans at trans.Update")
@@ -104,11 +106,11 @@ func (tr *Trans) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "select `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " + 
-	"`request_title`, `request`, `budget_range`, `request_cancel`, `estimate_limit_date`, " + 
-	"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " + 
-	"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` " + 
-	"where `id` = " + strconv.Itoa(tr.Id)
+	sql := "select `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +
+		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
+		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
+		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` " +
+		"where `id` = " + strconv.Itoa(tr.Id)
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println(err)
@@ -118,7 +120,7 @@ func (tr *Trans) Get() bool {
 
 	if rows.Next() {
 		err = rows.Scan(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType,
-			&tr.RequestTitle, &tr.Request, &tr.BudgetRange, &tr.RequestCancel, &tr.EstimateLimitDate,
+			&tr.RequestTitle, &tr.Request, &tr.RequestDate, &tr.BudgetRange, &tr.RequestCancel, &tr.EstimateLimitDate,
 			&tr.Price, &tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate, &tr.FinishedDate,
 			&tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment)
 		if err != nil {

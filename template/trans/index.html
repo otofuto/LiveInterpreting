@@ -38,6 +38,11 @@
 				<p id="from"></p>
 				<p id="to"></p>
 				<table><tbody id="tbl"></tbody></table>
+				{{ if eq .User.Id .Login.Id }}
+				<div id="sendEst" style="display: none;">
+					<button class="button">見積を送信する</button>
+				</div>
+				{{ end }}
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -67,6 +72,24 @@
 			appendRow('通訳言語', msg.trans.lang);
 			appendRow('通訳形態', msg.trans.request_type);
 			appendRow('提案期限', msg.trans.estimate_limit_date.String);
+			{{ if eq .User.Id .Login.Id }}
+			if (msg.trans.request_cancel == 0 && !msg.trans.response_type.Valid) {
+				let limit = new Date(msg.trans.estimate_limit_date.String);
+				if (!msg.trans.estimate_limit_date.Valid) {
+					limit = new Date(msg.trans.live_start);
+				}
+				let nextdate = new Date(limit);
+				nextdate.setHours(0);
+				nextdate.setMinutes(0);
+				nextdate.setSeconds(0);
+				nextdate.setMilliseconds(0);
+				nextdate.setDate(nextdate.getDate() + 1);
+				console.log(nextdate);
+				if (new Date() < nextdate) {
+					document.getElementById('sendEst').removeAttribute('style');
+				}
+			}
+			{{ end }}
 		</script>
 	</body>
 </html>
