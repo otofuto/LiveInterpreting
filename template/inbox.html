@@ -64,6 +64,14 @@
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Login.Name}}</span>さん";
+			{{ end }}
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'">ホーム</div>
@@ -94,22 +102,6 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			function getNotifTypeMessage(ntype) {
-				let ret = "";
-				switch (ntype) {
-					case 'dm':
-						ret = "ダイレクトメッセージが届いています";
-						break;
-					case 'trans/req':
-						ret = "見積依頼が届いています";
-						break;
-					default:
-						ret = "不明なメッセージ";
-						break;
-				}
-				return ret;
-			}
-
 			let msg = JSON.parse({{ .Message }});
 			msg.notifs.forEach(n => {
 				let row = document.getElementById('ex').getElementsByTagName('article')[0].cloneNode(true);

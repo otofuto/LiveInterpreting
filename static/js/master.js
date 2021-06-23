@@ -168,3 +168,22 @@ function userName(uid) {
 		});
 	});
 }
+
+function getNotifTypeMessage(ntype) {
+	let ret = "";
+	switch (ntype) {
+		case 'dm':
+			ret = "ダイレクトメッセージが届いています";
+			break;
+		case 'trans/req':
+			ret = "見積依頼が届いています";
+			break;
+		case 'trans/res':
+			ret = "見積が届いています";
+			break;
+		default:
+			ret = "不明なメッセージ";
+			break;
+	}
+	return ret;
+}

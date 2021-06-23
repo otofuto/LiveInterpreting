@@ -739,6 +739,22 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to update trans", 500)
 					return
 				}
+				respHead := tr.Response.String
+				if len([]rune(respHead)) > 16 {
+					respHead = string([]rune(respHead)[:16])
+				}
+				n := accounts.Notif{
+					Type: "trans/res",
+					Text: respHead,
+					From: login.Id,
+					To:   tr.From,
+					Id:   tr.Id,
+				}
+				err = n.Insert()
+				if err != nil {
+					log.Println(err)
+					errorData.Insert("failed to insert notif "+strconv.Itoa(login.Id)+" to "+strconv.Itoa(tr.From), err.Error())
+				}
 				bytes, err := json.Marshal(tr)
 				if err != nil {
 					http.Error(w, "failed to convert trans object to json", 500)

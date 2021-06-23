@@ -727,7 +727,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	var notifs []Notif
+	notifs := make([]Notif, 0)
 	sql := "select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -759,6 +759,25 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	for rows2.Next() {
 		var n Notif
 		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println(err)
+			return notifs, errors.New("failed to scan notif")
+		}
+		notifs = append(notifs, n)
+	}
+	sql = "select 'trans/res' as `type`, `response` as `text`, `estimate_date` as `date`, `to`, `from`, `id` from `trans` where `request_cancel` = 0 and `response_type` = 0 and `estimate_date` is not null and buy_date is null and `from` = " + strconv.Itoa(ac.Id) + " order by `estimate_date` desc"
+	rows3, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println(err)
+		log.Println(sql)
+		return notifs, errors.New("failed to get notifications")
+	}
+	defer rows3.Close()
+	for rows3.Next() {
+		var n Notif
+		err = rows3.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) Inbox()")
 			log.Println(err)
