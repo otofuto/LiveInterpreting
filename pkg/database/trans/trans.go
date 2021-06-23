@@ -46,7 +46,7 @@ func (tr *Trans) Insert() error {
 		return errors.New("insert trans failed at trans.Insert")
 	}
 	defer ins.Close()
-	_, err = ins.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang,
+	result, err := ins.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang,
 		&tr.RequestType, &tr.RequestTitle, &tr.Request, &tr.BudgetRange,
 		&tr.EstimateLimitDate, &tr.Price)
 	if err != nil {
@@ -54,38 +54,27 @@ func (tr *Trans) Insert() error {
 		return errors.New("insert trans failed at trans.Insert")
 	}
 
-	rows, err := db.Query("select last_insert_id()")
+	newid, err := result.LastInsertId()
 	if err != nil {
-		log.Println(err)
-		return errors.New("select last_insert_id failed at trans.Insert")
+		return err
 	}
-	defer rows.Close()
-	if rows.Next() {
-		rows.Scan(&tr.Id)
-		if tr.Id == 0 {
-			tr.Id = -1
-			return errors.New("insert error: select last_insert_id() = 0")
-		}
-
-		return nil
-	} else {
-		return errors.New("cannot get last_insert_id at trans.Insert")
-	}
+	tr.Id = database.Int64ToInt(newid)
+	return nil
 }
 
 func (tr *Trans) Update() error {
 	db := database.Connect()
 	defer db.Close()
 
-	upd, err := db.Prepare(
-		"update `trans` set " +
-			"`from` = ?, `to` = ?, `live_start` = ?, `live_time` = ?, `lang` = ?, " +
-			"`request_type` = ?, `request` = ?, `request_cancel` = ?, `price` = ?, " +
-			"`request_title` = ?, `budget_range` = ?, `estimate_limit_date` = ?, " +
-			"`estimate_date` = ?, `response_type` = ?, `response` = ?, `buy_date` = ?, " +
-			"`finished_date` = ?, `cancel_date` = ?, `from_eval` = ?, `from_comment` = ?, " +
-			"`to_eval` = ?, `to_comment` = ? where `id` = ?")
-	if upd != nil {
+	sql := "update `trans` set " +
+		"`from` = ?, `to` = ?, `live_start` = ?, `live_time` = ?, `lang` = ?, " +
+		"`request_type` = ?, `request` = ?, `request_cancel` = ?, `price` = ?, " +
+		"`request_title` = ?, `budget_range` = ?, `estimate_limit_date` = ?, " +
+		"`estimate_date` = ?, `response_type` = ?, `response` = ?, `buy_date` = ?, " +
+		"`finished_date` = ?, `cancel_date` = ?, `from_eval` = ?, `from_comment` = ?, " +
+		"`to_eval` = ?, `to_comment` = ? where `id` = ?"
+	upd, err := db.Prepare(sql)
+	if err != nil {
 		log.Println(err)
 		return errors.New("failed to update trans at trans.Update")
 	}

@@ -1,14 +1,16 @@
 package database
 
 import (
-	"fmt"
-	"os"
-	"database/sql"
 	"crypto/tls"
 	"crypto/x509"
+	"database/sql"
 	"errors"
-	"strings"
+	"fmt"
 	"io/ioutil"
+	"math"
+	"os"
+	"strings"
+
 	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
@@ -41,7 +43,7 @@ func registerTlsConfig(pemPath, tlsConfigKey string) (err error) {
 		return errors.New("Failed to append PEM.")
 	}
 	mysql.RegisterTLSConfig(tlsConfigKey, &tls.Config{
-		ClientCAs: caCertPool,
+		ClientCAs:          caCertPool,
 		InsecureSkipVerify: true,
 	})
 
@@ -57,4 +59,12 @@ func Escape(str string) string {
 	ret = strings.Replace(ret, "\n", "\\n", -1)
 
 	return ret
+}
+
+func Int64ToInt(i int64) int {
+	if i < math.MinInt32 || i > math.MaxInt32 {
+		return 0
+	} else {
+		return int(i)
+	}
 }

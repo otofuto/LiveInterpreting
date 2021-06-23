@@ -14,11 +14,6 @@
 				box-shadow: 0 1px 0 gray;
 			}
 
-			th {
-				background-color: black;
-				color: white;
-			}
-
 			td:nth-of-type(1) {
 				width: fit-content;
 				padding: 4px 10px;
@@ -44,15 +39,21 @@
 				<div onclick="logout()">ログアウト</div>
 			</div>
 			<div id="content">
-				<h1>案件内容</h1>
-				<p id="from"></p>
-				<p id="to"></p>
+				<h1>見積作成</h1>
 				<table><tbody id="tbl"></tbody></table>
-				{{ if eq .User.Id .Login.Id }}
-				<div id="sendEst">
-					<button class="button">見積を送信する</button>
-				</div>
-				{{ end }}
+				<form name="fm" onsubmit="sub(); return false;" style="display: none;">
+					<div class="field">
+						<input type="number" class="input" name="price" required>
+						<label class="input-label">見積金額</label>
+					</div>
+					<div class="field">
+						<textarea name="response" class="textarea" required></textarea>
+						<label class="input-label">見積詳細</label>
+					</div>
+					<div style="text-align: center;">
+						<button class="button" style="background-color: var(--color1); color: white">見積を送信</button>
+					</div>
+				</form>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -69,14 +70,7 @@
 				td2.innerText = v;
 				row.appendChild(td2);
 				document.getElementById('tbl').appendChild(row);
-			}
-			function appendHeader(text) {
-				let row = document.createElement('tr');
-				let th = document.createElement('th');
-				th.innerText = text;
-				th.setAttribute('colspan', '2');
-				row.appendChild(th);
-				document.getElementById('tbl').appendChild(row);
+				return row;
 			}
 			function frontZero(s) {
 				if ((s - 0) < 10) s = '0' + s;
@@ -84,9 +78,6 @@
 			}
 			let msg = JSON.parse("{{ .Message }}");
 			document.title = msg.trans.request_title + ' | Live interpreting';
-			document.getElementById('from').innerText = '依頼者: ' + msg.from.name;
-			document.getElementById('to').innerText = '通訳者: ' + msg.to.name;
-			appendHeader('依頼内容');
 			appendRow('依頼タイトル', msg.trans.request_title);
 			appendRow('依頼詳細', msg.trans.request);
 			appendRow('予算範囲', msg.trans.budget_range);
@@ -97,8 +88,7 @@
 					" ～ " + msg.trans.live_time.Int64 + '分程度');
 			appendRow('通訳言語', msg.trans.lang);
 			appendRow('通訳形態', ['テキスト', '音声', 'テキストと音声'][msg.trans.request_type]);
-			appendRow('提案期限', msg.trans.estimate_limit_date.String);
-			{{ if eq .User.Id .Login.Id }}
+			let limitTr = appendRow('提案期限', msg.trans.estimate_limit_date.String);
 			if (msg.trans.request_cancel == 0 && !msg.trans.response_type.Valid) {
 				let limit = new Date(msg.trans.estimate_limit_date.String);
 				if (!msg.trans.estimate_limit_date.Valid) {
@@ -112,21 +102,35 @@
 				nextdate.setDate(nextdate.getDate() + 1);
 				console.log(nextdate);
 				if (new Date() < nextdate) {
-					document.querySelector('#sendEst button').addEventListener('click', () => {
-						location = '/trans/estimate/' + msg.trans.id;
-					});
+					document.fm.removeAttribute('style');
 				} else {
-					document.querySelector('#sendEst button').innerText = '見積期限切れ';
-					document.querySelector('#sendEst button').setAttribute('disabled', '');
+					document.fm.remove();
+					limitTr.getElementsByTagName('td')[1].innerHTML += " <span style=\"color: red;\">期限切れ</span>";
 				}
-			} else {
-				document.getElementById('sendEst').remove();
-				appendHeader('見積内容');
-				appendRow('見積日時', msg.trans.estimate_date.String);
-				appendRow('見積金額', "￥" + msg.trans.price.Int64);
-				appendRow('見積詳細', msg.trans.response.String);
 			}
-			{{ end }}
+
+			function sub() {
+				let data = new FormData(document.fm);
+				formDisabled(document.fm, true);
+				post('/trans/estimate/' + msg.trans.id, data)
+				.then(res => {
+					if (res === true) {
+						alert('登録成功');
+						location = '/u/{{ .User.Id }}';
+					} else if (typeof res.id == 'number') {
+						alert('登録成功');
+						location = '/trans/' + res.id;
+					} else {
+						formDisabled(document.fm, false);
+						console.error(res);
+						alert("登録に失敗しました。");
+					}
+				}).catch(err => {
+					formDisabled(document.fm, false);
+					console.error(err);
+					alert('登録に失敗しました。');
+				});
+			}
 		</script>
 	</body>
 </html>

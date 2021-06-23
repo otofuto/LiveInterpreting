@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
@@ -507,6 +508,45 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/home/", 303)
 				return
 			}
+		} else if strings.HasPrefix(filename, "estimate/") {
+			trid, err := strconv.Atoi(filename[len("estimate/"):])
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			if tr.To != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			ac.Id = tr.From
+			if !ac.Get() {
+				http.Error(w, "failed to get user(from) data", 500)
+				return
+			}
+			msgobj := struct {
+				Trans trans.Trans       `json:"trans"`
+				From  accounts.Accounts `json:"from"`
+				To    accounts.Accounts `json:"to"`
+			}{
+				Trans: tr,
+				From:  login,
+				To: accounts.Accounts{
+					Id:   ac.Id,
+					Name: ac.Name,
+				},
+			}
+			bytes, err := json.Marshal(msgobj)
+			if err != nil {
+				http.Error(w, "failed to convert trans object to json", 500)
+				return
+			}
+			msg = string(bytes)
+			filename = "estimate"
 		} else {
 			trid, err := strconv.Atoi(filename)
 			if err != nil {
@@ -524,7 +564,12 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			ac.Id = tr.To
 			if !ac.Get() {
-				http.Error(w, "failed to get user data", 500)
+				http.Error(w, "failed to get user(to) data", 500)
+				return
+			}
+			from := accounts.Accounts{Id: tr.From}
+			if !from.GetLite() {
+				http.Error(w, "failed to get user(from) data", 500)
 				return
 			}
 			msgobj := struct {
@@ -533,10 +578,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				To    accounts.Accounts `json:"to"`
 			}{
 				Trans: tr,
-				From: accounts.Accounts{
-					Id:   login.Id,
-					Name: login.Name,
-				},
+				From:  from,
 				To: accounts.Accounts{
 					Id:   ac.Id,
 					Name: ac.Name,
@@ -665,6 +707,46 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, string(bytes))
 			} else {
 				http.Error(w, "parameters not enough", 400)
+			}
+		} else if strings.HasPrefix(mode, "estimate/") {
+			trid, err := strconv.Atoi(mode[len("estimate/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			r.ParseMultipartForm(32 << 20)
+			if isset(r, []string{
+				"price",
+				"response",
+			}) {
+				tr := trans.Trans{Id: trid}
+				if !tr.Get() {
+					http.Error(w, "failed to get trans data", 404)
+					return
+				}
+				price, err := strconv.Atoi(r.FormValue("price"))
+				if err != nil {
+					http.Error(w, "price is not integer", 400)
+					return
+				}
+				tr.Price = sql.NullInt64{Int64: int64(price), Valid: true}
+				tr.Response = sql.NullString{String: r.FormValue("response"), Valid: true}
+				tr.ResponseType = sql.NullInt64{Int64: 0, Valid: true}
+				tr.EstimateDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}
+				err = tr.Update()
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to update trans", 500)
+					return
+				}
+				bytes, err := json.Marshal(tr)
+				if err != nil {
+					http.Error(w, "failed to convert trans object to json", 500)
+					return
+				}
+				fmt.Fprintf(w, string(bytes))
+			} else {
+				http.Error(w, "parameter not enough", 400)
 			}
 		} else {
 			http.Error(w, "user not designation", 404)
