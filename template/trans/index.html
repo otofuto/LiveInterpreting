@@ -121,12 +121,18 @@
 				}
 			} else {
 				document.getElementById('sendEst').remove();
-				appendHeader('見積内容');
-				appendRow('見積日時', msg.trans.estimate_date.String);
-				appendRow('見積金額', "￥" + msg.trans.price.Int64);
-				appendRow('見積詳細', msg.trans.response.String);
 			}
 			{{ end }}
+			if (msg.trans.estimate_date.Valid && msg.trans.response_type.Valid) {
+				appendHeader('見積内容');
+				appendRow('見積日時', msg.trans.estimate_date.String);
+				if (msg.trans.response_type.Int64 == 0) {
+					appendRow('見積金額', "￥" + msg.trans.price.Int64);
+					appendRow('見積詳細', msg.trans.response.String);
+				} else {
+					appendRow('', '見積が辞退されました。');
+				}
+			}
 		</script>
 	</body>
 </html>
