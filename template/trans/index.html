@@ -10,6 +10,10 @@
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
+			table {
+				width: 90%;
+			}
+
 			tr {
 				box-shadow: 0 1px 0 gray;
 			}
@@ -29,28 +33,45 @@
 				width: 100%;
 				text-align: center;
 			}
+
+			#buy {
+				width: 100%;
+				text-align: center;
+			}
 		</style>
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Login.Name}}</span>さん";
+			{{ end }}
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="sidemenu">
-				<div onclick="location = '/home/'">ホーム</div>
-				<div onclick="location = '/inbox/'">受信BOX</div>
-				<div onclick="location = '/mypage/'">マイページ</div>
-				<div onclick="location = '/mypage/follows/'">フォロー</div>
-				<div onclick="location = '/mypage/lives/'">配信登録</div>
-				<div onclick="location = '/search/'">翻訳者を探す</div>
-				<div onclick="logout()">ログアウト</div>
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
 				<h1>案件内容</h1>
-				<p id="from"></p>
-				<p id="to"></p>
+				<p>依頼者: <a id="from"></a></p>
+				<p>通訳者: <a id="to"></a></p>
 				<table><tbody id="tbl"></tbody></table>
 				{{ if eq .User.Id .Login.Id }}
 				<div id="sendEst">
 					<button class="button">見積を送信する</button>
+				</div>
+				{{ else }}
+				<div id="buy" style="display: none;">
+					<button class="button">この見積内容で購入する</button>
 				</div>
 				{{ end }}
 			</div>
@@ -84,8 +105,10 @@
 			}
 			let msg = JSON.parse("{{ .Message }}");
 			document.title = msg.trans.request_title + ' | Live interpreting';
-			document.getElementById('from').innerText = '依頼者: ' + msg.from.name;
-			document.getElementById('to').innerText = '通訳者: ' + msg.to.name;
+			document.getElementById('from').innerText = msg.from.name;
+			document.getElementById('from').setAttribute('href', '/u/' + msg.from.id);
+			document.getElementById('to').innerText = msg.to.name;
+			document.getElementById('to').setAttribute('href', '/u/' + msg.to.id);
 			appendHeader('依頼内容');
 			appendRow('依頼タイトル', msg.trans.request_title);
 			appendRow('依頼詳細', msg.trans.request);
@@ -129,6 +152,12 @@
 				if (msg.trans.response_type.Int64 == 0) {
 					appendRow('見積金額', "￥" + msg.trans.price.Int64);
 					appendRow('見積詳細', msg.trans.response.String);
+					{{ if ne .User.Id .Login.Id }}
+					document.querySelector('#buy').removeAttribute('style');
+					document.querySelector('#buy button').addEventListener('click', () => {
+						location = '/trans/buy/' + msg.trans.id;
+					});
+					{{ end }}
 				} else {
 					appendRow('', '見積が辞退されました。');
 				}

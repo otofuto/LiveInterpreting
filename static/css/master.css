@@ -7,7 +7,7 @@ body {
 	padding: 0;
 	margin: 0;
 
-	--color1: #136EAB;
+	--color1: #414141;
 	--color2: #AB5013;
 	--color3: #AB9C13;
 	--header-height: 80px;
@@ -34,6 +34,7 @@ body {
 	justify-content: space-between;
 	width: 100%;
 	max-width: 1280px;
+	color: white;
 }
 
 .header-humb {
@@ -97,11 +98,29 @@ body > main {
 	margin: 20px auto;
 	cursor: pointer;
 	user-select: none;
+	position: relative;
+	background-color: white;
+	overflow: hidden;
 }
 
-#sidemenu>div:hover {
-	text-shadow: 0 0 1px var(--color1);
-	color: darkgray;
+#sidemenu>div:before {
+	content:  '';
+	position: absolute;
+	width:  100%;
+	height: 100%;
+	left: -100%;
+	top: 0;
+	background-color: var(--color2);
+	transition: all 250ms 0ms ease;
+	mix-blend-mode: lighten;
+}
+
+#sidemenu>div>span {
+	z-index: -1;
+}
+
+#sidemenu>div:hover:before {
+	left: 0;
 }
 
 #sidemenu .selected {

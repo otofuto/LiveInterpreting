@@ -10,8 +10,17 @@
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
+			table {
+				width: 90%;
+			}
+
 			tr {
 				box-shadow: 0 1px 0 gray;
+			}
+
+			th {
+				background-color: var(--color1);
+				color: white;
 			}
 
 			td:nth-of-type(1) {
@@ -30,13 +39,13 @@
 		<script src="/st/js/header.js"></script>
 		<main>
 			<div id="sidemenu">
-				<div onclick="location = '/home/'">ホーム</div>
-				<div onclick="location = '/inbox/'">受信BOX</div>
-				<div onclick="location = '/mypage/'">マイページ</div>
-				<div onclick="location = '/mypage/follows/'">フォロー</div>
-				<div onclick="location = '/mypage/lives/'">配信登録</div>
-				<div onclick="location = '/search/'">翻訳者を探す</div>
-				<div onclick="logout()">ログアウト</div>
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
 				<h1>見積作成</h1>
@@ -72,12 +81,21 @@
 				document.getElementById('tbl').appendChild(row);
 				return row;
 			}
+			function appendHeader(text) {
+				let row = document.createElement('tr');
+				let th = document.createElement('th');
+				th.innerText = text;
+				th.setAttribute('colspan', '2');
+				row.appendChild(th);
+				document.getElementById('tbl').appendChild(row);
+			}
 			function frontZero(s) {
 				if ((s - 0) < 10) s = '0' + s;
 				return s;
 			}
 			let msg = JSON.parse("{{ .Message }}");
 			document.title = msg.trans.request_title + ' | Live interpreting';
+			appendHeader('依頼内容');
 			appendRow('依頼タイトル', msg.trans.request_title);
 			appendRow('依頼詳細', msg.trans.request);
 			appendRow('予算範囲', msg.trans.budget_range);
