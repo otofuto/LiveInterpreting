@@ -96,7 +96,7 @@
 			document.getElementById('to').innerText = msg.to.name;
 			document.getElementById('to').setAttribute('href', '/u/' + msg.to.id);
 			appendRow('依頼タイトル', msg.trans.request_title);
-			appendRow('配信日時', formatdate(msg.trans.live_start.String) + " ～ " + msg.trans.live_time.Int64 + '分程度');
+			appendRow('配信日時', formatdate(msg.trans.live_start.String) + " ～ " + msg.trans.live_time.Int64 + '分');
 			appendRow('通訳言語', msg.langs.find(l => l.id == msg.trans.lang).lang);
 			appendRow('通訳形態', ['テキスト', '音声', 'テキストと音声'][msg.trans.request_type]);
 			appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());

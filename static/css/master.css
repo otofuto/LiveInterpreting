@@ -35,6 +35,8 @@ body {
 	width: 100%;
 	max-width: 1280px;
 	color: white;
+	box-sizing: border-box;
+	padding-right: 10px;
 }
 
 .header-humb {
@@ -92,6 +94,7 @@ body > main {
 	height: auto;
 	box-sizing: border-box;
 	overflow: hidden;
+	background-color: #fffcf7;
 }
 
 #sidemenu>div {
@@ -99,7 +102,7 @@ body > main {
 	cursor: pointer;
 	user-select: none;
 	position: relative;
-	background-color: white;
+	background-color: #fffcf7;
 	overflow: hidden;
 }
 
