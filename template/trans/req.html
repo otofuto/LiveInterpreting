@@ -14,6 +14,14 @@
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>
@@ -26,6 +34,9 @@
 			</div>
 			<div id="content">
 				<h1>見積り依頼</h1>
+				{{ if eq .User.Id .Login.Id }}
+				<h3>自分に対して見積依頼をすることはできません。</h3>
+				{{ else }}
 				<h3>{{ .User.Name }}さんに見積もり依頼をします。</h3>
 				<form name="fm" onsubmit="sub(); return false;">
 					<div class="field">
@@ -62,7 +73,6 @@
 					</div>
 					<div class="field">
 						<select name="budget_range" class="input" required>
-							<option value="0">相談して決めたい</option>
 						</select>
 						<label class="input-label">予算範囲</label>
 					</div>
@@ -74,13 +84,21 @@
 						<button class="button" style="background-color: var(--color1); color: white">見積依頼を送信</button>
 					</div>
 				</form>
+				{{ end }}
 			</div>
 		</main>
 		<footer class="page-footer">
 			<label>© 2021 Live interpreting - Powered by OTFT</label>
 		</footer>
 		<script src="/st/js/master.js"></script>
+		<script src="/st/js/constant.js"></script>
 		<script>
+			budget_range.forEach((br, i) => {
+				let opt = document.createElement('option');
+				opt.value = i;
+				opt.innerText = br;
+				document.fm.budget_range.appendChild(opt);
+			});
 			function sub() {
 				let data = new FormData(document.fm);
 				formDisabled(document.fm, true);

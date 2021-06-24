@@ -48,7 +48,7 @@
 			var p = document.createElement("p");
 			p.setAttribute("class", "page-header__username");
 			{{ if ne .Login.Id -1 }}
-			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Login.Name}}</span>さん";
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
 			{{ end }}
 			appendHeader(p);
 		</script>

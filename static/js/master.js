@@ -187,3 +187,16 @@ function getNotifTypeMessage(ntype) {
 	}
 	return ret;
 }
+
+function formatdate(str, timeView = true) {
+	let dt = new Date(str);
+	let ret = dt.getFullYear() + '年 ' +
+		(dt.getMonth() + 1) + '月 ' + dt.getDate() + '日';
+	if (timeView) ret += ' ' + frontZero(dt.getHours()) + ':' + frontZero(dt.getMinutes());
+	return ret;
+}
+
+function frontZero(s) {
+	if ((s - 0) < 10) s = '0' + s;
+	return s;
+}

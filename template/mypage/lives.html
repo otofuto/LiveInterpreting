@@ -8,11 +8,20 @@
 		<meta name="robots" content="noindex,nofollow">
 		<title>配信登録 | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
 		</style>
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>

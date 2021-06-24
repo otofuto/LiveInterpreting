@@ -8,15 +8,40 @@
 		<meta name="robots" content="noindex,nofollow">
 		<title>フォロー | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
 		<link rel="stylesheet" href="/st/css/user.css">
 		<style>
-			#iconDisp {
-				background-image: url('/Account/img/{{.Login.Id}}');
+			.account {
+				display: inline-block;
+				width: 150px;
+				border-radius: 15px 15px 0 0;
+				margin: 5px;
+				color: white;
+				cursor: pointer;
+			}
+
+			.iconDisp {
+				position: relative;
+				display: block;
+				width: 75px;
+				height: 75px;
+				margin: 5px auto 0 auto;
+				border-radius: 5px;
+				background-size: cover;
+				background-position: center;
 			}
 		</style>
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>

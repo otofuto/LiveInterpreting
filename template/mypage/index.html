@@ -17,6 +17,14 @@
 	</head>
 	<body>
 		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>
@@ -51,7 +59,8 @@
 					</p>{{ end }}
 				</header>
 				<div style="width: 100%; text-align: right;">
-					<button class="button" onclick="location = '/mypage/profile/'">プロフィール編集</button></div>
+					<button class="button" onclick="location = '/u/{{ .Login.Id }}'">自分のユーザーページを見る</button>
+					<button class="button" onclick="location = '/mypage/profile/'">プロフィール編集</button>
 				</div>
 			</div>
 		</main>

@@ -532,6 +532,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				Trans trans.Trans       `json:"trans"`
 				From  accounts.Accounts `json:"from"`
 				To    accounts.Accounts `json:"to"`
+				Langs []langs.Langs     `json:"langs"`
 			}{
 				Trans: tr,
 				From:  login,
@@ -539,6 +540,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					Id:   ac.Id,
 					Name: ac.Name,
 				},
+				Langs: langs.All(),
 			}
 			bytes, err := json.Marshal(msgobj)
 			if err != nil {
@@ -547,6 +549,47 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			msg = string(bytes)
 			filename = "estimate"
+		} else if strings.HasPrefix(filename, "buy/") {
+			trid, err := strconv.Atoi(filename[len("buy/"):])
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			if tr.From != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			ac.Id = tr.To
+			if !ac.Get() {
+				http.Error(w, "failed to get user(from) data", 500)
+				return
+			}
+			msgobj := struct {
+				Trans trans.Trans       `json:"trans"`
+				From  accounts.Accounts `json:"from"`
+				To    accounts.Accounts `json:"to"`
+				Langs []langs.Langs     `json:"langs"`
+			}{
+				Trans: tr,
+				To:    login,
+				From: accounts.Accounts{
+					Id:   ac.Id,
+					Name: ac.Name,
+				},
+				Langs: langs.All(),
+			}
+			bytes, err := json.Marshal(msgobj)
+			if err != nil {
+				http.Error(w, "failed to convert trans object to json", 500)
+				return
+			}
+			msg = string(bytes)
+			filename = "buy"
 		} else {
 			trid, err := strconv.Atoi(filename)
 			if err != nil {
@@ -576,6 +619,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				Trans trans.Trans       `json:"trans"`
 				From  accounts.Accounts `json:"from"`
 				To    accounts.Accounts `json:"to"`
+				Langs []langs.Langs     `json:"langs"`
 			}{
 				Trans: tr,
 				From:  from,
@@ -583,6 +627,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					Id:   ac.Id,
 					Name: ac.Name,
 				},
+				Langs: langs.All(),
 			}
 			bytes, err := json.Marshal(msgobj)
 			if err != nil {

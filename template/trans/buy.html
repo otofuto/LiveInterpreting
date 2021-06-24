@@ -6,7 +6,7 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>Live interpreting</title>
+		<title>購入する | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
@@ -27,11 +27,6 @@
 				width: fit-content;
 				padding: 4px 10px;
 				color: dimgray;
-			}
-
-			#sendEst {
-				width: 100%;
-				text-align: center;
 			}
 
 			#buy {
@@ -61,26 +56,20 @@
 				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
-				<h1>案件内容</h1>
+				<h1>購入する</h1>
+				<p><a id="backtotrans">案件内容に戻る</a></p>
 				<p>依頼者: <a id="from"></a></p>
 				<p>通訳者: <a id="to"></a></p>
 				<table><tbody id="tbl"></tbody></table>
-				{{ if eq .User.Id .Login.Id }}
-				<div id="sendEst">
-					<button class="button">見積を送信する</button>
+				<div id="buy">
+					<button class="button"></button>
 				</div>
-				{{ else }}
-				<div id="buy" style="display: none;">
-					<button class="button">この見積内容で購入する</button>
-				</div>
-				{{ end }}
 			</div>
 		</main>
 		<footer class="page-footer">
 			<label>© 2021 Live interpreting - Powered by OTFT</label>
 		</footer>
 		<script src="/st/js/master.js"></script>
-		<script src="/st/js/constant.js"></script>
 		<script>
 			function appendRow(k, v) {
 				let row = document.createElement('tr');
@@ -101,60 +90,18 @@
 				document.getElementById('tbl').appendChild(row);
 			}
 			let msg = JSON.parse("{{ .Message }}");
-			document.title = msg.trans.request_title + ' | Live interpreting';
+			document.getElementById('backtotrans').setAttribute('href', '/trans/' + msg.trans.id);
 			document.getElementById('from').innerText = msg.from.name;
 			document.getElementById('from').setAttribute('href', '/u/' + msg.from.id);
 			document.getElementById('to').innerText = msg.to.name;
 			document.getElementById('to').setAttribute('href', '/u/' + msg.to.id);
-			appendHeader('依頼内容');
 			appendRow('依頼タイトル', msg.trans.request_title);
-			appendRow('依頼詳細', msg.trans.request);
-			appendRow('予算範囲', budget_range[msg.trans.budget_range]);
 			appendRow('配信日時', formatdate(msg.trans.live_start.String) + " ～ " + msg.trans.live_time.Int64 + '分程度');
 			appendRow('通訳言語', msg.langs.find(l => l.id == msg.trans.lang).lang);
 			appendRow('通訳形態', ['テキスト', '音声', 'テキストと音声'][msg.trans.request_type]);
-			appendRow('提案期限', formatdate(msg.trans.estimate_limit_date.String, false));
-			{{ if eq .User.Id .Login.Id }}
-			if (msg.trans.request_cancel == 0 && !msg.trans.response_type.Valid) {
-				let limit = new Date(msg.trans.estimate_limit_date.String);
-				if (!msg.trans.estimate_limit_date.Valid) {
-					limit = new Date(msg.trans.live_start);
-				}
-				let nextdate = new Date(limit);
-				nextdate.setHours(0);
-				nextdate.setMinutes(0);
-				nextdate.setSeconds(0);
-				nextdate.setMilliseconds(0);
-				nextdate.setDate(nextdate.getDate() + 1);
-				console.log(nextdate);
-				if (new Date() < nextdate) {
-					document.querySelector('#sendEst button').addEventListener('click', () => {
-						location = '/trans/estimate/' + msg.trans.id;
-					});
-				} else {
-					document.querySelector('#sendEst button').innerText = '見積期限切れ';
-					document.querySelector('#sendEst button').setAttribute('disabled', '');
-				}
-			} else {
-				document.getElementById('sendEst').remove();
-			}
-			{{ end }}
-			if (msg.trans.estimate_date.Valid && msg.trans.response_type.Valid) {
-				appendHeader('見積内容');
-				appendRow('見積日時', formatdate(msg.trans.estimate_date.String));
-				if (msg.trans.response_type.Int64 == 0) {
-					appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
-					appendRow('見積詳細', msg.trans.response.String);
-					{{ if ne .User.Id .Login.Id }}
-					document.querySelector('#buy').removeAttribute('style');
-					document.querySelector('#buy button').addEventListener('click', () => {
-						location = '/trans/buy/' + msg.trans.id;
-					});
-					{{ end }}
-				} else {
-					appendRow('', '見積が辞退されました。');
-				}
-			}
+			appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
+			appendRow('見積詳細', msg.trans.response.String);
+			document.querySelector('#buy button').innerText = msg.trans.price.Int64.toLocaleString() + '円で購入する'
 		</script>
 	</body>
 </html>
