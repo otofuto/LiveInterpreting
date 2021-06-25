@@ -15,6 +15,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
+	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
@@ -250,6 +251,7 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		msg := ""
+		msgs := make([]directMessages.DirectMessages, 0)
 		filename := r.URL.Path[len("/mypage/"):]
 		if filename == "" {
 			filename = "index"
@@ -257,8 +259,28 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		if filename[len(filename)-1:] == "/" {
 			filename = filename[:len(filename)-1]
 		}
+		users := make([]accounts.Accounts, 0)
 		if filename == "index" {
 			login.GetView(login.Id)
+			msgs = login.GetDMs(10)
+			db := database.Connect()
+			defer db.Close()
+			for _, dm := range msgs {
+				u := accounts.Accounts{Id: dm.From}
+				if dm.From == login.Id {
+					u.Id = dm.To
+				}
+				u.GetLite(db)
+				users = append(users, u)
+			}
+			users = append(users, login)
+			bytes, err := json.Marshal(users)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to convert object to json", 500)
+				return
+			}
+			msg = string(bytes)
 		} else if filename == "profile" {
 			if !login.Get() {
 				http.Error(w, "failed to fetch account info", 500)
@@ -267,8 +289,10 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		temp := template.Must(template.ParseFiles("template/mypage/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
-			Login:   login,
-			Message: msg,
+			Login:    login,
+			Message:  msg,
+			Messages: msgs,
+			Users:    users,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
@@ -611,7 +635,9 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			from := accounts.Accounts{Id: tr.From}
-			if !from.GetLite() {
+			db := database.Connect()
+			defer db.Close()
+			if !from.GetLite(db) {
 				http.Error(w, "failed to get user(from) data", 500)
 				return
 			}
@@ -833,9 +859,11 @@ func InboxHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		acc := make([]accounts.Accounts, 0)
+		db := database.Connect()
+		defer db.Close()
 		for _, n := range notifs {
 			ac := accounts.Accounts{Id: n.From}
-			if !ac.GetLite() {
+			if !ac.GetLite(db) {
 				http.Error(w, "failed to get accounts into", 500)
 				return
 			}

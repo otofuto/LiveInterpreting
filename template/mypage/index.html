@@ -13,9 +13,49 @@
 			#iconDisp {
 				background-image: url('/Account/img/{{.Login.Id}}');
 			}
+
+			#dmList article {
+				display: block;
+				padding: 15px;
+				box-sizing: border-box;
+				border: none;
+				border-radius: 8px;
+				background-color: lightgray;
+				margin: 10px;
+				transition: all 70ms 0ms ease;
+			}
+
+			#dmList article:hover {
+				background-color: whitesmoke;
+				box-shadow: 0 0 20px -10px lightgray inset;
+			}
+
+			#dmList article header {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: space-between;
+			}
+
+			#dmList article header h3 {
+				margin: 0;
+				font-weight: bold;
+			}
+
+			#dmList article header span img {
+				max-width: 50px;
+				max-height: 50px;
+			}
+
+			#dmList article main {
+				padding: 5px;
+				box-sizing: border-box;
+			}
 		</style>
 	</head>
 	<body>
+		<script>
+			users = JSON.parse("{{ .Message }}");
+		</script>
 		<script src="/st/js/header.js"></script>
 		<script>
 			var p = document.createElement("p");
@@ -62,6 +102,23 @@
 					<button class="button" onclick="location = '/u/{{ .Login.Id }}'">自分のユーザーページを見る</button>
 					<button class="button" onclick="location = '/mypage/profile/'">プロフィール編集</button>
 				</div>
+				<div style="width: 100%; text-align: left;">
+					<h2>DM履歴</h2>
+					<div id="dmList">
+						{{ range .Messages }}
+						<article onclick="location = '/directmessages/{{ if eq $.Login.Id .From }}{{ .To }}{{ else }}{{ .From }}{{ end }}'">
+							<header>
+								<div>
+									<img>
+									<h3><label data-userid="{{ .From }}"></label> >> <label data-userid="{{ .To }}"></label></h3>
+								</div>
+								<span>{{ .CreatedAt }}</span>
+							</header>
+							<main>{{ .Message }}</main>
+						</article>
+						{{ end }}
+					</div>
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -69,6 +126,9 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
+			document.querySelectorAll('[data-userid]').forEach(elm => {
+				elm.innerText = users.find(u => u.id == elm.getAttribute('data-userid')).name;
+			});
 			function follow(btn) {
 				var data = new FormData();
 				data.append("target_id", "{{.Login.Id}}");

@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/otofuto/LiveInterpreting/pkg/database"
+	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"golang.org/x/crypto/bcrypt"
@@ -258,10 +260,7 @@ func (ac *Accounts) Get() bool {
 	return false
 }
 
-func (ac *Accounts) GetLite() bool {
-	db := database.Connect()
-	defer db.Close()
-
+func (ac *Accounts) GetLite(db *sql.DB) bool {
 	sql := "select `name`, `icon_image`, `description`, `sex`, `user_type`, `hourly_wage`, `last_logined` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -541,30 +540,30 @@ func Search(search string, user_type string, id int) []Accounts {
 		user_type = "`user_type` = '" + user_type + "'"
 	}
 
+	searchQ := ""
 	if search == "new" {
 		if user_type != "" {
 			user_type += " and "
 		}
-		search = "`created_at` >= subtime(now(), '168:00:00')"
+		searchQ = "`created_at` >= subtime(now(), '168:00:00')"
 	} else if search == "follow" {
 		if user_type != "" {
 			user_type += " and "
 		}
-		search = "`id` in (select `target_id` from `account_social` where `id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
+		searchQ = "`id` in (select `target_id` from `account_social` where `id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
 	} else if search == "follower" {
 		if user_type != "" {
 			user_type += " and "
 		}
-		search = "`id` in (select `id` from `account_social` where `target_id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
-	} else {
-		search = ""
+		searchQ = "`id` in (select `id` from `account_social` where `target_id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
 	}
 
-	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + search
+	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + searchQ
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println(err)
 		log.Println(sql)
+		log.Println("search: " + search)
 		return make([]Accounts, 0)
 	}
 	defer rows.Close()
@@ -822,4 +821,49 @@ func DeleteNotif(from int, to int, tp string, date string) error {
 		return err
 	}
 	return nil
+}
+
+func (ac *Accounts) GetDMs(count int) []directMessages.DirectMessages {
+	ret := make([]directMessages.DirectMessages, 0)
+
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "select `direct_messages`.`from`, `direct_messages`.`to`, `id`, `message`, `created_at` " +
+		"from `direct_messages` inner join " +
+		"(select `from`, `to`, max(`id`) as `mid` from direct_messages group by `from`, `to`) as `tbl` " +
+		"on `direct_messages`.`from` = `tbl`.`from` and `direct_messages`.`to` = `tbl`.`to` " +
+		"and `direct_messages`.`id` = `tbl`.`mid` where `tbl`.`from` = " + strconv.Itoa(ac.Id) + " or `tbl`.`to` = " + strconv.Itoa(ac.Id) +
+		" order by `created_at` desc limit " + strconv.Itoa(count*2)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) GetDMs(count int)")
+		log.Println(err)
+		log.Println(sql)
+		return ret
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var dm directMessages.DirectMessages
+		err = rows.Scan(&dm.From, &dm.To, &dm.Id, &dm.Message, &dm.CreatedAt)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) GetDMs(count int)")
+			log.Println(err)
+			return ret
+		}
+		noadd := false
+		oppo := dm.From
+		if dm.From == ac.Id {
+			oppo = dm.To
+		}
+		for i := 0; i < len(ret); i++ {
+			if ret[i].From == oppo || ret[i].To == oppo {
+				noadd = true
+			}
+		}
+		if !noadd {
+			ret = append(ret, dm)
+		}
+	}
+	return ret
 }
