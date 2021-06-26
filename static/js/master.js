@@ -181,6 +181,9 @@ function getNotifTypeMessage(ntype) {
 		case 'trans/res':
 			ret = "見積が届いています";
 			break;
+		case 'trans/buy':
+			ret = '見積が購入されました';
+			break;
 		default:
 			ret = "不明なメッセージ";
 			break;

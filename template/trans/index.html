@@ -38,6 +38,11 @@
 				width: 100%;
 				text-align: center;
 			}
+
+			#talk {
+				width: 100%;
+				text-align: center;
+			}
 		</style>
 	</head>
 	<body>
@@ -74,6 +79,9 @@
 					<button class="button">この見積内容で購入する</button>
 				</div>
 				{{ end }}
+				<div id="talk" style="display: none;">
+					<button class="button">トークルームに移動する</button>
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -145,12 +153,20 @@
 				if (msg.trans.response_type.Int64 == 0) {
 					appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
 					appendRow('見積詳細', msg.trans.response.String);
-					{{ if ne .User.Id .Login.Id }}
-					document.querySelector('#buy').removeAttribute('style');
-					document.querySelector('#buy button').addEventListener('click', () => {
-						location = '/trans/buy/' + msg.trans.id;
-					});
-					{{ end }}
+					if (!msg.trans.buy_date.Valid) {
+						{{ if ne .User.Id .Login.Id }}
+						document.querySelector('#buy').removeAttribute('style');
+						document.querySelector('#buy button').addEventListener('click', () => {
+							location = '/trans/buy/' + msg.trans.id;
+						});
+						{{ end }}
+					} else {
+						appendRow('購入日時', msg.trans.buy_date.String);
+						document.getElementById('talk').removeAttribute('style');
+						document.querySelector('#talk button').addEventListener('click', () => {
+							location = '/trans/talkroom/' + msg.trans.id;
+						})
+					}
 				} else {
 					appendRow('', '見積が辞退されました。');
 				}

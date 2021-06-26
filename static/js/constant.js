@@ -1,4 +1,4 @@
-let budget_range =
+const budget_range =
 [
     "相談して決めたい",
     "～5,000円未満",

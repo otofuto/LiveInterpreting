@@ -20,6 +20,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
+	"github.com/otofuto/LiveInterpreting/pkg/database/talkrooms"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
 )
 
@@ -36,6 +37,8 @@ type TempContext struct {
 	Users    []accounts.Accounts             `json:"users"`
 	Message  string                          `json:"message"`
 	Messages []directMessages.DirectMessages `json:"direct_messages"`
+	Transes  []trans.Trans                   `json:"transes"`
+	Talks    []talkrooms.TalkRooms           `json:"talkrooms"`
 }
 
 type SocketMessage struct {
@@ -44,6 +47,7 @@ type SocketMessage struct {
 	Id        int    `json:"id"`
 	CreatedAt string `json:"created_at"`
 	ChatId    string `json:"chat_id"`
+	TransId   int    `json:"trans_id"`
 }
 
 func main() {
@@ -252,6 +256,7 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		msg := ""
 		msgs := make([]directMessages.DirectMessages, 0)
+		trs := make([]trans.Trans, 0)
 		filename := r.URL.Path[len("/mypage/"):]
 		if filename == "" {
 			filename = "index"
@@ -263,12 +268,21 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		if filename == "index" {
 			login.GetView(login.Id)
 			msgs = login.GetDMs(10)
+			trs = login.GetTranses(10, 0)
 			db := database.Connect()
 			defer db.Close()
 			for _, dm := range msgs {
 				u := accounts.Accounts{Id: dm.From}
 				if dm.From == login.Id {
 					u.Id = dm.To
+				}
+				u.GetLite(db)
+				users = append(users, u)
+			}
+			for _, tr := range trs {
+				u := accounts.Accounts{Id: tr.From}
+				if tr.From == login.Id {
+					u.Id = tr.To
 				}
 				u.GetLite(db)
 				users = append(users, u)
@@ -292,6 +306,7 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 			Login:    login,
 			Message:  msg,
 			Messages: msgs,
+			Transes:  trs,
 			Users:    users,
 		}); err != nil {
 			log.Println(err)
@@ -514,6 +529,8 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		msg := ""
+		msgs := make([]directMessages.DirectMessages, 0)
+		talks := make([]talkrooms.TalkRooms, 0)
 		filename := r.URL.Path[len("/trans/"):]
 		if strings.HasSuffix(filename, "/") {
 			filename = filename[:len(filename)-1]
@@ -614,6 +631,32 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			msg = string(bytes)
 			filename = "buy"
+		} else if strings.HasPrefix(filename, "talkroom/") {
+			trid, err := strconv.Atoi(filename[len("talkroom/"):])
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			if tr.To != login.Id && tr.From != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			if login.Id == tr.From {
+				ac.Id = tr.To
+			} else {
+				ac.Id = tr.From
+			}
+			if !ac.Get() {
+				http.Error(w, "failed to get user(from) data", 500)
+				return
+			}
+			talks = talkrooms.List(tr.Id)
+			filename = "talkroom"
 		} else {
 			trid, err := strconv.Atoi(filename)
 			if err != nil {
@@ -665,9 +708,11 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		temp := template.Must(template.ParseFiles("template/trans/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
-			Login:   login,
-			User:    ac,
-			Message: msg,
+			Login:    login,
+			User:     ac,
+			Message:  msg,
+			Messages: msgs,
+			Talks:    talks,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
@@ -795,6 +840,10 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to get trans data", 404)
 					return
 				}
+				if tr.To != login.Id {
+					http.Error(w, "dame", 403)
+					return
+				}
 				price, err := strconv.Atoi(r.FormValue("price"))
 				if err != nil {
 					http.Error(w, "price is not integer", 400)
@@ -817,7 +866,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				n := accounts.Notif{
 					Type: "trans/res",
 					Text: respHead,
-					From: login.Id,
+					From: tr.To,
 					To:   tr.From,
 					Id:   tr.Id,
 				}
@@ -835,8 +884,126 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "parameter not enough", 400)
 			}
+		} else if strings.HasPrefix(mode, "buy/") {
+			trid, err := strconv.Atoi(mode[len("buy/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "failed to get trans data", 404)
+				return
+			}
+			if tr.From != login.Id {
+				http.Error(w, "dame", 403)
+				return
+			}
+			tr.BuyDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}
+			err = tr.Update()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to update trans", 500)
+				return
+			}
+			n := accounts.Notif{
+				Type: "trans/buy",
+				Text: tr.RequestTitle,
+				From: tr.From,
+				To:   tr.To,
+				Id:   tr.Id,
+			}
+			err = n.Insert()
+			if err != nil {
+				log.Println(err)
+				errorData.Insert("failed to insert notif "+strconv.Itoa(login.Id)+" to "+strconv.Itoa(tr.From), err.Error())
+			}
+			fmt.Fprintf(w, "true")
+		} else if strings.HasPrefix(mode, "talkroom/") {
+			trid, err := strconv.Atoi(mode[len("talkroom/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "failed to get trans data", 404)
+				return
+			}
+			r.ParseMultipartForm(32 << 20)
+			if strings.TrimSpace(r.FormValue("message")) == "" {
+				http.Error(w, "message is empty", 400)
+				return
+			}
+			talk := talkrooms.TalkRooms{
+				TransId: tr.Id,
+				From:    login.Id,
+				To:      tr.To,
+				Message: r.FormValue("message"),
+			}
+			if tr.To == login.Id {
+				talk.To = tr.From
+			}
+			err = talk.Insert()
+			if err != nil {
+				log.Println("main.go TransHandle(w http.ResponseWriter, r *http.Request)")
+				log.Println(err)
+				http.Error(w, "failed to insert message", 500)
+				return
+			}
+			chatId := "talk"
+			if tr.From > tr.To {
+				chatId += strconv.Itoa(tr.To) + "_" + strconv.Itoa(tr.From)
+			} else {
+				chatId += strconv.Itoa(tr.From) + "_" + strconv.Itoa(tr.To)
+			}
+			msg := SocketMessage{
+				Message:   talk.Message,
+				From:      talk.From,
+				Id:        talk.Id,
+				CreatedAt: talk.CreatedAt,
+				ChatId:    chatId,
+				TransId:   talk.TransId,
+			}
+			for client, id := range clients {
+				if id == chatId {
+					client.WriteJSON(msg)
+				}
+			}
+			fmt.Fprintf(w, "true")
 		} else {
 			http.Error(w, "user not designation", 404)
+		}
+	} else if r.Method == http.MethodPut {
+		if strings.HasPrefix(r.URL.Path, "/trans/talkrooms/") {
+			str := r.URL.Path[len("/trans/talkrooms/"):]
+			if strings.Index(str, "/") > 0 {
+				trid, err := strconv.Atoi(str[:strings.Index(str, "/")])
+				if err != nil {
+					http.Error(w, "trans_id is not integer", 400)
+					return
+				}
+				id, err := strconv.Atoi(str[strings.Index(str, "/")+1:])
+				if err != nil {
+					http.Error(w, "id is not integer", 400)
+					return
+				}
+				talk := talkrooms.TalkRooms{
+					TransId: trid,
+					Id:      id,
+				}
+				err = talk.SetRead()
+				if err != nil {
+					log.Println("main.go TransHandle(w http.ResponseWriter, r *http.Request)")
+					log.Println(err)
+					http.Error(w, "talk's read flag change failed", 500)
+					return
+				}
+			} else {
+				http.Error(w, "path is ends with trans_id/id", 404)
+			}
+		} else {
+			http.Error(w, "誰やねんおまえ", 404)
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)

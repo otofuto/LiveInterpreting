@@ -1,27 +1,28 @@
 package account
 
 import (
-	"log"
-	"fmt"
 	"bytes"
-	"strings"
-	"strconv"
-	"net/smtp"
-	"net/http"
-	"html/template"
-	"os"
-	"io"
-	"encoding/json"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"html/template"
 	"image"
 	_ "image/jpeg"
 	"image/png"
-	"github.com/nfnt/resize"
+	"io"
+	"log"
+	"net/http"
+	"net/smtp"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/nfnt/resize"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 )
@@ -35,19 +36,19 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 		sex, err := strconv.Atoi(r.FormValue("sex"))
 		if err != nil {
 			http.Error(w, "sex is type of int", 400)
-			return;
+			return
 		}
-		ac := accounts.Accounts {
-			UserType: r.FormValue("user_type"),
-			Name: r.FormValue("name"),
+		ac := accounts.Accounts{
+			UserType:    r.FormValue("user_type"),
+			Name:        r.FormValue("name"),
 			Description: r.FormValue("description"),
-			Email: r.FormValue("email"),
-			Sex: sex,
-			Password: r.FormValue("password"),
-			Url1: r.FormValue("url1"),
-			Url2: r.FormValue("url2"),
-			Url3: r.FormValue("url3"),
-			HourlyWage: r.FormValue("hourly_wage"),
+			Email:       r.FormValue("email"),
+			Sex:         sex,
+			Password:    r.FormValue("password"),
+			Url1:        r.FormValue("url1"),
+			Url2:        r.FormValue("url2"),
+			Url3:        r.FormValue("url3"),
+			HourlyWage:  r.FormValue("hourly_wage"),
 		}
 		if ac.UserType == "interpreter" {
 			err = ac.SetLangs(r.FormValue("langs"))
@@ -98,14 +99,14 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 
 			sess := session.Must(session.NewSession(&aws.Config{
 				Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
-				Region: aws.String(os.Getenv("S3_REGION")),
+				Region:      aws.String(os.Getenv("S3_REGION")),
 			}))
 
 			uploader := s3manager.NewUploader(sess)
 			_, err = uploader.Upload(&s3manager.UploadInput{
 				Bucket: aws.String(os.Getenv("S3_BUCKET")),
-				Key: aws.String("accounts/" + ac.IconImage),
-				Body: pr,
+				Key:    aws.String("accounts/" + ac.IconImage),
+				Body:   pr,
 			})
 			if err != nil {
 				fmt.Println("S3アップロード失敗")
@@ -119,12 +120,12 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 
 		token := ac.CreateToken()
 
-		cookie := &http.Cookie {
-			Name: "accounttoken",
-			Value: token,
-			Path: "/",
+		cookie := &http.Cookie{
+			Name:     "accounttoken",
+			Value:    token,
+			Path:     "/",
 			HttpOnly: true,
-			MaxAge: 3600 * 24 * 7,
+			MaxAge:   3600 * 24 * 7,
 		}
 		http.SetCookie(w, cookie)
 
@@ -153,12 +154,13 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 		} else if strings.HasPrefix(mode, "Search") {
 			ac := LoginAccount(r)
 			search := r.FormValue("search")
+			search = strings.Replace(search, "?", "", -1)
 			userType := r.FormValue("user_type")
 			if search == "" && userType == "" {
 				http.Error(w, "user_type or search value is must", 400)
 				return
 			}
-			if userType != "influencer" && userType != "interpreter" && userType != ""{
+			if userType != "influencer" && userType != "interpreter" && userType != "" {
 				http.Error(w, "user_type value is not allowed", 400)
 				return
 			}
@@ -171,10 +173,10 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 		} else if strings.HasPrefix(mode, "img/") {
 			id, err := strconv.Atoi(r.URL.Path[len("/Account/img/"):])
 			if err != nil {
-				http.Error(w, "id is not integer: " + r.URL.Path[len("/Accounts/img/"):], 400)
+				http.Error(w, "id is not integer: "+r.URL.Path[len("/Accounts/img/"):], 400)
 				return
 			}
-			ac := accounts.Accounts { Id: id }
+			ac := accounts.Accounts{Id: id}
 			if ac.Get() {
 				if ac.IconImage == "" {
 					file, err := os.Open("./materials/defaulticon.png")
@@ -184,18 +186,18 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 					}
 					defer file.Close()
 					w.Header().Set("Content-Type", "image/png")
-					io.Copy(w, file);
+					io.Copy(w, file)
 					return
 				}
 				sess := session.Must(session.NewSession(&aws.Config{
 					Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
-					Region: aws.String(os.Getenv("S3_REGION")),
+					Region:      aws.String(os.Getenv("S3_REGION")),
 				}))
 
 				svc := s3.New(sess)
 				obj, err := svc.GetObject(&s3.GetObjectInput{
 					Bucket: aws.String(os.Getenv("S3_BUCKET")),
-					Key: aws.String("accounts/" + ac.IconImage),
+					Key:    aws.String("accounts/" + ac.IconImage),
 				})
 				if err != nil {
 					fmt.Println(err)
@@ -214,10 +216,10 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "user id is not integer", 400)
 				return
 			}
-			ac := accounts.Accounts{ Id: uid }
+			ac := accounts.Accounts{Id: uid}
 			if ac.Get() {
-				bytes, err := json.Marshal(accounts.Accounts {
-					Id: uid,
+				bytes, err := json.Marshal(accounts.Accounts{
+					Id:   uid,
 					Name: ac.Name,
 				})
 				if err != nil {
@@ -303,14 +305,14 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 
 					sess := session.Must(session.NewSession(&aws.Config{
 						Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
-						Region: aws.String(os.Getenv("S3_REGION")),
+						Region:      aws.String(os.Getenv("S3_REGION")),
 					}))
 
 					uploader := s3manager.NewUploader(sess)
 					_, err = uploader.Upload(&s3manager.UploadInput{
 						Bucket: aws.String(os.Getenv("S3_BUCKET")),
-						Key: aws.String("accounts/" + ac.IconImage),
-						Body: pr,
+						Key:    aws.String("accounts/" + ac.IconImage),
+						Body:   pr,
 					})
 					if err != nil {
 						fmt.Println("S3アップロード失敗")
@@ -323,13 +325,13 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 
 					if oldImage != ac.IconImage {
 						svc := s3.New(sess)
-						input := &s3.DeleteObjectInput {
+						input := &s3.DeleteObjectInput{
 							Bucket: aws.String(os.Getenv("S3_BUCKET")),
-							Key: aws.String("accounts/" + oldImage),
+							Key:    aws.String("accounts/" + oldImage),
 						}
 						_, err := svc.DeleteObject(input)
 						if err != nil {
-							errorData.Insert("Delete file from s3 failed.", "accounts/" + oldImage)
+							errorData.Insert("Delete file from s3 failed.", "accounts/"+oldImage)
 						}
 					}
 				}
@@ -389,10 +391,10 @@ func AccountSocialHandle(w http.ResponseWriter, r *http.Request) {
 		if ac.Id == -1 {
 			http.Error(w, "not logined", 403)
 		} else {
-			social := accounts.AccountSocial {
-				Id: ac.Id,
+			social := accounts.AccountSocial{
+				Id:       ac.Id,
 				TargetId: targetId,
-				Action: action,
+				Action:   action,
 			}
 			if social.Insert() {
 				fmt.Fprintf(w, "true")
@@ -433,8 +435,8 @@ func AccountSocialHandle(w http.ResponseWriter, r *http.Request) {
 		if ac.Id == -1 {
 			http.Error(w, "not logined", 403)
 		} else {
-			social := accounts.AccountSocial {
-				Id: ac.Id,
+			social := accounts.AccountSocial{
+				Id:       ac.Id,
 				TargetId: targetId,
 			}
 			if social.Delete() {
@@ -463,7 +465,7 @@ func ToSquare(img image.Image) image.Image {
 		ret := image.NewRGBA(image.Rectangle{tl, br})
 		for y2 := 0; y2 < x; y2++ {
 			for x2 := 0; x2 < x; x2++ {
-				ret.Set(x2, y2, img.At(x2, y2 + cutHeight))
+				ret.Set(x2, y2, img.At(x2, y2+cutHeight))
 			}
 		}
 		return ret
@@ -473,7 +475,7 @@ func ToSquare(img image.Image) image.Image {
 		ret := image.NewRGBA(image.Rectangle{tl, br})
 		for y2 := 0; y2 < x; y2++ {
 			for x2 := 0; x2 < x; x2++ {
-				ret.Set(x2, y2, img.At(x2 + cutWidth, y2))
+				ret.Set(x2, y2, img.At(x2+cutWidth, y2))
 			}
 		}
 		return ret
@@ -496,12 +498,12 @@ func LoginHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		token := ac.CreateToken()
 
-		cookie := &http.Cookie {
-			Name: "accounttoken",
-			Value: token,
-			Path: "/",
+		cookie := &http.Cookie{
+			Name:     "accounttoken",
+			Value:    token,
+			Path:     "/",
 			HttpOnly: true,
-			MaxAge: 3600 * 24 * 7,
+			MaxAge:   3600 * 24 * 7,
 		}
 		http.SetCookie(w, cookie)
 		bytes, err := json.Marshal(ac)
@@ -545,7 +547,7 @@ func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		accounts.DeleteToken(cookie.Value)
 		cookie.MaxAge = -1
-		cookie.Value = "";
+		cookie.Value = ""
 		http.SetCookie(w, cookie)
 		fmt.Fprintf(w, "logout")
 	} else {
@@ -557,44 +559,43 @@ func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 //http://psychedelicnekopunch.com/archives/1922
 
 func encodeHeader(code string, subject string) string {
-    // UTF8 文字列を指定文字数で分割する
-    b := bytes.NewBuffer([]byte(""))
-    strs := []string{}
-    length := 13
-    for k, c := range strings.Split(subject, "") {
-        b.WriteString(c)
-        if k%length == length-1 {
-            strs = append(strs, b.String())
-            b.Reset()
-        }
-    }
-    if b.Len() > 0 {
-        strs = append(strs, b.String())
-    }
-    // MIME エンコードする
-    b2 := bytes.NewBuffer([]byte(""))
-    b2.WriteString(code + ":")
-    for _, line := range strs {
-        b2.WriteString(" =?utf-8?B?")
-        b2.WriteString(base64.StdEncoding.EncodeToString([]byte(line)))
-        b2.WriteString("?=\r\n")
-    }
-    return b2.String()
+	// UTF8 文字列を指定文字数で分割する
+	b := bytes.NewBuffer([]byte(""))
+	strs := []string{}
+	length := 13
+	for k, c := range strings.Split(subject, "") {
+		b.WriteString(c)
+		if k%length == length-1 {
+			strs = append(strs, b.String())
+			b.Reset()
+		}
+	}
+	if b.Len() > 0 {
+		strs = append(strs, b.String())
+	}
+	// MIME エンコードする
+	b2 := bytes.NewBuffer([]byte(""))
+	b2.WriteString(code + ":")
+	for _, line := range strs {
+		b2.WriteString(" =?utf-8?B?")
+		b2.WriteString(base64.StdEncoding.EncodeToString([]byte(line)))
+		b2.WriteString("?=\r\n")
+	}
+	return b2.String()
 }
-
 
 // 本文を 76 バイト毎に CRLF を挿入して返す
 func encodeBody(body string) string {
-    b := bytes.NewBufferString(body)
-    s := base64.StdEncoding.EncodeToString(b.Bytes())
-    b2 := bytes.NewBuffer([]byte(""))
-    for k, c := range strings.Split(s, "") {
-        b2.WriteString(c)
-        if k % 76 == 75 {
-            b2.WriteString("\r\n")
-        }
-    }
-    return b2.String()
+	b := bytes.NewBufferString(body)
+	s := base64.StdEncoding.EncodeToString(b.Bytes())
+	b2 := bytes.NewBuffer([]byte(""))
+	for k, c := range strings.Split(s, "") {
+		b2.WriteString(c)
+		if k%76 == 75 {
+			b2.WriteString("\r\n")
+		}
+	}
+	return b2.String()
 }
 
 func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
@@ -603,12 +604,12 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
-		ac := accounts.Accounts {Email: r.FormValue("email")}
+		ac := accounts.Accounts{Email: r.FormValue("email")}
 		if ac.GetFromEmail() {
 			token := accounts.PassResetToken(ac.Id)
 			auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
 
-			rootUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//") + 2] + r.Host
+			rootUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//")+2] + r.Host
 			msg := []byte("" +
 				"From: Live interpreting<" + os.Getenv("MAIL_ADDRESS") + ">\r\n" +
 				"To: " + ac.Name + "<" + ac.Email + ">\r\n" +
@@ -618,18 +619,18 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 				"Content-Transfer-Encoding: base64\r\n" +
 				"\r\n" +
 				encodeBody(
-					"<p>いつもLive interpretingをご利用いただきありがとうございます。</p>" +
-					"<p>下記URLへアクセスし、パスワードの再設定を行ってください。</p>" +
-					"<p><a href=\"" + rootUrl + "/PassForgot/?t=" + token + "\">" + rootUrl + "/PassForgot/?t=" + token + "</a></p>" +
-					"<p><br></p>" +
-					"<p><br></p>" +
-					"<p>このメールは配信専用です。<br>ご返信頂いても確認および返信は出来かねますのでご了承ください。<p>" +
-					"<p><br></p>" +
-					"<p>Live interpreting</p>" +
-					"\r\n") +
+					"<p>いつもLive interpretingをご利用いただきありがとうございます。</p>"+
+						"<p>下記URLへアクセスし、パスワードの再設定を行ってください。</p>"+
+						"<p><a href=\""+rootUrl+"/PassForgot/?t="+token+"\">"+rootUrl+"/PassForgot/?t="+token+"</a></p>"+
+						"<p><br></p>"+
+						"<p><br></p>"+
+						"<p>このメールは配信専用です。<br>ご返信頂いても確認および返信は出来かねますのでご了承ください。<p>"+
+						"<p><br></p>"+
+						"<p>Live interpreting</p>"+
+						"\r\n") +
 				"\r\n")
 
-			err := smtp.SendMail(os.Getenv("MAIL_SERVER") + ":587", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
+			err := smtp.SendMail(os.Getenv("MAIL_SERVER")+":587", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
 			if err != nil {
 				log.Println(err)
 				log.Println(rootUrl + "/PassForgot/?t=" + token)
@@ -650,12 +651,12 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 		if ac.Id != -1 {
 			token := ac.CreateToken()
 
-			cookie := &http.Cookie {
-				Name: "accounttoken",
-				Value: token,
-				Path: "/",
+			cookie := &http.Cookie{
+				Name:     "accounttoken",
+				Value:    token,
+				Path:     "/",
 				HttpOnly: true,
-				MaxAge: 3600 * 24 * 7,
+				MaxAge:   3600 * 24 * 7,
 			}
 			http.SetCookie(w, cookie)
 

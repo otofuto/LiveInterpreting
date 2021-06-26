@@ -13,6 +13,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
+	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -752,7 +753,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		log.Println("accounts.go (ac *Accounts) Inbox()")
 		log.Println(err)
 		log.Println(sql)
-		return notifs, errors.New("failed to get notifications")
+		return notifs, errors.New("failed to get trans/req")
 	}
 	defer rows2.Close()
 	for rows2.Next() {
@@ -761,7 +762,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) Inbox()")
 			log.Println(err)
-			return notifs, errors.New("failed to scan notif")
+			return notifs, errors.New("failed to scan trans/req")
 		}
 		notifs = append(notifs, n)
 	}
@@ -771,7 +772,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		log.Println("accounts.go (ac *Accounts) Inbox()")
 		log.Println(err)
 		log.Println(sql)
-		return notifs, errors.New("failed to get notifications")
+		return notifs, errors.New("failed to get trans/res")
 	}
 	defer rows3.Close()
 	for rows3.Next() {
@@ -780,7 +781,26 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) Inbox()")
 			log.Println(err)
-			return notifs, errors.New("failed to scan notif")
+			return notifs, errors.New("failed to scan trans/res")
+		}
+		notifs = append(notifs, n)
+	}
+	sql = "select 'trans/buy' as `type`, `request_title` as `text`, `buy_date` as `date`, `to`, `from`, `id` from `trans` where buy_date is not null and `to` = " + strconv.Itoa(ac.Id) + " order by `buy_date` desc"
+	rows4, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println(err)
+		log.Println(sql)
+		return notifs, errors.New("failed to get trans/buy")
+	}
+	defer rows4.Close()
+	for rows4.Next() {
+		var n Notif
+		err = rows4.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println(err)
+			return notifs, errors.New("failed to scan trans/buy")
 		}
 		notifs = append(notifs, n)
 	}
@@ -864,6 +884,41 @@ func (ac *Accounts) GetDMs(count int) []directMessages.DirectMessages {
 		if !noadd {
 			ret = append(ret, dm)
 		}
+	}
+	return ret
+}
+
+func (ac *Accounts) GetTranses(count, offset int) []trans.Trans {
+	ret := make([]trans.Trans, 0)
+
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "select `id`, `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +
+		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
+		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
+		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` where `from` = " + strconv.Itoa(ac.Id) + " or `to` = " + strconv.Itoa(ac.Id) +
+		" order by `request_date` desc limit " + strconv.Itoa(count*2) + " offset " + strconv.Itoa(offset)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) GetTranses(count, offset int)")
+		log.Println(err)
+		log.Println(sql)
+		return ret
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var tr trans.Trans
+		err = rows.Scan(&tr.Id, &tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType,
+			&tr.RequestTitle, &tr.Request, &tr.RequestDate, &tr.BudgetRange, &tr.RequestCancel, &tr.EstimateLimitDate,
+			&tr.Price, &tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate, &tr.FinishedDate,
+			&tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) GetTranses(count, offset int)")
+			log.Println(err)
+			return ret
+		}
+		ret = append(ret, tr)
 	}
 	return ret
 }

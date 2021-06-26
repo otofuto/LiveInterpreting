@@ -14,7 +14,7 @@
 				background-image: url('/Account/img/{{.Login.Id}}');
 			}
 
-			#dmList article {
+			.list article {
 				display: block;
 				padding: 15px;
 				box-sizing: border-box;
@@ -25,28 +25,28 @@
 				transition: all 70ms 0ms ease;
 			}
 
-			#dmList article:hover {
+			.list article:hover {
 				background-color: whitesmoke;
 				box-shadow: 0 0 20px -10px lightgray inset;
 			}
 
-			#dmList article header {
+			.list article header {
 				display: flex;
 				flex-wrap: wrap;
 				justify-content: space-between;
 			}
 
-			#dmList article header h3 {
+			.list article header h3 {
 				margin: 0;
 				font-weight: bold;
 			}
 
-			#dmList article header span img {
+			.list article header span img {
 				max-width: 50px;
 				max-height: 50px;
 			}
 
-			#dmList article main {
+			.list article main {
 				padding: 5px;
 				box-sizing: border-box;
 			}
@@ -92,11 +92,10 @@
 					</div>
 					{{ if ne (len .Login.Langs) 0 }}
 						<p>使用出来る言語: </p>
-						<p>
-						{{ range .Login.Langs }}
+						<p>{{ range .Login.Langs }}
 						{{ .Lang }}<br>
-						{{ end }}
-					</p>{{ end }}
+						{{ end }}</p>
+					{{ end }}
 				</header>
 				<div style="width: 100%; text-align: right;">
 					<button class="button" onclick="location = '/u/{{ .Login.Id }}'">自分のユーザーページを見る</button>
@@ -104,7 +103,7 @@
 				</div>
 				<div style="width: 100%; text-align: left;">
 					<h2>DM履歴</h2>
-					<div id="dmList">
+					<div id="dmList" class="list">
 						{{ range .Messages }}
 						<article onclick="location = '/directmessages/{{ if eq $.Login.Id .From }}{{ .To }}{{ else }}{{ .From }}{{ end }}'">
 							<header>
@@ -115,6 +114,21 @@
 								<span>{{ .CreatedAt }}</span>
 							</header>
 							<main>{{ .Message }}</main>
+						</article>
+						{{ end }}
+					</div>
+					<h2>案件履歴</h2>
+					<div id="transList" class="list">
+						{{ range .Transes }}
+						<article onclick="location = '/trans/{{ .Id }}'">
+							<header>
+								<div>
+									<img>
+									<h3><label data-userid="{{ .From }}"></label> >> <label data-userid="{{ .To }}"></label></h3>
+								</div>
+								<span>{{ .RequestDate }}</span>
+							</header>
+							<main>{{ .RequestTitle }}</main>
 						</article>
 						{{ end }}
 					</div>
