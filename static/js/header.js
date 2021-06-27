@@ -44,3 +44,7 @@ document.getElementById('humbCheck').addEventListener('change', elm => {
 function appendHeader(elm) {
 	document.querySelector('.inner-header').appendChild(elm);
 }
+
+function footerText() {
+	document.write("© 2021 Live interpreting - Powered by OTFT");
+}
