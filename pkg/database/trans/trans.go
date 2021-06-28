@@ -67,7 +67,7 @@ func (tr *Trans) Update() error {
 	defer db.Close()
 
 	sql := "update `trans` set " +
-		"`from` = ?, `to` = ?, `live_start` = ?, `live_time` = ?, `lang` = ?, " +
+		"`live_start` = ?, `live_time` = ?, `lang` = ?, " +
 		"`request_type` = ?, `request` = ?, `request_cancel` = ?, `price` = ?, " +
 		"`request_title` = ?, `budget_range` = ?, `estimate_limit_date` = ?, " +
 		"`estimate_date` = ?, `response_type` = ?, `response` = ?, `buy_date` = ?, " +
@@ -79,7 +79,7 @@ func (tr *Trans) Update() error {
 		return errors.New("failed to update trans at trans.Update")
 	}
 	defer upd.Close()
-	_, err = upd.Exec(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang,
+	_, err = upd.Exec(&tr.LiveStart, &tr.LiveTime, &tr.Lang,
 		&tr.RequestType, &tr.Request, &tr.RequestCancel, &tr.Price,
 		&tr.RequestTitle, &tr.BudgetRange, &tr.EstimateLimitDate,
 		&tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate,

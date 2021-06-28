@@ -110,7 +110,7 @@
 				.then(res => {
 					if (res === true) {
 						elm.target.innerText = '購入処理が完了しました。';
-						location = '/trans/' + msg.trans.id;
+						location = '/trans/' + msg.trans.id + '?msg=buy';
 					} else {
 						elm.target.removeAttribute('disabled');
 						elm.target.innerText = text;

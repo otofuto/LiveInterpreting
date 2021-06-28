@@ -43,6 +43,14 @@
 				width: 100%;
 				text-align: center;
 			}
+
+			#msg {
+				height: 0px;
+				background-color: var(--color3);
+				transition: height 300ms 0ms ease;
+				overflow: hidden;
+				text-align: center;
+			}
 		</style>
 	</head>
 	<body>
@@ -66,19 +74,17 @@
 				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
+				<div id="msg"></div>
 				<h1>案件内容</h1>
 				<p>依頼者: <a id="from"></a></p>
 				<p>通訳者: <a id="to"></a></p>
 				<table><tbody id="tbl"></tbody></table>
-				{{ if eq .User.Id .Login.Id }}
-				<div id="sendEst">
-					<button class="button">見積を送信する</button>
+				<div id="sendEst" style="display: none;">
+					<button class="button">見積を送信または辞退する</button>
 				</div>
-				{{ else }}
 				<div id="buy" style="display: none;">
 					<button class="button">この見積内容で購入する</button>
 				</div>
-				{{ end }}
 				<div id="talk" style="display: none;">
 					<button class="button">トークルームに移動する</button>
 				</div>
@@ -90,6 +96,22 @@
 		<script src="/st/js/master.js"></script>
 		<script src="/st/js/constant.js"></script>
 		<script>
+			onload = () => {
+				if (new URL(location).searchParams.get('msg') != null) {
+					let mlist = {
+						'req': '見積依頼が完了しました。',
+						'reqedit': '見積依頼を変更しました。',
+						'est': '見積を送信しました。',
+						'estcancel': '見積を辞退しました。',
+						'buy': '購入しました。'
+					};
+					document.getElementById('msg').innerText = mlist[new URL(location).searchParams.get('msg')];
+					document.getElementById('msg').style.height = '30px';
+					setTimeout(() => {
+						document.getElementById('msg').style.height = '0px';
+					}, 5000);
+				}
+			};
 			function appendRow(k, v) {
 				let row = document.createElement('tr');
 				let td1 = document.createElement('td');
@@ -135,6 +157,7 @@
 				nextdate.setMilliseconds(0);
 				nextdate.setDate(nextdate.getDate() + 1);
 				console.log(nextdate);
+				document.querySelector('#sendEst').removeAttribute('style');
 				if (new Date() < nextdate) {
 					document.querySelector('#sendEst button').addEventListener('click', () => {
 						location = '/trans/estimate/' + msg.trans.id;
@@ -146,11 +169,19 @@
 			} else {
 				document.getElementById('sendEst').remove();
 			}
+			{{ else }}
+			if (msg.trans.request_cancel == 0 && !msg.trans.response_type.Valid) {
+				document.querySelector('#sendEst').removeAttribute('style');
+				document.querySelector('#sendEst button').innerText = '変更またはキャンセル';
+				document.querySelector('#sendEst button').addEventListener('click', () => {
+					location = '/trans/reqedit/' + msg.trans.id;
+				});
+			}
 			{{ end }}
 			if (msg.trans.estimate_date.Valid && msg.trans.response_type.Valid) {
 				appendHeader('見積内容');
-				appendRow('見積日時', formatdate(msg.trans.estimate_date.String));
 				if (msg.trans.response_type.Int64 == 0) {
+					appendRow('見積日時', formatdate(msg.trans.estimate_date.String));
 					appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
 					appendRow('見積詳細', msg.trans.response.String);
 					if (!msg.trans.buy_date.Valid) {
@@ -169,6 +200,8 @@
 					}
 				} else {
 					appendRow('', '見積が辞退されました。');
+					appendRow('辞退日時', formatdate(msg.trans.estimate_date.String));
+					appendRow('辞退理由', msg.trans.response.String);
 				}
 			}
 		</script>

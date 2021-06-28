@@ -33,6 +33,10 @@
 				width: 100%;
 				text-align: center;
 			}
+
+			form {
+				width: 400px;
+			}
 		</style>
 	</head>
 	<body>
@@ -58,19 +62,30 @@
 			<div id="content">
 				<h1>見積作成</h1>
 				<table><tbody id="tbl"></tbody></table>
-				<form name="fm" onsubmit="sub(); return false;" style="display: none;">
-					<div class="field">
-						<input type="number" class="input" name="price" required>
-						<label class="input-label">見積金額</label>
-					</div>
-					<div class="field">
-						<textarea name="response" class="textarea" required></textarea>
-						<label class="input-label">見積詳細</label>
-					</div>
-					<div style="text-align: center;">
-						<button class="button" style="background-color: var(--color1); color: white">見積を送信</button>
-					</div>
-				</form>
+				<div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+					<form name="fm" onsubmit="sub(); return false;" style="display: none;">
+						<div class="field">
+							<input type="number" class="input" name="price" required>
+							<label class="input-label">見積金額</label>
+						</div>
+						<div class="field">
+							<textarea name="response" class="textarea" required></textarea>
+							<label class="input-label">見積詳細</label>
+						</div>
+						<div style="text-align: center;">
+							<button class="button" style="background-color: var(--color1); color: white">見積を送信</button>
+						</div>
+					</form>
+					<form name="fm2" onsubmit="cancelEst(); return false;" style="display: none;">
+						<div class="field">
+							<textarea name="response" class="textarea" required></textarea>
+							<label class="input-label">辞退理由</label>
+						</div>
+						<div style="text-align: center;">
+							<button class="button" style="background-color: var(--color2); color: white">この依頼を辞退する</button>
+						</div>
+					</form>
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -122,8 +137,10 @@
 				console.log(nextdate);
 				if (new Date() < nextdate) {
 					document.fm.removeAttribute('style');
+					document.fm2.removeAttribute('style');
 				} else {
 					document.fm.remove();
+					document.fm2.remove();
 					limitTr.getElementsByTagName('td')[1].innerHTML += " <span style=\"color: red;\">期限切れ</span>";
 				}
 			} else {
@@ -139,8 +156,7 @@
 						alert('登録成功');
 						location = '/u/{{ .User.Id }}';
 					} else if (typeof res.id == 'number') {
-						alert('登録成功');
-						location = '/trans/' + res.id;
+						location = '/trans/' + res.id + '?msg=est';
 					} else {
 						formDisabled(document.fm, false);
 						console.error(res);
@@ -150,6 +166,28 @@
 					formDisabled(document.fm, false);
 					console.error(err);
 					alert('登録に失敗しました。');
+				});
+			}
+
+			function cancelEst() {
+				let data = new FormData(document.fm2);
+				formDisabled(document.fm2, true);
+				del('/trans/estimate/' + msg.trans.id, data)
+				.then(res => {
+					if (res === true) {
+						alert('辞退しました。');
+						location = '/u/{{ .User.Id }}';
+					} else if (typeof res.id == 'number') {
+						location = '/trans/' + res.id + '?msg=estcancel';
+					} else {
+						formDisabled(document.fm2, false);
+						console.error(res);
+						alert("処理に失敗しました。");
+					}
+				}).catch(err => {
+					formDisabled(document.fm2, false);
+					console.error(err);
+					alert('処理に失敗しました。');
 				});
 			}
 		</script>

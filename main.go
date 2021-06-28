@@ -549,6 +549,41 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/home/", 303)
 				return
 			}
+		} else if strings.HasPrefix(filename, "reqedit/") {
+			trid, err := strconv.Atoi(filename[len("reqedit/"):])
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			if tr.From != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			if tr.RequestCancel != 0 {
+				http.Error(w, "既にキャンセルされています。", 400)
+				return
+			}
+			if tr.EstimateDate.Valid {
+				http.Error(w, "既に見積が来ている依頼は変更できません。", 400)
+				return
+			}
+			ac.Id = tr.To
+			if !ac.Get() {
+				http.Error(w, "failed to get account data", 500)
+				return
+			}
+			bytes, err := json.Marshal(tr)
+			if err != nil {
+				http.Error(w, "failed to convert trans object to json", 500)
+				return
+			}
+			msg = string(bytes)
+			filename = "reqedit"
 		} else if strings.HasPrefix(filename, "estimate/") {
 			trid, err := strconv.Atoi(filename[len("estimate/"):])
 			if err != nil {
@@ -987,7 +1022,9 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "user not designation", 404)
 		}
 	} else if r.Method == http.MethodPut {
-		if strings.HasPrefix(r.URL.Path, "/trans/talkrooms/") {
+		w.Header().Set("Content-Type", "application/json")
+		mode := r.URL.Path[len("/trans/"):]
+		if strings.HasPrefix(mode, "talkrooms/") {
 			str := r.URL.Path[len("/trans/talkrooms/"):]
 			if strings.Index(str, "/") > 0 {
 				trid, err := strconv.Atoi(str[:strings.Index(str, "/")])
@@ -1014,8 +1051,161 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "path is ends with trans_id/id", 404)
 			}
+		} else if strings.HasPrefix(mode, "req/") {
+			trid, err := strconv.Atoi(mode[len("req/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			r.ParseMultipartForm(32 << 20)
+			if isset(r, []string{
+				"live_start",
+				"live_time",
+				"lang",
+				"request_type",
+				"request_title",
+				"request",
+				"budget_range",
+				"estimate_limit_date",
+			}) {
+				livetimestr := r.FormValue("live_time")
+				if strings.Index(r.FormValue("live_time"), ":") >= 0 {
+					hour, err := strconv.Atoi(r.FormValue("live_time")[:strings.Index(r.FormValue("live_time"), ":")])
+					if err != nil {
+						http.Error(w, "live_time is invalid format", 400)
+						return
+					}
+					min, err := strconv.Atoi(r.FormValue("live_time")[strings.Index(r.FormValue("live_time"), ":")+1:])
+					if err != nil {
+						http.Error(w, "live_time is invalid format", 400)
+						return
+					}
+					livetimestr = strconv.Itoa(hour*60 + min)
+				}
+				livetime, err := strconv.Atoi(livetimestr)
+				if err != nil {
+					http.Error(w, "live_time is not integer", 400)
+					return
+				}
+				lang, err := strconv.Atoi(r.FormValue("lang"))
+				if err != nil {
+					http.Error(w, "lang is not integer", 400)
+					return
+				}
+				reqtype, err := strconv.Atoi(r.FormValue("request_type"))
+				if err != nil {
+					http.Error(w, "request_type is not integer", 400)
+					return
+				}
+				budgetrange, err := strconv.Atoi(r.FormValue("budget_range"))
+				if err != nil {
+					http.Error(w, "budget_range is not integer", 400)
+					return
+				}
+				login := account.LoginAccount(r)
+				if login.Id == -1 {
+					http.Error(w, "not logined", 403)
+					return
+				}
+				tr := trans.Trans{Id: trid}
+				if !tr.Get() {
+					http.Error(w, "failed to get trans object", 500)
+					return
+				}
+				if tr.From != login.Id {
+					http.Error(w, "who are you majide", 403)
+					return
+				}
+				tr.LiveStart = sql.NullString{Valid: true, String: r.FormValue("live_start")}
+				tr.LiveTime = sql.NullInt64{Valid: true, Int64: int64(livetime)}
+				tr.Lang = lang
+				tr.RequestType = reqtype
+				tr.RequestTitle = r.FormValue("request_title")
+				tr.Request = r.FormValue("request")
+				tr.BudgetRange = budgetrange
+				tr.EstimateLimitDate = sql.NullString{Valid: true, String: r.FormValue("estimate_limit_date")}
+				err = tr.Update()
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to regist", 500)
+					return
+				}
+				n := accounts.Notif{
+					Type: "trans/reqedit",
+					Text: tr.RequestTitle,
+					From: tr.From,
+					To:   tr.To,
+					Id:   tr.Id,
+				}
+				err = n.Insert()
+				if err != nil {
+					log.Println(err)
+					errorData.Insert("failed to insert notif "+strconv.Itoa(tr.From)+" to "+strconv.Itoa(tr.To), err.Error())
+				}
+				bytes, err := json.Marshal(tr)
+				if err != nil {
+					fmt.Fprintf(w, "true")
+					return
+				}
+				fmt.Fprintf(w, string(bytes))
+			} else {
+				http.Error(w, "parameters not enough", 400)
+			}
 		} else {
 			http.Error(w, "誰やねんおまえ", 404)
+		}
+	} else if r.Method == http.MethodDelete {
+		w.Header().Set("Content-Type", "application/json")
+		mode := r.URL.Path[len("/trans/"):]
+		if strings.HasPrefix(mode, "estimate/") {
+			trid, err := strconv.Atoi(mode[len("estimate/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			r.ParseMultipartForm(32 << 20)
+			if isset(r, []string{"response"}) {
+				tr := trans.Trans{Id: trid}
+				if !tr.Get() {
+					http.Error(w, "failed to get trans object", 500)
+					return
+				}
+				login := account.LoginAccount(r)
+				if login.Id == -1 {
+					http.Error(w, "not logined", 403)
+					return
+				}
+				if login.Id != tr.To {
+					http.Error(w, "account not allowed", 403)
+					return
+				}
+				tr.Response = sql.NullString{Valid: true, String: r.FormValue("response")}
+				tr.EstimateDate = sql.NullString{Valid: true, String: time.Now().Format("2006-01-02 15:04:05")}
+				tr.ResponseType = sql.NullInt64{Valid: true, Int64: 1}
+				err = tr.Update()
+				if err != nil {
+					http.Error(w, "failed to update", 500)
+					return
+				}
+				n := accounts.Notif{
+					Type: "trans/rescancel",
+					Text: tr.RequestTitle,
+					From: tr.To,
+					To:   tr.From,
+					Id:   tr.Id,
+				}
+				err = n.Insert()
+				if err != nil {
+					log.Println(err)
+					errorData.Insert("failed to insert notif "+strconv.Itoa(tr.From)+" to "+strconv.Itoa(tr.To), err.Error())
+				}
+				bytes, err := json.Marshal(tr)
+				if err != nil {
+					http.Error(w, "failed to convert trans object to json", 500)
+					return
+				}
+				fmt.Fprintf(w, string(bytes))
+			}
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)

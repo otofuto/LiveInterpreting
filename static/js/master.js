@@ -178,8 +178,14 @@ function getNotifTypeMessage(ntype) {
 		case 'trans/req':
 			ret = "見積依頼が届いています";
 			break;
+		case 'trans/reqedit':
+			ret = "見積依頼の内容が変更されました";
+			break;
 		case 'trans/res':
 			ret = "見積が届いています";
+			break;
+		case 'trans/rescancel':
+			ret = '見積が辞退されました';
 			break;
 		case 'trans/buy':
 			ret = '見積が購入されました';
@@ -197,6 +203,52 @@ function formatdate(str, timeView = true) {
 		(dt.getMonth() + 1) + '月 ' + dt.getDate() + '日';
 	if (timeView) ret += ' ' + frontZero(dt.getHours()) + ':' + frontZero(dt.getMinutes());
 	return ret;
+}
+
+function object2form(obj, form) {
+	for (let i = 0; i < Object.keys(obj).length; i++) {
+		let k = Object.keys(obj)[i];
+		let v = obj[k];
+		if (typeof v.Valid == 'boolean') {
+			if (typeof v.String != 'undefined')
+				v = v.String;
+			else if (typeof v.Int64 != 'undefined')
+				v = v.Int64;
+		}
+		console.log(k, v);
+		if (k.endsWith('[]') && Array.isArray(v)) {
+			v.forEach(v2 => {
+				form.querySelectorAll('[name="' + k + '"]').forEach(input => {
+					if (!input.checked && input.value == v2) input.click();
+				});
+			});
+		} else if (Array.isArray(v)) {
+			v.forEach(v2 => {
+				form.querySelectorAll('[name="' + k + '[]"]').forEach(input => {
+					if (!input.checked && input.value == v2) input.click();
+				});
+			});
+		} else {
+			form.querySelectorAll('[name="' + k + '"]').forEach(input => {
+				switch (input.getAttribute('type')) {
+					case 'checkbox':
+						if (!input.checked) input.click();
+						break;
+					case 'radio':
+						if (input.value == v) input.click();
+						break;
+					case 'file':
+						break;
+					case 'datetime-local':
+						input.value = v.replace(' ', 'T');
+						break;
+					default:
+						input.value = v;
+						break;
+				}
+			});
+		}
+	}
 }
 
 function frontZero(s) {
