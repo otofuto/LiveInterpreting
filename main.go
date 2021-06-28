@@ -646,6 +646,10 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/home/", 303)
 				return
 			}
+			if !tr.BuyDate.Valid {
+				http.Redirect(w, r, "/trans/"+strconv.Itoa(tr.Id), 303)
+				return
+			}
 			if login.Id == tr.From {
 				ac.Id = tr.To
 			} else {
@@ -928,6 +932,14 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			tr := trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "failed to get trans data", 404)
+				return
+			}
+			if tr.To != login.Id && tr.From != login.Id {
+				http.Error(w, "誰だてめぇは", 403)
+				return
+			}
+			if !tr.BuyDate.Valid {
+				http.Error(w, "this trans is not buyed yet", 400)
 				return
 			}
 			r.ParseMultipartForm(32 << 20)

@@ -785,7 +785,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select 'trans/buy' as `type`, `request_title` as `text`, `buy_date` as `date`, `to`, `from`, `id` from `trans` where buy_date is not null and `to` = " + strconv.Itoa(ac.Id) + " order by `buy_date` desc"
+	sql = "select 'trans/buy' as `type`, `request_title` as `text`, `buy_date` as `date`, `to`, `from`, `id` from `trans` where `buy_date` is not null and `to` = " + strconv.Itoa(ac.Id) + " and `id` not in (select distinct `trans_id` from `talkrooms`) order by `buy_date` desc"
 	rows4, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Inbox()")

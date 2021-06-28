@@ -46,5 +46,5 @@ function appendHeader(elm) {
 }
 
 function footerText() {
-	document.write("© 2021 Live interpreting - Powered by OTFT");
+	document.write("© 2021 Live interpreting - Powered by pinecir08 & otft");
 }
