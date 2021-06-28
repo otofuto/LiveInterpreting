@@ -82,7 +82,7 @@
 					</div>
 				</form>
 				<div style="text-align: center;">
-					<button class="button" style="background-color: var(--color2); color: white;">この見積り依頼を取り消す</button>
+					<button class="button" style="background-color: var(--color2); color: white;" onclick="reqcancel()">この見積り依頼を取り消す</button>
 				</div>
 			</div>
 		</main>
@@ -123,6 +123,25 @@
 					formDisabled(document.fm, false);
 					console.error(err);
 					alert('変更に失敗しました。');
+				});
+			}
+
+			function reqcancel() {
+				if (!confirm('見積依頼をキャンセルしますか？')) return;
+				del('/trans/req/' + trans.id)
+				.then(res => {
+					if (res === true) {
+						alert('キャンセルしました。');
+						location = '/home/';
+					} else if (typeof res.id == 'number') {
+						location = '/trans/' + res.id + "?msg=reqcancel";
+					} else {
+						console.error(res);
+						alert("キャンセルに失敗しました。");
+					}
+				}).catch(err => {
+					console.error(err);
+					alert('キャンセルに失敗しました。');
 				});
 			}
 		</script>

@@ -102,7 +102,9 @@
 						'req': '見積依頼が完了しました。',
 						'reqedit': '見積依頼を変更しました。',
 						'est': '見積を送信しました。',
+						'estedit': '見積を変更しました',
 						'estcancel': '見積を辞退しました。',
+						'estdel': '見積を取り消しました。',
 						'buy': '購入しました。'
 					};
 					document.getElementById('msg').innerText = mlist[new URL(location).searchParams.get('msg')];
@@ -166,8 +168,15 @@
 					document.querySelector('#sendEst button').innerText = '見積期限切れ';
 					document.querySelector('#sendEst button').setAttribute('disabled', '');
 				}
-			} else {
-				document.getElementById('sendEst').remove();
+			} else if (msg.trans.response_type.Int64 == 0) {
+				document.querySelector('#sendEst').removeAttribute('style');
+				document.querySelector('#sendEst button').innerText = '見積の変更または取り消し';
+				document.querySelector('#sendEst button').addEventListener('click', () => {
+					location = '/trans/estedit/' + msg.trans.id;
+				});
+			}
+			if (msg.trans.request_cancel == 1) {
+				appendHeader('見積依頼がキャンセルされました。');
 			}
 			{{ else }}
 			if (msg.trans.request_cancel == 0 && !msg.trans.response_type.Valid) {
@@ -176,6 +185,9 @@
 				document.querySelector('#sendEst button').addEventListener('click', () => {
 					location = '/trans/reqedit/' + msg.trans.id;
 				});
+			}
+			if (msg.trans.request_cancel == 1) {
+				appendHeader('見積依頼をキャンセルしました。');
 			}
 			{{ end }}
 			if (msg.trans.estimate_date.Valid && msg.trans.response_type.Valid) {

@@ -620,11 +620,60 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			bytes, err := json.Marshal(msgobj)
 			if err != nil {
-				http.Error(w, "failed to convert trans object to json", 500)
+				http.Error(w, "failed to convert object to json", 500)
 				return
 			}
 			msg = string(bytes)
 			filename = "estimate"
+		} else if strings.HasPrefix(filename, "estedit/") {
+			trid, err := strconv.Atoi(filename[len("estedit/"):])
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			if tr.To != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			if !tr.ResponseType.Valid {
+				http.Error(w, "まだ見積を送っていません。", 400)
+				return
+			}
+			if tr.ResponseType.Int64 == 1 {
+				http.Error(w, "既にキャンセルされています。", 400)
+				return
+			}
+			if tr.BuyDate.Valid {
+				http.Error(w, "購入されたあとでは変更できません。", 400)
+				return
+			}
+			ac.Id = tr.From
+			if !ac.Get() {
+				http.Error(w, "failed to get user(from) data", 500)
+				return
+			}
+			msgobj := struct {
+				Trans trans.Trans       `json:"trans"`
+				From  accounts.Accounts `json:"from"`
+				To    accounts.Accounts `json:"to"`
+				Langs []langs.Langs     `json:"langs"`
+			}{
+				Trans: tr,
+				From:  login,
+				To: accounts.Accounts{
+					Id:   ac.Id,
+					Name: ac.Name,
+				},
+				Langs: langs.All(),
+			}
+			bytes, err := json.Marshal(msgobj)
+			msg = string(bytes)
+			filename = "estedit"
 		} else if strings.HasPrefix(filename, "buy/") {
 			trid, err := strconv.Atoi(filename[len("buy/"):])
 			if err != nil {
@@ -898,9 +947,9 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to update trans", 500)
 					return
 				}
-				respHead := tr.Response.String
+				respHead := strings.Replace(tr.Response.String, "\n", " ", -1)
 				if len([]rune(respHead)) > 16 {
-					respHead = string([]rune(respHead)[:16])
+					respHead = string([]rune(respHead)[:16]) + "…"
 				}
 				n := accounts.Notif{
 					Type: "trans/res",
@@ -1112,6 +1161,10 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to get trans object", 500)
 					return
 				}
+				if tr.EstimateDate.Valid {
+					http.Error(w, "got estimate", 409)
+					return
+				}
 				if tr.From != login.Id {
 					http.Error(w, "who are you majide", 403)
 					return
@@ -1151,6 +1204,70 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "parameters not enough", 400)
 			}
+		} else if strings.HasPrefix(mode, "estimate/") {
+			trid, err := strconv.Atoi(mode[len("estimate/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			r.ParseMultipartForm(32 << 20)
+			if isset(r, []string{
+				"price",
+				"response",
+			}) {
+				tr := trans.Trans{Id: trid}
+				if !tr.Get() {
+					http.Error(w, "failed to get trans data", 404)
+					return
+				}
+				if tr.BuyDate.Valid {
+					http.Error(w, "this trans is already buyed", 409)
+					return
+				}
+				login := account.LoginAccount(r)
+				if tr.To != login.Id {
+					http.Error(w, "dame", 403)
+					return
+				}
+				price, err := strconv.Atoi(r.FormValue("price"))
+				if err != nil {
+					http.Error(w, "price is not integer", 400)
+					return
+				}
+				tr.Price = sql.NullInt64{Int64: int64(price), Valid: true}
+				tr.Response = sql.NullString{String: r.FormValue("response"), Valid: true}
+				tr.EstimateDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}
+				err = tr.Update()
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to update trans", 500)
+					return
+				}
+				respHead := strings.Replace(tr.Response.String, "\n", " ", -1)
+				if len([]rune(respHead)) > 16 {
+					respHead = string([]rune(respHead)[:16]) + "…"
+				}
+				n := accounts.Notif{
+					Type: "trans/estedit",
+					Text: respHead,
+					From: tr.To,
+					To:   tr.From,
+					Id:   tr.Id,
+				}
+				err = n.Insert()
+				if err != nil {
+					log.Println(err)
+					errorData.Insert("failed to insert notif "+strconv.Itoa(login.Id)+" to "+strconv.Itoa(tr.From), err.Error())
+				}
+				bytes, err := json.Marshal(tr)
+				if err != nil {
+					http.Error(w, "failed to convert trans object to json", 500)
+					return
+				}
+				fmt.Fprintf(w, string(bytes))
+			} else {
+				http.Error(w, "parameter not enough", 400)
+			}
 		} else {
 			http.Error(w, "誰やねんおまえ", 404)
 		}
@@ -1163,22 +1280,22 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "trans id is not set", 404)
 				return
 			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "failed to get trans object", 500)
+				return
+			}
+			login := account.LoginAccount(r)
+			if login.Id == -1 {
+				http.Error(w, "not logined", 403)
+				return
+			}
+			if login.Id != tr.To {
+				http.Error(w, "account not allowed", 403)
+				return
+			}
 			r.ParseMultipartForm(32 << 20)
 			if isset(r, []string{"response"}) {
-				tr := trans.Trans{Id: trid}
-				if !tr.Get() {
-					http.Error(w, "failed to get trans object", 500)
-					return
-				}
-				login := account.LoginAccount(r)
-				if login.Id == -1 {
-					http.Error(w, "not logined", 403)
-					return
-				}
-				if login.Id != tr.To {
-					http.Error(w, "account not allowed", 403)
-					return
-				}
 				tr.Response = sql.NullString{Valid: true, String: r.FormValue("response")}
 				tr.EstimateDate = sql.NullString{Valid: true, String: time.Now().Format("2006-01-02 15:04:05")}
 				tr.ResponseType = sql.NullInt64{Valid: true, Int64: 1}
@@ -1187,8 +1304,39 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to update", 500)
 					return
 				}
+				res := strings.Replace(r.FormValue("response"), "\n", " ", -1)
+				if len([]rune(res)) > 16 {
+					res = string([]rune(res)[:16]) + "…"
+				}
 				n := accounts.Notif{
 					Type: "trans/rescancel",
+					Text: res,
+					From: tr.To,
+					To:   tr.From,
+					Id:   tr.Id,
+				}
+				err = n.Insert()
+				if err != nil {
+					log.Println(err)
+					errorData.Insert("failed to insert notif "+strconv.Itoa(tr.From)+" to "+strconv.Itoa(tr.To), err.Error())
+				}
+				bytes, err := json.Marshal(tr)
+				if err != nil {
+					http.Error(w, "failed to convert trans object to json", 500)
+					return
+				}
+				fmt.Fprintf(w, string(bytes))
+			} else {
+				tr.Response = sql.NullString{Valid: false}
+				tr.EstimateDate = sql.NullString{Valid: false}
+				tr.ResponseType = sql.NullInt64{Valid: false}
+				err = tr.Update()
+				if err != nil {
+					http.Error(w, "failed to update", 500)
+					return
+				}
+				n := accounts.Notif{
+					Type: "trans/estdel",
 					Text: tr.RequestTitle,
 					From: tr.To,
 					To:   tr.From,
@@ -1206,6 +1354,52 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				}
 				fmt.Fprintf(w, string(bytes))
 			}
+		} else if strings.HasPrefix(mode, "req/") {
+			trid, err := strconv.Atoi(mode[len("req/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "failed to get trans object", 500)
+				return
+			}
+			login := account.LoginAccount(r)
+			if login.Id == -1 {
+				http.Error(w, "not logined", 403)
+				return
+			}
+			if login.Id != tr.From {
+				http.Error(w, "account not allowed", 403)
+				return
+			}
+			tr.RequestCancel = 1
+			err = tr.Update()
+			if err != nil {
+				http.Error(w, "failed to update", 500)
+				return
+			}
+			n := accounts.Notif{
+				Type: "trans/reqcancel",
+				Text: tr.RequestTitle,
+				From: tr.From,
+				To:   tr.To,
+				Id:   tr.Id,
+			}
+			err = n.Insert()
+			if err != nil {
+				log.Println(err)
+				errorData.Insert("failed to insert notif "+strconv.Itoa(tr.From)+" to "+strconv.Itoa(tr.To), err.Error())
+			}
+			bytes, err := json.Marshal(tr)
+			if err != nil {
+				http.Error(w, "failed to convert trans object to json", 500)
+				return
+			}
+			fmt.Fprintf(w, string(bytes))
+		} else {
+			http.Error(w, "なにさ", 404)
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)

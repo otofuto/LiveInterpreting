@@ -181,11 +181,20 @@ function getNotifTypeMessage(ntype) {
 		case 'trans/reqedit':
 			ret = "見積依頼の内容が変更されました";
 			break;
+		case 'trans/reqcancel':
+			ret = '見積依頼がキャンセルされました';
+			break;
 		case 'trans/res':
 			ret = "見積が届いています";
 			break;
+		case 'trans/estedit':
+			ret = '見積が変更されました';
+			break;
 		case 'trans/rescancel':
 			ret = '見積が辞退されました';
+			break;
+		case 'trans/estdel':
+			ret = '見積が取り消されました';
 			break;
 		case 'trans/buy':
 			ret = '見積が購入されました';
@@ -215,7 +224,6 @@ function object2form(obj, form) {
 			else if (typeof v.Int64 != 'undefined')
 				v = v.Int64;
 		}
-		console.log(k, v);
 		if (k.endsWith('[]') && Array.isArray(v)) {
 			v.forEach(v2 => {
 				form.querySelectorAll('[name="' + k + '"]').forEach(input => {
