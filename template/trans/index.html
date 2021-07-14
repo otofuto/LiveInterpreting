@@ -101,6 +101,7 @@
 					let mlist = {
 						'req': '見積依頼が完了しました。',
 						'reqedit': '見積依頼を変更しました。',
+						'reqcancel': '見積依頼をキャンセルしました。',
 						'est': '見積を送信しました。',
 						'estedit': '見積を変更しました',
 						'estcancel': '見積を辞退しました。',
@@ -206,6 +207,8 @@
 					} else {
 						appendRow('購入日時', msg.trans.buy_date.String);
 						document.getElementById('talk').removeAttribute('style');
+						document.getElementById('sendEst').remove();
+						document.getElementById('buy').remove();
 						document.querySelector('#talk button').addEventListener('click', () => {
 							location = '/trans/talkroom/' + msg.trans.id;
 						})
