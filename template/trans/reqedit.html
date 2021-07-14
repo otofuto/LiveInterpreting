@@ -35,6 +35,7 @@
 			<div id="content">
 				<h1>見積り依頼修正</h1>
 				<h3>{{ .User.Name }}さんに送った見積もり依頼を変更します。</h3>
+				<p id="alreadyEst" style="display: none; color: red;">※既に見積が届いている依頼は編集出来ません。</p>
 				<form name="fm" onsubmit="sub(); return false;">
 					<div class="field">
 						<input type="datetime-local" class="input" name="live_start" required>
@@ -103,8 +104,13 @@
 			let lt = trans.live_time.Int64;
 			trans.live_time = frontZero(Math.floor(lt / 60)) + ':' + frontZero(lt % 60);
 			object2form(trans, document.fm);
+			if (trans.estimate_date.Valid) {
+				document.getElementById('alreadyEst').style.display = 'block';
+				formDisabled(document.fm, true);
+			}
 
 			function sub() {
+				if (trans.estimate_date.Valid) return;
 				let ls = new Date(document.fm.live_start.value);
 				ls.setSeconds(0);
 				ls.setMinutes(0);

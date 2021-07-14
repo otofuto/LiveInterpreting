@@ -96,6 +96,7 @@
 		<script src="/st/js/master.js"></script>
 		<script src="/st/js/constant.js"></script>
 		<script>
+			let msg = JSON.parse("{{ .Message }}");
 			onload = () => {
 				if (new URL(location).searchParams.get('msg') != null) {
 					let mlist = {
@@ -108,6 +109,7 @@
 						'estdel': '見積を取り消しました。',
 						'buy': '購入しました。'
 					};
+					location.replace('/trans/' + msg.trans.id);
 					document.getElementById('msg').innerText = mlist[new URL(location).searchParams.get('msg')];
 					document.getElementById('msg').style.height = '30px';
 					setTimeout(() => {
@@ -133,7 +135,6 @@
 				row.appendChild(th);
 				document.getElementById('tbl').appendChild(row);
 			}
-			let msg = JSON.parse("{{ .Message }}");
 			document.title = msg.trans.request_title + ' | Live interpreting';
 			document.getElementById('from').innerText = msg.from.name;
 			document.getElementById('from').setAttribute('href', '/u/' + msg.from.id);
@@ -178,9 +179,10 @@
 			}
 			if (msg.trans.request_cancel == 1) {
 				appendHeader('見積依頼がキャンセルされました。');
+				document.querySelector('#sendEst').remove();
 			}
 			{{ else }}
-			if (msg.trans.request_cancel == 0 && !msg.trans.response_type.Valid) {
+			if (msg.trans.request_cancel == 0) {
 				document.querySelector('#sendEst').removeAttribute('style');
 				document.querySelector('#sendEst button').innerText = '変更またはキャンセル';
 				document.querySelector('#sendEst button').addEventListener('click', () => {
@@ -189,6 +191,7 @@
 			}
 			if (msg.trans.request_cancel == 1) {
 				appendHeader('見積依頼をキャンセルしました。');
+				document.querySelector('#buy').remove();
 			}
 			{{ end }}
 			if (msg.trans.estimate_date.Valid && msg.trans.response_type.Valid) {
@@ -197,21 +200,23 @@
 					appendRow('見積日時', formatdate(msg.trans.estimate_date.String));
 					appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
 					appendRow('見積詳細', msg.trans.response.String);
-					if (!msg.trans.buy_date.Valid) {
-						{{ if ne .User.Id .Login.Id }}
-						document.querySelector('#buy').removeAttribute('style');
-						document.querySelector('#buy button').addEventListener('click', () => {
-							location = '/trans/buy/' + msg.trans.id;
-						});
-						{{ end }}
-					} else {
-						appendRow('購入日時', msg.trans.buy_date.String);
-						document.getElementById('talk').removeAttribute('style');
-						document.getElementById('sendEst').remove();
-						document.getElementById('buy').remove();
-						document.querySelector('#talk button').addEventListener('click', () => {
-							location = '/trans/talkroom/' + msg.trans.id;
-						})
+					if (msg.trans.request_cancel == 0) {
+						if (!msg.trans.buy_date.Valid) {
+							{{ if ne .User.Id .Login.Id }}
+							document.querySelector('#buy').removeAttribute('style');
+							document.querySelector('#buy button').addEventListener('click', () => {
+								location = '/trans/buy/' + msg.trans.id;
+							});
+							{{ end }}
+						} else {
+							appendRow('購入日時', msg.trans.buy_date.String);
+							document.getElementById('talk').removeAttribute('style');
+							document.getElementById('sendEst').remove();
+							document.getElementById('buy').remove();
+							document.querySelector('#talk button').addEventListener('click', () => {
+								location = '/trans/talkroom/' + msg.trans.id;
+							})
+						}
 					}
 				} else {
 					appendRow('', '見積が辞退されました。');

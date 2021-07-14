@@ -568,10 +568,6 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "既にキャンセルされています。", 400)
 				return
 			}
-			if tr.EstimateDate.Valid {
-				http.Error(w, "既に見積が来ている依頼は変更できません。", 400)
-				return
-			}
 			ac.Id = tr.To
 			if !ac.Get() {
 				http.Error(w, "failed to get account data", 500)
