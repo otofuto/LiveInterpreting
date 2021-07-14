@@ -105,6 +105,23 @@
 			object2form(trans, document.fm);
 
 			function sub() {
+				let ls = new Date(document.fm.live_start.value);
+				ls.setSeconds(0);
+				ls.setMinutes(0);
+				ls.setHours(24);
+				let eld = new Date(document.fm.estimate_limit_date.value);
+				if (!(eld < ls)) {
+					alert('配信日が提案期限より前になっています。');
+					return;
+				}
+				let today = new Date();
+				today.setSeconds(0);
+				today.setMinutes(0);
+				today.setHours(0);
+				if (eld < today) {
+					alert('提案期限が今日より前になっています。');
+					return;
+				}
 				let data = new FormData(document.fm);
 				formDisabled(document.fm, true);
 				put('/trans/req/' + trans.id, data)
