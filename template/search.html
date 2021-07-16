@@ -9,7 +9,27 @@
 		<title>翻訳者を探す | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
-			#langs {
+			.account {
+				display: inline-block;
+				width: 150px;
+				border-radius: 15px 15px 0 0;
+				margin: 5px;
+				color: white;
+				cursor: pointer;
+			}
+
+			.iconDisp {
+				position: relative;
+				display: block;
+				width: 75px;
+				height: 75px;
+				margin: 5px auto 0 auto;
+				border-radius: 5px;
+				background-size: cover;
+				background-position: center;
+			}
+
+			.selectBox {
 				display: inline-block;
 				border: solid 2px lightgray;
 				border-radius: 10px;
@@ -19,23 +39,18 @@
 				overflow: hidden;
 				padding: 0;
 				box-sizing: border-box;
+				opacity: 0;
 			}
 
 			#langs label {
 				display: block;
 			}
 
-			#langSearchBtn {
+			#searchBtn {
 				background-color: var(--color1);
 				color: white;
-				width: 0px;
-				padding: 0px;
 				overflow: hidden;
 				white-space: nowrap;
-				margin: 0;
-			}
-
-			#langSearchBtn.disp {
 				padding: 10px 20px;
 				width: auto;
 				margin: 10px;
@@ -71,12 +86,18 @@
 			<div id="content">
 				<div style="text-align: right;">
 					<button class="button" onclick="openLangs()">言語を選択</button>
-					<button class="button" onclick="langSearch()" id="langSearchBtn">言語を決定</button>
-					<button class="button">並び替え</button>
-					<div>
-						<div id="langs" data-opened="false"></div>
+					<button class="button" onclick="openSort()">並び替え</button>
+					<button class="button" onclick="search()" id="searchBtn">検索する</button>
+					<div style="padding: 0 10px;">
+						<div id="langs" class="selectBox" data-opened="false"></div>
+						<div id="sort" class="selectBox" data-opened="false">
+							<label>おすすめ順<input type="radio" name="sort" value="major" checked></label>
+							<label>登録日時<input type="radio" name="sort" value="created_at"></label>
+							<label>ログイン日時<input type="radio" name="sort" value="last_logined"></label>
+						</div>
 					</div>
 				</div>
+				<div id="users"></div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -107,12 +128,68 @@
 					langs.style.height = '200px';
 					langs.style.overflow = 'auto';
 					langs.style.padding = '10px';
-					document.getElementById('langSearchBtn').setAttribute('class', 'button disp');
+					langs.style.opacity = '1';
 				} else {
 					langs.setAttribute('data-opened', false);
 					langs.removeAttribute('style');
-					document.getElementById('langSearchBtn').setAttribute('class', 'button');
 				}
+			}
+
+			function openSort() {
+				let st = document.getElementById('sort');
+				if (st.getAttribute('data-opened') == "false") {
+					st.setAttribute('data-opened', true);
+					st.style.height = '50px';
+					st.style.overflow = 'auto';
+					st.style.padding = '10px';
+					st.style.opacity = '1';
+				} else {
+					st.setAttribute('data-opened', false);
+					st.removeAttribute('style');
+				}
+			}
+
+			function search() {
+				let checks = Array.from(document.querySelectorAll('input[name="lang"]')).filter(l => l.checked);
+				if (checks.length == 0) return;
+				let langs = checks.map(l => l.value).join(',');
+				document.getElementById('users').innerHTML = '';
+				get('/Account/Search?langs=' + langs  + "&sort=" + document.querySelector('input[name="sort"]:checked').value)
+				.then(accounts => {
+					Array.from(accounts).forEach(ac => {
+						document.getElementById('users').appendChild(createAccount(ac));
+					});
+				});
+			}
+
+			function createAccount(ac) {
+				let acbox = document.createElement("div");
+				acbox.setAttribute("class", "account");
+				if (ac.user_type == "influencer") {
+					acbox.style.backgroundColor = "var(--color1)";
+				} else {
+					acbox.style.backgroundColor = "var(--color2)";
+				}
+
+				let iconDisp = document.createElement("div");
+				iconDisp.setAttribute("class", "iconDisp");
+				iconDisp.style.backgroundImage = "url('/Account/img/" + ac.id + "')";
+				acbox.appendChild(iconDisp);
+
+				let namelabel = document.createElement("div");
+				namelabel.innerText = ac.name;
+				acbox.appendChild(namelabel);
+
+				let datelabel = document.createElement("label");
+				datelabel.style.fontSize = "80%";
+				datelabel.innerText = ac.created_at;
+				acbox.appendChild(datelabel);
+
+				acbox.addEventListener('click', () => {
+					location = "/u/" + ac.id;
+				});
+
+				return acbox;
 			}
 		</script>
 	</body>

@@ -528,11 +528,11 @@ func checkPass(hash string, pass string) bool {
 	return err == nil
 }
 
-func Search(search string, user_type string, id int) []Accounts {
+func Search(search, user_type, lans, sort string, id int) []Accounts {
 	db := database.Connect()
 	defer db.Close()
 
-	if search == "" && user_type == "" {
+	if search == "" && user_type == "" && lans == "" {
 		log.Println("search and user_type is empty")
 		return make([]Accounts, 0)
 	}
@@ -559,12 +559,27 @@ func Search(search string, user_type string, id int) []Accounts {
 		searchQ = "`id` in (select `id` from `account_social` where `target_id` = " + strconv.Itoa(id) + " order by `created_at` desc)"
 	}
 
-	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + searchQ
+	if lans != "" {
+		if user_type != "" || searchQ != "" {
+			searchQ += " and "
+		}
+		searchQ += "`id` in (select distinct `id` from `account_langs` where `lang_id` in (" + database.Escape(lans) + "))"
+	}
+
+	sortQ := ""
+	if sort == "created_at" || sort == "last_logined" {
+		sortQ = " order by `" + sort + "`"
+	}
+	if sort == "major" {
+		//
+	}
+
+	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + searchQ + sortQ
 	rows, err := db.Query(sql)
 	if err != nil {
+		log.Println("accounts.go Search(search, user_type, lans string, id int)")
 		log.Println(err)
 		log.Println(sql)
-		log.Println("search: " + search)
 		return make([]Accounts, 0)
 	}
 	defer rows.Close()

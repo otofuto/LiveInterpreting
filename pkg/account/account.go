@@ -156,15 +156,15 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			search := r.FormValue("search")
 			search = strings.Replace(search, "?", "", -1)
 			userType := r.FormValue("user_type")
-			if search == "" && userType == "" {
-				http.Error(w, "user_type or search value is must", 400)
+			if search == "" && userType == "" && r.FormValue("langs") == "" {
+				http.Error(w, "user_type or search or langs value is must", 400)
 				return
 			}
 			if userType != "influencer" && userType != "interpreter" && userType != "" {
 				http.Error(w, "user_type value is not allowed", 400)
 				return
 			}
-			acs := accounts.Search(search, userType, ac.Id)
+			acs := accounts.Search(search, userType, r.FormValue("langs"), r.FormValue("sort"), ac.Id)
 			bytes, err := json.Marshal(acs)
 			if err != nil {
 				log.Fatal(err)
