@@ -38,6 +38,11 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "sex is type of int", 400)
 			return
 		}
+		hw, err := strconv.Atoi(r.FormValue("hourly_wage"))
+		if err != nil {
+			http.Error(w, "hourly_wage is type of int", 400)
+			return
+		}
 		ac := accounts.Accounts{
 			UserType:    r.FormValue("user_type"),
 			Name:        r.FormValue("name"),
@@ -48,7 +53,8 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			Url1:        r.FormValue("url1"),
 			Url2:        r.FormValue("url2"),
 			Url3:        r.FormValue("url3"),
-			HourlyWage:  r.FormValue("hourly_wage"),
+			HourlyWage:  hw,
+			WageComment: r.FormValue("wage_comment"),
 		}
 		if ac.UserType == "interpreter" {
 			err = ac.SetLangs(r.FormValue("langs"))
@@ -259,13 +265,19 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "email already registered", 400)
 					return
 				}
+				hw, err := strconv.Atoi(r.FormValue("hourly_wage"))
+				if err != nil {
+					http.Error(w, "hourly_wage is not integer", 400)
+					return
+				}
 				ac.Name = r.FormValue("name")
 				ac.Description = r.FormValue("description")
 				ac.Email = r.FormValue("email")
 				ac.Url1 = r.FormValue("url1")
 				ac.Url2 = r.FormValue("url2")
 				ac.Url3 = r.FormValue("url3")
-				ac.HourlyWage = r.FormValue("hourly_wage")
+				ac.HourlyWage = hw
+				ac.WageComment = r.FormValue("wage_comment")
 
 				if r.FormValue("langs") != "" {
 					err := ac.SetLangs(r.FormValue("langs"))

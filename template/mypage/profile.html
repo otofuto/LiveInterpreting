@@ -126,8 +126,12 @@
 						<label class="input-label">URL3</label>
 					</div>
 					<div class="field">
-						<input type="text" name="hourly_wage" class="input" maxlength="255" value="{{.Login.HourlyWage}}">
+						<input type="number" name="hourly_wage" class="input" min="0" value="{{if ne .Login.HourlyWage 0}}{{ .Login.HourlyWage }}{{ end }}">
 						<label class="input-label">最低時給</label>
+					</div>
+					<div class="field">
+						<input type="text" name="wage_comment" class="input" value="{{.Login.WageComment}}">
+						<label class="input-label">時給について特記</label>
 					</div>
 					<div class="field" style="width: 100%;">
 						<div id="langs">読込中</div>
@@ -241,7 +245,8 @@
 					data.append("url1", document.fm.url1.value);
 					data.append("url2", document.fm.url2.value);
 					data.append("url3", document.fm.url3.value);
-					data.append("hourly_wage", document.fm.hourly_wage.value);
+					data.append("hourly_wage", document.fm.hourly_wage.value == '' ? 0 : document.fm.hourly_wage.value);
+					data.append("wage_comment", document.fm.wage_comment.value);
 					if (document.getElementsByName("icon_image")[0].files.length > 0) {
 						data.append("icon_image", document.getElementsByName("icon_image")[0].files[0]);
 					}

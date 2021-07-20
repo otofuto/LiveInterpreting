@@ -88,8 +88,12 @@
 						<label class="input-label">URL3</label>
 					</div>
 					<div class="field">
-						<input type="text" name="hourly_wage" class="input" maxlength="255">
+						<input type="number" name="hourly_wage" class="input" min="0">
 						<label class="input-label">最低時給</label>
+					</div>
+					<div class="field">
+						<input type="text" name="wage_comment" class="input">
+						<label class="input-label">時給について特記</label>
 					</div>
 					<input type="submit" style="display: none;" name="sub">
 				</form>
@@ -130,7 +134,8 @@
 					"url1": document.fm.url1.value,
 					"url2": document.fm.url2.value,
 					"url3": document.fm.url3.value,
-					"hourly_wage": document.fm.hourly_wage.value
+					"hourly_wage": (document.fm.hourly_wage.value == '' ? 0 : document.fm.hourly_wage.value - 0),
+					"wage_comment": document.fm.wage_comment.value
 				};
 				sessionStorage.setItem("signup", JSON.stringify(obj));
 				location = "./lang/";

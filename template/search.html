@@ -46,6 +46,10 @@
 				display: block;
 			}
 
+			#wages .input {
+				top: 0;
+			}
+
 			#searchBtn {
 				background-color: var(--color1);
 				color: white;
@@ -86,10 +90,21 @@
 			<div id="content">
 				<div style="text-align: right;">
 					<button class="button" onclick="openLangs()">言語を選択</button>
+					<button class="button" onclick="openWage()">金額(時間あたり)を選択</button>
 					<button class="button" onclick="openSort()">並び替え</button>
 					<button class="button" onclick="search()" id="searchBtn">検索する</button>
 					<div style="padding: 0 10px;">
 						<div id="langs" class="selectBox" data-opened="false"></div>
+						<div id="wages" class="selectBox" data-opened="false">
+							<select id="houry_wage" class="input">
+								<option value="1">～1,000円</option>
+								<option value="2">1,001～2,000円</option>
+								<option value="3">2,001～3,000円</option>
+								<option value="4">3,001～4,000円</option>
+								<option value="5">4,001～5,000円</option>
+								<option value="6">5,001円～</option>
+							</select>
+						</div>
 						<div id="sort" class="selectBox" data-opened="false">
 							<label>おすすめ順<input type="radio" name="sort" value="major" checked></label>
 							<label>登録日時<input type="radio" name="sort" value="created_at"></label>
@@ -132,6 +147,20 @@
 				} else {
 					langs.setAttribute('data-opened', false);
 					langs.removeAttribute('style');
+				}
+			}
+
+			function openWage() {
+				let st = document.getElementById('wages');
+				if (st.getAttribute('data-opened') == "false") {
+					st.setAttribute('data-opened', true);
+					st.style.height = '74px';
+					st.style.overflow = 'auto';
+					st.style.padding = '10px';
+					st.style.opacity = '1';
+				} else {
+					st.setAttribute('data-opened', false);
+					st.removeAttribute('style');
 				}
 			}
 
