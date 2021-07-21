@@ -6,7 +6,7 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>パスワードのリセット | Live interpreting</title>
+		<title>クレジットカードの登録・変更 | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
 			.button {
@@ -49,7 +49,7 @@
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>
 				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
-				<div onclick="location = '/mypage/'" class="selected"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
 				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
 				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
 				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
@@ -57,8 +57,8 @@
 			</div>
 			<div id="content">
 				<form name="fm" onsubmit="update(); return false;">
-					<h1>新しいパスワードを入力してください</h1>
-					<p>8文字～16文字で、半角英数で入力してください</p>
+					<h1></h1>
+					<p></p>
 					<div class="field">
 						<input type="password" name="pass" class="input" minlength="8" maxlength="16" pattern="^[0-9A-Za-z]+$" required>
 						<lavel class="input-label">パスワード</lavel>
@@ -81,41 +81,6 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			function update() {
-				if (document.fm.pass.value != document.fm.pass2.value) {
-					passUnmatch.innerText = "パスワードが一致しません！";
-					passUnmatch.style.animationName = "vibe";
-					setTimeout(() => {
-						passUnmatch.style.animationName = "none";
-					}, 400);
-				} else {
-					passUnmatch.innerText = "";
-					btn.innerText = "送信中";
-					btn.setAttribute("disabled", "");
-					var data = new FormData(document.fm);
-					fetch('/Account/passreset/', {
-						method: "put",
-						body: data
-					}).then(res => {
-						if (res.status == 200)
-							return res.json();
-						else
-							return false;
-					}).then(result => {
-						btn.innerText = "決定";
-						btn.removeAttribute("disabled");
-						if (result) {
-							resultMsg.innerText = "パスワードを設定しました。";
-							setTimeout(() => {
-								location = "/u/{{ .Login.Id }}";
-							}, 2000);
-						} else {
-							resultMsg.innerText = "失敗";
-							alert('パスワードの設定に失敗しました。');
-						}
-					});
-				}
-			}
 		</script>
 	</body>
 </html>

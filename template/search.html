@@ -96,7 +96,7 @@
 					<div style="padding: 0 10px;">
 						<div id="langs" class="selectBox" data-opened="false"></div>
 						<div id="wages" class="selectBox" data-opened="false">
-							<select id="houry_wage" class="input">
+							<select id="hourly_wage" class="input">
 								<option value="1">～1,000円</option>
 								<option value="2">1,001～2,000円</option>
 								<option value="3">2,001～3,000円</option>
@@ -180,10 +180,15 @@
 
 			function search() {
 				let checks = Array.from(document.querySelectorAll('input[name="lang"]')).filter(l => l.checked);
-				if (checks.length == 0) return;
 				let langs = checks.map(l => l.value).join(',');
+				let query = 'langs=' + langs  + "&sort=" + document.querySelector('input[name="sort"]:checked').value + '&wage=' + document.getElementById('hourly_wage').value;
+				location.replace('/search?' + query);
 				document.getElementById('users').innerHTML = '';
-				get('/Account/Search?langs=' + langs  + "&sort=" + document.querySelector('input[name="sort"]:checked').value)
+			}
+
+			if (new URL(location).searchParams.get('langs') != null) {
+				let query = 'langs=' + new URL(location).searchParams.get('langs') + '&sort=' + new URL(location).searchParams.get('sort') + '&wage=' + new URL(location).searchParams.get('wage');
+				get('/Account/Search?' + query)
 				.then(accounts => {
 					Array.from(accounts).forEach(ac => {
 						document.getElementById('users').appendChild(createAccount(ac));

@@ -170,7 +170,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "user_type value is not allowed", 400)
 				return
 			}
-			acs := accounts.Search(search, userType, r.FormValue("langs"), r.FormValue("sort"), ac.Id)
+			acs := accounts.Search(search, userType, r.FormValue("langs"), r.FormValue("sort"), r.FormValue("wage"), ac.Id)
 			bytes, err := json.Marshal(acs)
 			if err != nil {
 				log.Fatal(err)

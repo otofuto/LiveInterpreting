@@ -533,7 +533,7 @@ func checkPass(hash string, pass string) bool {
 	return err == nil
 }
 
-func Search(search, user_type, lans, sort string, id int) []Accounts {
+func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 	db := database.Connect()
 	defer db.Close()
 
@@ -579,7 +579,40 @@ func Search(search, user_type, lans, sort string, id int) []Accounts {
 		//
 	}
 
-	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + searchQ + sortQ
+	wageQ := ""
+	if wage == "1" {
+		if searchQ != "" {
+			wageQ += " and "
+		}
+		wageQ += "`hourly_wage` <= 1000"
+	} else if wage == "2" {
+		if searchQ != "" {
+			wageQ += " and "
+		}
+		wageQ += "(`hourly_wage` > 1000 and `hourly_wage` <= 2000)"
+	} else if wage == "3" {
+		if searchQ != "" {
+			wageQ += " and "
+		}
+		wageQ += "(`hourly_wage` > 2000 and `hourly_wage` <= 3000)"
+	} else if wage == "4" {
+		if searchQ != "" {
+			wageQ += " and "
+		}
+		wageQ += "(`hourly_wage` > 3000 and `hourly_wage` <= 4000)"
+	} else if wage == "5" {
+		if searchQ != "" {
+			wageQ += " and "
+		}
+		wageQ += "(`hourly_wage` > 4000 and `hourly_wage` <= 5000)"
+	} else if wage == "6" {
+		if searchQ != "" {
+			wageQ += " and "
+		}
+		wageQ += "`hourly_wage` > 5000"
+	}
+
+	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + searchQ + wageQ + sortQ
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go Search(search, user_type, lans string, id int)")
