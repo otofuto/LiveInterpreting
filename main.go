@@ -22,6 +22,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/talkrooms"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
+	stripe "github.com/otofuto/LiveInterpreting/pkg/stripeHandler"
 )
 
 var port string
@@ -76,6 +77,7 @@ func main() {
 	http.HandleFunc("/search/", SearchHandle)
 	http.HandleFunc("/trans/", TransHandle)
 	http.HandleFunc("/inbox/", InboxHandle)
+	http.HandleFunc("/payment/", PaymentHandle)
 
 	http.HandleFunc("/document/", documentHandle)
 
@@ -1449,6 +1451,104 @@ func InboxHandle(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
 		}
+	} else {
+		http.Error(w, "method not allowed.", 405)
+	}
+}
+
+func PaymentHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	login := account.LoginAccount(r)
+	if login.Id == -1 {
+		http.Redirect(w, r, "/", 303)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		type StripeInfo struct {
+			PublicKey string `json:"pk"`
+			SecretKey string `json:"sk"`
+		}
+		filename := r.URL.Path[len("/payment/"):]
+		if strings.HasSuffix(filename, "/") {
+			filename = filename[:len(filename)-1]
+		}
+		bytes, _ := json.Marshal(StripeInfo{
+			PublicKey: os.Getenv("STRIPE_API_KEY"),
+			SecretKey: stripe.GetClientSecret(50),
+		})
+		temp := template.Must(template.ParseFiles("template/payment/" + filename + ".html"))
+		if err := temp.Execute(w, TempContext{
+			Message: string(bytes),
+		}); err != nil {
+			log.Println(err)
+			http.Error(w, "HTTP 500 Internal server error", 500)
+			return
+		}
+	} else if r.Method == http.MethodPost {
+		/*r.ParseMultipartForm(32 << 20)
+		if login.StripeSubscription == "" {
+			if r.FormValue("token") != "" {
+				planName := r.URL.Path[len("/payment/"):]
+				plan := plans.Get(planName)
+				if plan.Slug == "" {
+					http.Error(w, "plan was not selected", 404)
+					return
+				}
+				if login.Get() {
+					if login.StripeCustomer == "" {
+						cusId := stripe.CreateCustomer(login.Email, login.Name, r.FormValue("token"))
+						if cusId == "" {
+							http.Error(w, "failed to create customer of stripe", 500)
+							return
+						}
+						if err := login.SetCustomerId(cusId); err != nil {
+							http.Error(w, "failed to set customer id to your account", 500)
+							return
+						}
+					}
+					sid := stripe.GetSubscription(login.StripeCustomer, plan.PriceId)
+					if sid == "" {
+						http.Error(w, "subscription id is empty", 500)
+						return
+					}
+					if err := login.SetSubscriptionId(sid, planName); err != nil {
+						http.Error(w, "failed to set subscription id to your account", 500)
+						return
+					}
+					fmt.Fprintf(w, "true")
+				} else {
+					http.Error(w, "failed to get account info", 500)
+					return
+				}
+			} else {
+				http.Error(w, "token is required to register customer.", 400)
+				return
+			}
+		} else {
+			http.Error(w, "already subscribed!", 400)
+		}*/
+	} else if r.Method == http.MethodDelete {
+		/*if login.Get() {
+			if login.StripeSubscription != "" {
+				if err := stripe.EndSubscription(login.StripeSubscription); err != nil {
+					log.Println(err)
+					http.Error(w, "failed to end subscription", 500)
+					return
+				}
+				if err := login.SetSubscriptionId("", login.Plan); err != nil {
+					log.Println(err)
+					http.Error(w, "failed to update account data: stripe_subscription", 500)
+					return
+				}
+				fmt.Fprintf(w, "true")
+			} else {
+				http.Error(w, "subscription already ended", 400)
+			}
+		} else {
+			http.Error(w, "failed to get your account datas", 500)
+		}*/
 	} else {
 		http.Error(w, "method not allowed.", 405)
 	}

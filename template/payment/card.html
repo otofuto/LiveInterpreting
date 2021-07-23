@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>クレジットカードの登録・変更 | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<style>
+			.button {
+				font-size: 150%;
+				width: 300px;
+			}
+
+			#passUnmatch {
+				color: red;
+				animation-duration: 400ms;
+				animation-timing-function: ease;
+			}
+
+			@keyframes vibe {
+				0% {
+					margin-right: 10px;
+					margin-left: 0;
+				}
+
+				33% {
+					margin-right: 0;
+					margin-left: 10px;
+				}
+
+				66% {
+					margin-right: 10px;
+					margin-left: 0;
+				}
+
+				100% {
+					margin-right: 0;
+					margin-left: 0;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				<div onclick="logout()"><span>ログアウト</span></div>
+			</div>
+			<div id="content">
+				<form id="paymentForm" name="fm">
+					<div>
+						<label>サイト名</label>
+						<div style="border-bottom: solid 1px silver; padding: 10px;">Live interpreting</div>
+					</div>
+					<div class="field">
+						<label>カード番号</label>
+						<div id="cardNumber" class="input"></div>
+					</div>
+					<div class="field">
+						<label>有効期限</label>
+						<div id="cardExpiry" class="input"></div>
+					</div>
+					<div class="field">
+						<label>セキュリティコード</label>
+						<div id="cardCvc" class="input"></div>
+					</div>
+					<div style="padding: 10px; text-align: center;">
+						<div id="info" style="color: red;"></div>
+						<button class="button" onclick="document.fm.sub.click()" id="btn">決定</button>
+					</div>
+				</form>
+				<p id="resultMsg"></p>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label><script>footerText();</script></label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script src="https://js.stripe.com/v3/"></script>
+		<script>
+			let obj = JSON.parse("{{ .Message }}");
+			const stripe = Stripe(obj.pk);
+			const elements = stripe.elements();
+			let style = {
+				base: {
+					fontSize: '17px'
+				}
+			};
+			let cardNumber = elements.create('cardNumber', {
+				style: style,
+				classes: {base: 'base'}
+			});
+			cardNumber.mount('#cardNumber');
+			let cardExpiry = elements.create('cardExpiry', {
+				style: style,
+				classes: {base: 'base'}
+			});
+			cardExpiry.mount('#cardExpiry');
+			let cardCvc = elements.create('cardCvc', {
+				style: style,
+				classes: {base: 'base'}
+			});
+			cardCvc.mount('#cardCvc');
+	
+			paymentForm.addEventListener('submit', e => {
+				e.preventDefault();
+				let grayBack = document.getElementById('grayBack');
+				grayBack.style.display = 'block';
+				grayBack.style.opacity = '1';
+				stripe.createToken(cardNumber).then(result => {
+					if (result.error) {
+						grayBack.style.display = 'none';
+						grayBack.style.opacity = '0';
+						info.innerHTML = result.error.message;
+					} else {
+						console.log('result', result);
+						spriteTokenHandler(result.token.id);
+					}
+				});
+			});
+	
+			function spriteTokenHandler(token) {
+				if (token == "") {
+					console.log("token is empty");
+					return;
+				}
+				let grayBack = document.getElementById('grayBack');
+				let data = new FormData();
+				data.append('token', token);
+				post(location.pathname, data)
+				.then(res => {
+					console.log(res);
+					info.innerHTML = "";
+					alert('決済処理が完了しました。');
+					location = '/mypage/';
+				}).catch(err => {
+					console.error(err);
+					grayBack.style.display = 'none';
+					grayBack.style.opacity = '0';
+				});
+			}
+		</script>
+	</body>
+</html>
