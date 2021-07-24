@@ -18,23 +18,24 @@ import (
 )
 
 type Accounts struct {
-	Id          int           `json:"id"`
-	Name        string        `json:"name"`
-	Email       string        `json:"email"`
-	Password    string        `json:"password"`
-	IconImage   string        `json:"icon_image"`
-	Description string        `json:"description"`
-	Sex         int           `json:"sex"`
-	UserType    string        `json:"user_type"`
-	Url1        string        `json:"url1"`
-	Url2        string        `json:"url2"`
-	Url3        string        `json:"url3"`
-	HourlyWage  int           `json:"hourly_wage"`
-	WageComment string        `json:"wage_comment"`
-	Langs       []langs.Langs `json:"langs"`
-	CreatedAt   string        `json:"created_at"`
-	Enabled     int           `json:"enabled"`
-	LastLogined string        `json:"last_logined"`
+	Id             int           `json:"id"`
+	Name           string        `json:"name"`
+	Email          string        `json:"email"`
+	Password       string        `json:"password"`
+	IconImage      string        `json:"icon_image"`
+	Description    string        `json:"description"`
+	Sex            int           `json:"sex"`
+	UserType       string        `json:"user_type"`
+	Url1           string        `json:"url1"`
+	Url2           string        `json:"url2"`
+	Url3           string        `json:"url3"`
+	HourlyWage     int           `json:"hourly_wage"`
+	WageComment    string        `json:"wage_comment"`
+	Langs          []langs.Langs `json:"langs"`
+	CreatedAt      string        `json:"created_at"`
+	Enabled        int           `json:"enabled"`
+	LastLogined    string        `json:"last_logined"`
+	StripeCustomer string        `json:"stripe_customer"`
 }
 
 type AccountTokens struct {
@@ -223,7 +224,7 @@ func (ac *Accounts) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
+	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined`, `stripe_customer` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Get()")
@@ -233,7 +234,7 @@ func (ac *Accounts) Get() bool {
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined, &ac.StripeCustomer)
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) Get()")
 			log.Println(err)
@@ -293,6 +294,7 @@ func (ac *Accounts) GetView(loginid int) {
 	if ac.Get() {
 		ac.Password = ""
 		ac.Email = ""
+		ac.StripeCustomer = ""
 	} else {
 		ac.Id = -1
 	}
@@ -974,4 +976,23 @@ func (ac *Accounts) GetTranses(count, offset int) []trans.Trans {
 		ret = append(ret, tr)
 	}
 	return ret
+}
+
+func (ac *Accounts) SetCustomerId(cus string) error {
+	db := database.Connect()
+	defer db.Close()
+
+	upd, err := db.Prepare("update `accounts` set `stripe_customer` = ? where id = ?")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer upd.Close()
+	_, err = upd.Exec(&cus, &ac.Id)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	ac.StripeCustomer = cus
+	return nil
 }
