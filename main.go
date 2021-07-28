@@ -1476,7 +1476,6 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		bytes, _ := json.Marshal(StripeInfo{
 			PublicKey: os.Getenv("STRIPE_API_KEY"),
-			SecretKey: stripe.GetClientSecret(50),
 		})
 		temp := template.Must(template.ParseFiles("template/payment/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
@@ -1489,7 +1488,20 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
 		if login.Get() {
-			if login.StripeCustomer == "" {
+			mode := r.URL.Path[len("/payment/"):]
+			if strings.HasSuffix(mode, "/") {
+				mode = mode[:len(mode)-1]
+			}
+			if mode == "card" {
+				if login.StripeCustomer != "" {
+					err := stripe.DeleteCustomer(login.StripeCustomer)
+					if err != nil {
+						log.Println("main.go PaymentHandle(w http.ResponseWriter, r *http.Request) Method: POST")
+						log.Println(err)
+						http.Error(w, "failed to delete old customer", 500)
+						return
+					}
+				}
 				cusId := stripe.CreateCustomer(login.Email, login.Name, r.FormValue("token"))
 				if cusId == "" {
 					http.Error(w, "failed to create customer of stripe", 500)
@@ -1499,8 +1511,10 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "failed to set customer id to your account", 500)
 					return
 				}
+				fmt.Fprintf(w, "true")
+			} else {
+				http.Error(w, "different mode", 404)
 			}
-			fmt.Fprintf(w, "true")
 		} else {
 			http.Error(w, "failed to get account info", 500)
 			return

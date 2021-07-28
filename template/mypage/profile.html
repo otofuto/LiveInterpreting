@@ -162,6 +162,7 @@
 				</p>
 			</div>
 		</main>
+		<div id="grayBack"></div>
 		<footer class="page-footer">
 			<label><script>footerText();</script></label>
 		</footer>
@@ -241,6 +242,10 @@
 				let data = new FormData();
 				data.append("email", "{{.Login.Email}}");
 				data.append("password", pass);
+				formDisabled(document.fm, true);
+				let grayBack = document.getElementById('grayBack');
+				grayBack.style.display = 'block';
+				grayBack.style.opacity = '1';
 				post('/Login/', data)
 				.then(login => {
 					data = new FormData();
@@ -263,15 +268,24 @@
 					data.append("langs", JSON.stringify(langarray));
 					put('/Account/', data)
 					.then(result => {
+						formDisabled(document.fm, false);
+						grayBack.style.display = 'none';
+						grayBack.style.opacity = '0';
 						alert("アカウント情報を更新しました。");
 						btnUpdate.innerText = "更新";
 						btnUpdate.removeAttribute("disabled");
 					}).catch(err => {
+						formDisabled(document.fm, false);
+						grayBack.style.display = 'none';
+						grayBack.style.opacity = '0';
 						alert("更新に失敗しました。");
 						btnUpdate.innerText = "更新";
 						btnUpdate.removeAttribute("disabled");
 					});
 				}).catch(err => {
+					formDisabled(document.fm, false);
+					grayBack.style.display = 'none';
+					grayBack.style.opacity = '0';
 					alert("パスワードが間違っています。");
 					btnUpdate.innerText = "更新";
 					btnUpdate.removeAttribute("disabled");

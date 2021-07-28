@@ -50,19 +50,6 @@
 				min-width: 250px;
 				box-sizing: border-box;
 			}
-
-			#grayBack {
-				display: none;
-				position: fixed;
-				width: 100vw;
-				height: 100vh;
-				top: 0;
-				left: 0;
-				background-color: rgba(0, 0, 0, 0.2);
-				transition: 0ms 150ms opacity ease;
-				opacity: 0;
-				z-index: 9999;
-			}
 		</style>
 	</head>
 	<body>
@@ -136,7 +123,9 @@
 				let grayBack = document.getElementById('grayBack');
 				grayBack.style.display = 'block';
 				grayBack.style.opacity = '1';
+				formDisabled(document.fm, true);
 				stripe.createToken(cardNumber).then(result => {
+					formDisabled(document.fm, false);
 					if (result.error) {
 						grayBack.style.display = 'none';
 						grayBack.style.opacity = '0';
