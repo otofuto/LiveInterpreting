@@ -38,6 +38,10 @@
 				<h3>自分に対して見積依頼をすることはできません。</h3>
 				{{ else }}
 				<h3>{{ .User.Name }}さんに見積もり依頼をします。</h3>
+				{{ if eq .Login.StripeCustomer "" }}
+				<p>見積依頼をするにはクレジットカードの登録が必要です。</p>
+				<p><a href="/payment/card/" target="new">こちら</a>から登録してください。</p>
+				{{ end }}
 				<form name="fm" onsubmit="sub(); return false;">
 					<div class="field">
 						<input type="datetime-local" class="input" name="live_start" required>
@@ -122,19 +126,19 @@
 				post('/trans/req/{{ .User.Id }}', data)
 				.then(res => {
 					if (res === true) {
-						alert('登録成功');
+						alert('送信成功');
 						location = '/u/{{ .User.Id }}';
 					} else if (typeof res.id == 'number') {
 						location = '/trans/' + res.id + "?msg=req";
 					} else {
 						formDisabled(document.fm, false);
 						console.error(res);
-						alert("登録に失敗しました。");
+						alert("送信に失敗しました。");
 					}
 				}).catch(err => {
 					formDisabled(document.fm, false);
 					console.error(err);
-					alert('登録に失敗しました。');
+					alert('送信に失敗しました。');
 				});
 			}
 		</script>

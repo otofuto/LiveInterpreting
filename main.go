@@ -817,6 +817,10 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if strings.HasPrefix(mode, "req/") {
+			if login.StripeCustomer == "" {
+				http.Error(w, "login user is not registered credit card yet", 403)
+				return
+			}
 			uid, err := strconv.Atoi(mode[len("req/"):])
 			if err != nil {
 				http.Error(w, "user id is not integer", 400)
