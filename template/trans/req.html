@@ -39,8 +39,8 @@
 				{{ else }}
 				<h3>{{ .User.Name }}さんに見積もり依頼をします。</h3>
 				{{ if eq .Login.StripeCustomer "" }}
-				<p>見積依頼をするにはクレジットカードの登録が必要です。</p>
-				<p><a href="/payment/card/" target="new">こちら</a>から登録してください。</p>
+				<p style="color: red;">見積依頼をするにはクレジットカードの登録が必要です。</p>
+				<p><a href="/payment/card/" target="new">こちら</a>からクレジットカードを登録してください。</p>
 				{{ end }}
 				<form name="fm" onsubmit="sub(); return false;">
 					<div class="field">

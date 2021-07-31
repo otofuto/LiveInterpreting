@@ -989,6 +989,11 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "dame", 403)
 				return
 			}
+			if tr.BuyDate.Valid {
+				http.Error(w, "already buyed", 400)
+				return
+			}
+			//ここでstripe支払い
 			tr.BuyDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}
 			err = tr.Update()
 			if err != nil {
@@ -1484,6 +1489,7 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 		temp := template.Must(template.ParseFiles("template/payment/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
 			Message: string(bytes),
+			Login:   login,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
@@ -1524,25 +1530,33 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if r.Method == http.MethodDelete {
-		/*if login.Get() {
-			if login.StripeSubscription != "" {
-				if err := stripe.EndSubscription(login.StripeSubscription); err != nil {
-					log.Println(err)
-					http.Error(w, "failed to end subscription", 500)
-					return
-				}
-				if err := login.SetSubscriptionId("", login.Plan); err != nil {
-					log.Println(err)
-					http.Error(w, "failed to update account data: stripe_subscription", 500)
-					return
+		if login.Get() {
+			mode := r.URL.Path[len("/payment/"):]
+			if strings.HasSuffix(mode, "/") {
+				mode = mode[:len(mode)-1]
+			}
+			if mode == "card" {
+				if login.StripeCustomer != "" {
+					err := stripe.DeleteCustomer(login.StripeCustomer)
+					if err != nil {
+						log.Println("main.go PaymentHandle(w http.ResponseWriter, r *http.Request) Method: POST")
+						log.Println(err)
+						http.Error(w, "failed to delete old customer", 500)
+						return
+					}
+					if err := login.SetCustomerId(""); err != nil {
+						http.Error(w, "failed to set customer id to your account", 500)
+						return
+					}
 				}
 				fmt.Fprintf(w, "true")
 			} else {
-				http.Error(w, "subscription already ended", 400)
+				http.Error(w, "different mode", 404)
 			}
 		} else {
-			http.Error(w, "failed to get your account datas", 500)
-		}*/
+			http.Error(w, "failed to get account info", 500)
+			return
+		}
 	} else {
 		http.Error(w, "method not allowed.", 405)
 	}

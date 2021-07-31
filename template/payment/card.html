@@ -8,6 +8,7 @@
 		<meta name="robots" content="noindex,nofollow">
 		<title>クレジットカードの登録・変更 | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
 			.button {
 				font-size: 150%;
@@ -65,7 +66,12 @@
 				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
+				{{ if eq .Login.StripeCustomer "" }}
 				<h1>クレジットカードを登録する</h1>
+				{{ else }}
+				<h1>クレジットカードを変更する</h1>
+				<p>登録済みのカード番号は表示されません。<br>カードを変更する場合は新しい番号を入力してください。</p>
+				{{ end }}
 				<form id="paymentForm" name="fm">
 					<div class="field">
 						<label>カード番号</label>
@@ -81,9 +87,14 @@
 					</div>
 					<div style="padding: 10px; text-align: center;">
 						<div id="info" style="color: red;"></div>
-						<button class="button" onclick="document.fm.sub.click()" id="btn">決定</button>
+						<button class="button" id="btn">登録</button>
 					</div>
 				</form>
+				{{ if ne .Login.StripeCustomer "" }}
+				<div style="text-align: center;">
+					<button class="button" onclick="deleteCustomer()" id="delbtn">登録済みカードを解除する</button>
+				</div>
+				{{ end }}
 				<p id="resultMsg"></p>
 			</div>
 		</main>
@@ -125,10 +136,10 @@
 				grayBack.style.opacity = '1';
 				formDisabled(document.fm, true);
 				stripe.createToken(cardNumber).then(result => {
-					formDisabled(document.fm, false);
 					if (result.error) {
 						grayBack.style.display = 'none';
 						grayBack.style.opacity = '0';
+						formDisabled(document.fm, false);
 						info.innerHTML = result.error.message;
 					} else {
 						console.log('result', result);
@@ -148,11 +159,31 @@
 				post(location.pathname, data)
 				.then(res => {
 					console.log(res);
+					formDisabled(document.fm, false);
 					info.innerHTML = "";
 					alert('カードの登録が完了しました。');
 					location = '/mypage/profile/';
 				}).catch(err => {
 					console.error(err);
+					formDisabled(document.fm, false);
+					grayBack.style.display = 'none';
+					grayBack.style.opacity = '0';
+				});
+			}
+
+			function deleteCustomer() {
+				if (!confirm('クレジットカードの登録を解除しますか？')) return;
+				let grayBack = document.getElementById('grayBack');
+				grayBack.style.display = 'block';
+				grayBack.style.opacity = '1';
+				document.getElementById('delbtn').setAttribute('disabled', '');
+				del('/payment/card')
+				.then(res => {
+					alert('クレジットカードの登録を解除しました。');
+					location.reload();
+				}).catch(err => {
+					console.error(err);
+					document.getElementById('delbtn').removeAttribute('disabled');
 					grayBack.style.display = 'none';
 					grayBack.style.opacity = '0';
 				});

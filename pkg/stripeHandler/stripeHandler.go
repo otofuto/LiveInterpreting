@@ -7,7 +7,7 @@ import (
 
 	stripe "github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/customer"
-	paymentintent "github.com/stripe/stripe-go/v72/paymentintent"
+	"github.com/stripe/stripe-go/v72/setupintent"
 )
 
 type Webhook struct {
@@ -35,20 +35,35 @@ type WebhookObject struct {
 // 	return paymentintent.New(params)
 // }
 
-func GetClientSecret(yen int) string {
+/*func Payment(cusid string, yen int) error {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 	params := &stripe.PaymentIntentParams{
 		Amount:             stripe.Int64(int64(yen)),
 		Currency:           stripe.String(string(stripe.CurrencyJPY)),
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+		Customer:           &cusid,
 	}
 	pi, err := paymentintent.New(params)
 	if err != nil {
 		log.Println(err)
-		return ""
+		return err
 	}
 	fmt.Println(pi.ID)
-	return pi.ClientSecret
+	fmt.Println(pi.ClientSecret)
+	return nil
+}*/
+
+func GetClientSecret() string {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+	pms := &stripe.SetupIntentParams{
+		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
+	}
+	si, err := setupintent.New(pms)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return si.ClientSecret
 }
 
 func CreateCustomer(email, name, token string) string {

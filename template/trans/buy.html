@@ -57,6 +57,9 @@
 			</div>
 			<div id="content">
 				<h1>購入する</h1>
+				{{ if eq .Login.StripeCustomer "" }}
+				<p style="color: red;">クレジットカードが登録されていません。<br>購入するには<a href="/payment/card/" target="new">こちら</a>からクレジットカードを登録してください。</p>
+				{{ end }}
 				<p><a id="backtotrans">案件内容に戻る</a></p>
 				<p>依頼者: <a id="from"></a></p>
 				<p>通訳者: <a id="to"></a></p>
@@ -101,6 +104,7 @@
 			appendRow('通訳形態', ['テキスト', '音声', 'テキストと音声'][msg.trans.request_type]);
 			appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
 			appendRow('見積詳細', msg.trans.response.String);
+			{{ if ne .Login.StripeCustomer "" }}
 			document.querySelector('#buy button').innerText = msg.trans.price.Int64.toLocaleString() + '円で購入する';
 			document.querySelector('#buy button').addEventListener('click', elm => {
 				let text = elm.target.innerText;
@@ -123,6 +127,7 @@
 					alert('失敗しました。');
 				});
 			});
+			{{ end }}
 		</script>
 	</body>
 </html>
