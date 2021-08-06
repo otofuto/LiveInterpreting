@@ -105,7 +105,7 @@
 			appendRow('見積金額', "￥" + msg.trans.price.Int64.toLocaleString());
 			appendRow('見積詳細', msg.trans.response.String);
 			{{ if ne .Login.StripeCustomer "" }}
-			document.querySelector('#buy button').innerText = msg.trans.price.Int64.toLocaleString() + '円で購入する';
+			document.querySelector('#buy button').innerText = msg.trans.price.Int64.toLocaleString() + '円で購入を確定する';
 			document.querySelector('#buy button').addEventListener('click', elm => {
 				let text = elm.target.innerText;
 				elm.target.innerText = '購入処理中';

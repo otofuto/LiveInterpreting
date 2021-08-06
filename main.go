@@ -994,6 +994,13 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			//ここでstripe支払い
+			err = stripe.Payment(login.StripeCustomer, tr.Price.Int64)
+			if err != nil {
+				log.Println("main.go TransHandle(w http.ResponseWriter, r *http.Request) POST")
+				log.Println(err)
+				http.Error(w, "failed to payment", 500)
+				return
+			}
 			tr.BuyDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}
 			err = tr.Update()
 			if err != nil {
@@ -1485,6 +1492,7 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 		}
 		bytes, _ := json.Marshal(StripeInfo{
 			PublicKey: os.Getenv("STRIPE_API_KEY"),
+			SecretKey: stripe.GetClientSecret(),
 		})
 		temp := template.Must(template.ParseFiles("template/payment/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{

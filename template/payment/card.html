@@ -135,7 +135,14 @@
 				grayBack.style.display = 'block';
 				grayBack.style.opacity = '1';
 				formDisabled(document.fm, true);
-				stripe.createToken(cardNumber).then(result => {
+				stripe.confirmCardSetup(
+					obj.sk,
+					{
+						payment_method: {
+							card: cardNumber
+						}
+					}
+				).then(function(result) {
 					if (result.error) {
 						grayBack.style.display = 'none';
 						grayBack.style.opacity = '0';
@@ -143,9 +150,11 @@
 						info.innerHTML = result.error.message;
 					} else {
 						console.log('result', result);
-						spriteTokenHandler(result.token.id);
+						//spriteTokenHandler(result.token.id);
+						spriteTokenHandler(result.setupIntent.payment_method);
 					}
 				});
+				//stripe.createToken(cardNumber).then(result => {});
 			});
 	
 			function spriteTokenHandler(token) {
