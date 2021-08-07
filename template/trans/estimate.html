@@ -148,6 +148,7 @@
 			}
 
 			function sub() {
+				document.fm2.style.display = 'none';
 				let data = new FormData(document.fm);
 				formDisabled(document.fm, true);
 				post('/trans/estimate/' + msg.trans.id, data)
@@ -170,6 +171,7 @@
 			}
 
 			function cancelEst() {
+				document.fm.style.display = 'none';
 				let data = new FormData(document.fm2);
 				formDisabled(document.fm2, true);
 				del('/trans/estimate/' + msg.trans.id, data)

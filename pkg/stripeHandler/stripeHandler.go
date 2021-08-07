@@ -53,6 +53,7 @@ func Payment(cusid string, yen int64) error {
 		PaymentMethodTypes: stripe.StringSlice([]string{"card"}),
 		Customer:           &cusid,
 		PaymentMethod:      stripe.String(a.ID),
+		Confirm:            stripe.Bool(true),
 	}
 	pi, err := paymentintent.New(pms)
 	if err != nil {
@@ -61,7 +62,10 @@ func Payment(cusid string, yen int64) error {
 		return err
 	}
 	fmt.Println(pi.ID)
-	fmt.Println(pi.Status) //requires_confirmation
+	fmt.Println(pi.Status)
+	if pi.Status == stripe.PaymentIntentStatusSucceeded {
+		return nil
+	}
 	return errors.New("undefined error")
 }
 

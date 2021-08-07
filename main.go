@@ -993,7 +993,6 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "already buyed", 400)
 				return
 			}
-			//ここでstripe支払い
 			err = stripe.Payment(login.StripeCustomer, tr.Price.Int64)
 			if err != nil {
 				log.Println("main.go TransHandle(w http.ResponseWriter, r *http.Request) POST")
