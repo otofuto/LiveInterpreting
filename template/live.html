@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>Text Interpreting | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<style>
+			#textInteArea {
+				width: 100%;
+				padding: 10px;
+				box-sizing: border-box;
+			}
+
+			#list {
+				width: 100%;
+				padding: 5px;
+				box-sizing: border-box;
+				border: solid 1px var(--color2);
+				border-radius: 3px;
+				height: 100%;
+				overflow: auto;
+			}
+
+			.txt {
+				display: block;
+				background-color: whitesmoke;
+				margin-bottom: 3px;
+			}
+
+			.spn_created_at {
+				display: inline-block;
+				width: 100%;
+				text-align: right;
+				color: gray;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				{{ if ne .Login.Id -1 }}
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				{{ end }}
+				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				{{ if ne .Login.Id -1 }}
+				<div onclick="logout()"><span>ログアウト</span></div>
+				{{ else }}
+				<div onclick="location = '/st/login/'"><span>ログイン</span></div>
+				{{ end }}
+			</div>
+			<div id="content">
+				<h2 id="liveTitle"></h2>
+				<p id="liveInfo"></p>
+				<div id="textInteArea">
+					{{ if eq .Login.Id .Trans.To }}
+					<textarea id="text" class="textarea" placeholder="通訳文をここへ入力、Ctrl+Enterで送信"></textarea>
+					<div>
+						<button id="sendBtn" class="button" onclick="send()">送信</button>
+					</div>
+					{{ end }}
+					<div id="list"></div>
+				</div>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label><script>footerText();</script></label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script>
+			let msg = JSON.parse("{{ .Message }}");
+			document.getElementById('liveTitle').innerText = msg.liver.name + "さんのライブ通訳";
+			let begin = new Date(msg.begin);
+			begin_str = (begin.getMonth() + 1) + "月 " + begin.getDate() + "日 " + begin.getHours() + "時 " + begin.getMinutes() + "分";
+			document.getElementById('liveInfo').innerText = begin_str + "から" + msg.length + "分間";
+
+			function connectWs() {
+				let chatId = "live{{ .Trans.Id }}";
+				ws = new WebSocket((window.location.host == "live-interpreting.herokuapp.com" ? "wss://" : "ws://") + window.location.host + "/ws/" + chatId);
+				//ws = new WebSocket("wss://" + window.location.host + "/ws/" + chatId);
+
+				ws.onopen = () => {
+					console.log("ws connected.");
+				}
+
+				ws.onmessage = message => {
+					let data = JSON.parse(message.data);
+					console.log(data);
+
+					let txt = document.createElement('article');
+					txt.appendChild(document.createTextNode(data.message));
+					txt.setAttribute('class', 'txt');
+
+					let created_at = document.createElement('span');
+					created_at.innerText = data.created_at;
+					created_at.setAttribute('class', 'spn_created_at');
+					txt.appendChild(created_at);
+
+					document.getElementById('list').prepend(txt);
+
+					txt.scrollIntoView(true);
+				}
+
+				ws.onclose = () => {
+					connectWs();
+				}
+			}
+
+			connectWs();
+			{{ if eq .Login.Id .Trans.To }}
+			document.getElementById('text').addEventListener('keydown', e => {
+				if (e.ctrlKey && e.code == 'Enter') {
+					document.getElementById('sendBtn').click();
+				}
+			});
+
+			function send() {
+				let txt = document.getElementById('text').value;
+				console.log(txt);
+				let createdAt = new Date();
+				ws.send(JSON.stringify({
+					"message": txt,
+					"created_at": createdAt.getHours() + ':' + createdAt.getMinutes() + ' ' + createdAt.getSeconds()
+				}));
+				document.getElementById('text').value = '';
+				document.getElementById('text').focus();
+			}
+			{{ end }}
+			{{ if ne .Login.Id -1 }}
+			{{ end }}
+		</script>
+	</body>
+</html>

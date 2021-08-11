@@ -38,6 +38,7 @@ type TempContext struct {
 	Users    []accounts.Accounts             `json:"users"`
 	Message  string                          `json:"message"`
 	Messages []directMessages.DirectMessages `json:"direct_messages"`
+	Trans    trans.Trans                     `json:"trans"`
 	Transes  []trans.Trans                   `json:"transes"`
 	Talks    []talkrooms.TalkRooms           `json:"talkrooms"`
 }
@@ -78,6 +79,7 @@ func main() {
 	http.HandleFunc("/trans/", TransHandle)
 	http.HandleFunc("/inbox/", InboxHandle)
 	http.HandleFunc("/payment/", PaymentHandle)
+	http.HandleFunc("/live/", LiveHandle)
 
 	http.HandleFunc("/document/", documentHandle)
 
@@ -1566,6 +1568,68 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)
+	}
+}
+
+func LiveHandle(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		trid, err := strconv.Atoi(r.URL.Path[len("/live/"):])
+		if err == nil {
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Redirect(w, r, "/home/", 302)
+				return
+			}
+			liver := accounts.Accounts{Id: tr.From}
+			if !liver.Get() {
+				http.Error(w, "failed to fetch account info", 500)
+				return
+			}
+			interpreter := accounts.Accounts{Id: tr.To}
+			if !interpreter.Get() {
+				http.Error(w, "failed to fetch account info", 500)
+				return
+			}
+			transConx := struct {
+				Liver       accounts.Accounts `json:"liver"`
+				Interpreter accounts.Accounts `json:"interpreter"`
+				Begin       string            `json:"begin"`
+				Length      int               `json:"length"`
+			}{
+				Liver:       liver,
+				Interpreter: interpreter,
+				Begin:       tr.LiveStart.String,
+				Length:      int(tr.LiveTime.Int64),
+			}
+			bytes, err := json.Marshal(transConx)
+			if err != nil {
+				http.Error(w, "failed to convert object to json", 500)
+				return
+			}
+			temp := template.Must(template.ParseFiles("template/live.html"))
+			if err := temp.Execute(w, TempContext{
+				Login:   account.LoginAccount(r),
+				Trans:   tr,
+				Message: string(bytes),
+			}); err != nil {
+				log.Println(err)
+				http.Error(w, "HTTP 500 Internal server error", 500)
+			}
+		} else {
+			if strings.Index(r.Referer(), "/trans/") > 0 {
+				trid_str := r.Referer()[strings.Index(r.Referer(), "/trans/")+len("/trans/"):]
+				trid, err = strconv.Atoi(trid_str)
+				if err == nil {
+					http.Redirect(w, r, "/live/"+trid_str, 302)
+				} else {
+					http.Error(w, "page not found", 404)
+				}
+			} else {
+				http.Error(w, "page not found", 404)
+			}
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
 	}
 }
 

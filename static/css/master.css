@@ -252,6 +252,7 @@ body > main {
 	padding: 18px 8px 8px 8px;
 	border-radius: 3px;
 	font-size: 16px;
+	box-sizing: border-box;
 	transition: all 100ms 0ms ease;
 }
 
