@@ -37,7 +37,7 @@
 					<label id="loginresult"></label>
 					<span>パスワードをお忘れの方は<a href="/st/forgot/">こちら</a></span><br>
 					<span>アカウントをお持ちでない方は<a href="/st/signup/">こちら</a></span>
-					<div><button class="button">ログイン</button></div>
+					<div><button class="button" id="loginbtn">ログイン</button></div>
 				</form>
 			</div>
 		</main>
@@ -64,6 +64,7 @@
 						loginresult.innerText = "ログインできませんでした\n";
 					} else {
 						loginresult.innerText = "ログイン成功\n";
+						document.getElementById('loginbtn').innerText = 'お待ち下さい';
 						location = "/home/";
 					}
 				}).catch(err => {

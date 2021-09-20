@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>Voice Interpreting | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<style>
+			#textInteArea {
+				width: 100%;
+				padding: 10px;
+				box-sizing: border-box;
+			}
+
+			#list {
+				width: 100%;
+				padding: 5px;
+				box-sizing: border-box;
+				border: solid 1px var(--color2);
+				border-radius: 3px;
+				height: 100%;
+				overflow: auto;
+			}
+
+			.txt {
+				display: block;
+				background-color: whitesmoke;
+				margin-bottom: 3px;
+			}
+
+			.spn_created_at {
+				display: inline-block;
+				width: 100%;
+				text-align: right;
+				color: gray;
+			}
+		</style>
+        <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				{{ if ne .Login.Id -1 }}
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				{{ end }}
+				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				{{ if ne .Login.Id -1 }}
+				<div onclick="logout()"><span>ログアウト</span></div>
+				{{ else }}
+				<div onclick="location = '/st/login/'"><span>ログイン</span></div>
+				{{ end }}
+			</div>
+			<div id="content">
+				<h2 id="liveTitle"></h2>
+				<p id="liveInfo"></p>
+				{{ if eq .Login.Id .Trans.To }}
+				通訳者画面
+				<select id="audioDevices"></select>
+				<input type="button" value="配信開始" onclick="beginLive()">
+				{{ else }}
+				配信者画面
+				{{ end }}
+				<video id="vd" muted></video>
+				<audio id="ad" controls></audio>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label><script>footerText();</script></label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script>
+			let msg = JSON.parse("{{ .Message }}");
+			document.getElementById('liveTitle').innerText = msg.liver.name + "さんのライブ通訳";
+			let begin = new Date(msg.begin);
+			begin_str = (begin.getMonth() + 1) + "月 " + begin.getDate() + "日 " + begin.getHours() + "時 " + begin.getMinutes() + "分";
+			document.getElementById('liveInfo').innerText = begin_str + "から" + msg.length + "分間";
+
+			{{ if eq .Login.Id .Trans.To }}
+            const peer = new Peer('test1', {
+                host: 'localhost',
+                port: 9000,
+                path: '/'
+            });
+            let vd = document.getElementById('vd');
+            let ad = document.getElementById('ad');
+			let audioDevices = document.getElementById("audioDevices");
+			navigator.mediaDevices.getUserMedia({ audio: true })
+			.then(() => {
+				navigator.mediaDevices.enumerateDevices()
+				.then(devices => {
+					devices.forEach(dev => {
+						var opt = document.createElement("option");
+						opt.value = dev.deviceId;
+						opt.innerText = dev.label;
+						if(dev.kind == "audioinput")
+							audioDevices.appendChild(opt);
+					});
+				}).catch(err => {
+					console.error(err);
+					alert('オーディオデバイスの取得に失敗しました。');
+				});
+			});
+			function beginLive() {
+				navigator.mediaDevices.getUserMedia({
+					video: false,
+					audio: {
+						deviceId: audioDevices.value
+					}
+				}).then(stream => {
+					ad.srcObject = stream;
+					ad.play();
+					peer.call('test2', stream);
+				})
+			}
+			{{ else }}
+            const peer = new Peer('test2', {
+                host: 'localhost',
+                port: 9000,
+                path: '/'
+            });
+            let vd = document.getElementById('vd');
+            peer.on('call', call => {
+                call.answer();
+                call.on('stream', stream => {
+					ad.srcObject = stream;
+					ad.play();
+                });
+            });
+			{{ end }}
+		</script>
+	</body>
+</html>

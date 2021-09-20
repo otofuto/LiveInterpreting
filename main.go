@@ -1606,7 +1606,11 @@ func LiveHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "failed to convert object to json", 500)
 				return
 			}
-			temp := template.Must(template.ParseFiles("template/live.html"))
+			reqType := "text"
+			if tr.RequestType == 1 {
+				reqType = "voice"
+			}
+			temp := template.Must(template.ParseFiles("template/live_" + reqType + ".html"))
 			if err := temp.Execute(w, TempContext{
 				Login:   account.LoginAccount(r),
 				Trans:   tr,

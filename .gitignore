@@ -1,11 +1,4 @@
-
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
-
-static/img/accounts/
-documents/
+document/
 *.sql
 *.bat
 *.exe
