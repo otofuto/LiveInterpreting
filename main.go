@@ -33,14 +33,15 @@ var broadcast = make(chan SocketMessage)
 var upgrader = websocket.Upgrader{}
 
 type TempContext struct {
-	Login    accounts.Accounts               `json:"login"`
-	User     accounts.Accounts               `json:"user"`
-	Users    []accounts.Accounts             `json:"users"`
-	Message  string                          `json:"message"`
-	Messages []directMessages.DirectMessages `json:"direct_messages"`
-	Trans    trans.Trans                     `json:"trans"`
-	Transes  []trans.Trans                   `json:"transes"`
-	Talks    []talkrooms.TalkRooms           `json:"talkrooms"`
+	Login     accounts.Accounts               `json:"login"`
+	User      accounts.Accounts               `json:"user"`
+	Users     []accounts.Accounts             `json:"users"`
+	Message   string                          `json:"message"`
+	Messages  []directMessages.DirectMessages `json:"direct_messages"`
+	Trans     trans.Trans                     `json:"trans"`
+	Transes   []trans.Trans                   `json:"transes"`
+	Talks     []talkrooms.TalkRooms           `json:"talkrooms"`
+	LiveTexts []LiveTexts                     `json:"live_texts"`
 }
 
 type SocketMessage struct {
@@ -50,6 +51,12 @@ type SocketMessage struct {
 	CreatedAt string `json:"created_at"`
 	ChatId    string `json:"chat_id"`
 	TransId   int    `json:"trans_id"`
+}
+
+type LiveTexts struct {
+	Id        int    `json:"id"`
+	Text      string `json:"text"`
+	CreatedAt string `json:"created_at"`
 }
 
 func main() {
@@ -184,7 +191,18 @@ func NotificationsHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			fmt.Fprintf(w, "true")
 		} else {
-			http.Error(w, "parametors not enough", 400)
+			login := account.LoginAccount(r)
+			if login.Id == -1 {
+				http.Error(w, "account not logined", 403)
+				return
+			}
+			err := accounts.ClearNotif(login.Id)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to delete query", 500)
+				return
+			}
+			fmt.Fprintf(w, "true")
 		}
 	} else {
 		http.Error(w, "method not alloed.", 405)
@@ -1573,7 +1591,14 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 
 func LiveHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		trid, err := strconv.Atoi(r.URL.Path[len("/live/"):])
+		trid_str := r.URL.Path[len("/live/"):]
+		GbOn := false
+		if strings.HasSuffix(r.URL.Path[len("/live/"):], "/gb") || strings.HasSuffix(r.URL.Path[len("/live/"):], "/gb/") {
+			trid_str = r.URL.Path[len("/live/"):]
+			trid_str = trid_str[:strings.Index(trid_str, "/")]
+			GbOn = true
+		}
+		trid, err := strconv.Atoi(trid_str)
 		if err == nil {
 			tr := trans.Trans{Id: trid}
 			if !tr.Get() {
@@ -1606,15 +1631,37 @@ func LiveHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "failed to convert object to json", 500)
 				return
 			}
+			texts := make([]LiveTexts, 0)
 			reqType := "text"
 			if tr.RequestType == 1 {
 				reqType = "voice"
+			} else {
+				if GbOn {
+					reqType = "text_gb"
+				}
+				db := database.Connect()
+				defer db.Close()
+
+				sql := "select `id`, `text`, `created_at` from `live_texts` where `live_id` = " + strconv.Itoa(trid) + " order by id desc"
+				rows, err := db.Query(sql)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to fetch interpretering texts", 500)
+					return
+				}
+				defer rows.Close()
+				for rows.Next() {
+					var txt LiveTexts
+					rows.Scan(&txt.Id, &txt.Text, &txt.CreatedAt)
+					texts = append(texts, txt)
+				}
 			}
 			temp := template.Must(template.ParseFiles("template/live_" + reqType + ".html"))
 			if err := temp.Execute(w, TempContext{
-				Login:   account.LoginAccount(r),
-				Trans:   tr,
-				Message: string(bytes),
+				Login:     account.LoginAccount(r),
+				Trans:     tr,
+				Message:   string(bytes),
+				LiveTexts: texts,
 			}); err != nil {
 				log.Println(err)
 				http.Error(w, "HTTP 500 Internal server error", 500)
@@ -1634,6 +1681,54 @@ func LiveHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func InsertLiveText(liveId int, msg SocketMessage) {
+	db := database.Connect()
+	defer db.Close()
+
+	if msg.Id != 0 {
+		//update
+		sql := "update `live_texts` set `text` = ? where `live_id` = ? and `id` = ?"
+		upd, err := db.Prepare(sql)
+		if err != nil {
+			log.Println(err)
+			errorData.Insert("failed to update live_text", strconv.Itoa(liveId)+", "+strconv.Itoa(msg.Id)+", "+msg.Message)
+			return
+		}
+		defer upd.Close()
+		upd.Exec(&msg.Message, &liveId, &msg.Id)
+	} else {
+		//insert
+		sql := "select count(*) + 1 from `live_texts` where `live_id` = " + strconv.Itoa(liveId)
+		rows, err := db.Query(sql)
+		if err != nil {
+			log.Println(err)
+			errorData.Insert("failed to query before insert", sql)
+			return
+		}
+		defer rows.Close()
+		newid := 1
+		if rows.Next() {
+			rows.Scan(&newid)
+		}
+		sql = "insert into `live_texts` (`live_id`, `id`, `text`, `created_at`) values (?, ?, ?, ?)"
+		ins, err := db.Prepare(sql)
+		if err != nil {
+			log.Println(err)
+			errorData.Insert("failed to insert live_text", strconv.Itoa(liveId)+", "+msg.Message+", "+msg.CreatedAt)
+			return
+		}
+		defer ins.Close()
+		_, err = ins.Exec(&liveId, &newid, &msg.Message, &msg.CreatedAt)
+		if err != nil {
+			log.Println(err)
+			errorData.Insert("failed to insert live_text query", strconv.Itoa(liveId)+", "+msg.Message+", "+msg.CreatedAt)
+			return
+		}
+		/*i64, _ := result.RowsAffected()
+		log.Println(i64)*/
 	}
 }
 
@@ -1711,6 +1806,12 @@ func handleMessages() {
 					client.Close()
 					delete(clients, client)
 				}
+			}
+		}
+		if strings.HasPrefix(msg.ChatId, "live") {
+			liveId, err := strconv.Atoi(msg.ChatId[4:])
+			if err == nil {
+				InsertLiveText(liveId, msg)
 			}
 		}
 	}

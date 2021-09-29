@@ -898,6 +898,25 @@ func DeleteNotif(from int, to int, tp string, date string) error {
 	return nil
 }
 
+func ClearNotif(id int) error {
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "delete from `notifications` where `to` = ?"
+	del, err := db.Prepare(sql)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer del.Close()
+	_, err = del.Exec(&id)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
 func (ac *Accounts) GetDMs(count int) []directMessages.DirectMessages {
 	ret := make([]directMessages.DirectMessages, 0)
 

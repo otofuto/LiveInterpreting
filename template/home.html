@@ -119,6 +119,13 @@
 			get('/Notifications/')
 			.then(notifs => {
 				if (notifs != null) {
+					if (Array.from(notifs).length > 0) {
+						let btn = document.createElement('button');
+						btn.innerText = 'すべて既読にする';
+						btn.setAttribute('onclick', 'clearNotifs()');
+						btn.setAttribute('class', 'button');
+						notifications.appendChild(btn);
+					}
 					Array.from(notifs).forEach(notif => {
 						notifications.appendChild(createNotif(notif));
 					});
@@ -165,6 +172,17 @@
 				div.appendChild(notifText);
 
 				return div;
+			}
+
+			function clearNotifs() {
+				del('/Notifications/', null)
+				.then(res => {
+					notifications.innerHTML = '';
+					notifBtn.innerText = '通知';
+				}).catch(err => {
+					console.error(err);
+					alert('エラーにより失敗しました。');
+				});
 			}
 			{{ end }}
 

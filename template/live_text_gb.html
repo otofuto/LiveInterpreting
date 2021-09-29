@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>Text Interpreting | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<style>
+			body {
+				background-color: lime;
+			}
+
+			#list {
+				width: 100%;
+				padding: 5px;
+				box-sizing: border-box;
+				height: 100%;
+				overflow: auto;
+			}
+
+			#list::-webkit-scrollbar {
+				display: none;
+			}
+
+			.txt {
+				display: block;
+				margin-bottom: 3px;
+				height: max-content;
+				width: 100%;
+				box-sizing: border-box;
+				font-weight: bold;
+				font-size: 1.5em;
+			}
+
+			.spn_created_at {
+				display: inline-block;
+				width: 100%;
+				text-align: right;
+				color: gray;
+				font-size: 1.5em;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="list">
+			{{ range .LiveTexts }}
+			<article class="txt" data-id="{{ .Id }}">
+				{{ .Text }}
+				<span class="spn_created_at">{{ .CreatedAt }}</span>
+			</article>
+			{{ end }}
+		</div>
+		<script src="/st/js/master.js"></script>
+		<script>
+			let msg = JSON.parse("{{ .Message }}");
+
+			let newid = 0;
+			Array.from(document.querySelectorAll('.txt')).forEach(t => {
+				if (newid < t.getAttribute('data-id') - 0) {
+					newid = t.getAttribute('data-id') - 0;
+				}
+			});
+			newid++;
+
+			function connectWs() {
+				let chatId = "live{{ .Trans.Id }}";
+				ws = new WebSocket((window.location.host == "live-interpreting.herokuapp.com" ? "wss://" : "ws://") + window.location.host + "/ws/" + chatId);
+				//ws = new WebSocket("wss://" + window.location.host + "/ws/" + chatId);
+
+				ws.onopen = () => {
+					console.log("ws connected.");
+				}
+
+				ws.onmessage = message => {
+					let data = JSON.parse(message.data);
+					console.log(data);
+
+					if (data.id == 0) {
+						let txt = document.createElement('article');
+						txt.appendChild(document.createTextNode(data.message));
+						txt.setAttribute('class', 'txt');
+						txt.setAttribute('data-id', newid);
+						newid++;
+
+						let created_at = document.createElement('span');
+						created_at.innerText = data.created_at;
+						created_at.setAttribute('class', 'spn_created_at');
+						txt.appendChild(created_at);
+
+						document.getElementById('list').prepend(txt);
+
+						txt.scrollIntoView(true);
+					} else {
+						let txt = document.querySelector('[data-id="' + data.id + '"]');
+						txt.innerText = data.message;
+					}
+				}
+
+				ws.onclose = () => {
+					connectWs();
+				}
+			}
+
+			connectWs();
+		</script>
+	</body>
+</html>

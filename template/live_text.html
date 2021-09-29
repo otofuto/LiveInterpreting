@@ -29,6 +29,9 @@
 				display: block;
 				background-color: whitesmoke;
 				margin-bottom: 3px;
+				height: max-content;
+				width: 100%;
+				box-sizing: border-box;
 			}
 
 			.spn_created_at {
@@ -75,7 +78,20 @@
 						<button id="sendBtn" class="button" onclick="send()">送信</button>
 					</div>
 					{{ end }}
-					<div id="list"></div>
+					<p><button class="button" onclick="openGb()">GB画面を使う</button></p>
+					<div id="list">
+						{{ range .LiveTexts }}
+						{{ if eq $.Login.Id $.Trans.To }}
+						<textarea class="txt" data-id="{{ .Id }}" onchange="upd(this)">{{ .Text }}</textarea>
+						<span class="spn_created_at">{{ .CreatedAt }}</span>
+						{{ else }}
+						<article class="txt" data-id="{{ .Id }}">
+							{{ .Text }}
+							<span class="spn_created_at">{{ .CreatedAt }}</span>
+						</article>
+						{{ end }}
+						{{ end }}
+					</div>
 				</div>
 			</div>
 		</main>
@@ -90,6 +106,14 @@
 			begin_str = (begin.getMonth() + 1) + "月 " + begin.getDate() + "日 " + begin.getHours() + "時 " + begin.getMinutes() + "分";
 			document.getElementById('liveInfo').innerText = begin_str + "から" + msg.length + "分間";
 
+			let newid = 0;
+			Array.from(document.querySelectorAll('.txt')).forEach(t => {
+				if (newid < t.getAttribute('data-id') - 0) {
+					newid = t.getAttribute('data-id') - 0;
+				}
+			});
+			newid++;
+
 			function connectWs() {
 				let chatId = "live{{ .Trans.Id }}";
 				ws = new WebSocket((window.location.host == "live-interpreting.herokuapp.com" ? "wss://" : "ws://") + window.location.host + "/ws/" + chatId);
@@ -103,18 +127,42 @@
 					let data = JSON.parse(message.data);
 					console.log(data);
 
-					let txt = document.createElement('article');
-					txt.appendChild(document.createTextNode(data.message));
-					txt.setAttribute('class', 'txt');
+					{{ if eq $.Login.Id $.Trans.To }}
+					if (data.id == 0) {
+						let created_at = document.createElement('span');
+						created_at.innerText = data.created_at;
+						created_at.setAttribute('class', 'spn_created_at');
 
-					let created_at = document.createElement('span');
-					created_at.innerText = data.created_at;
-					created_at.setAttribute('class', 'spn_created_at');
-					txt.appendChild(created_at);
+						let txt = document.createElement('textarea');
+						txt.value = data.message;
+						txt.setAttribute('class', 'txt');
+						txt.setAttribute('data-id', newid);
+						newid++;
 
-					document.getElementById('list').prepend(txt);
+						document.getElementById('list').prepend(created_at);
+						document.getElementById('list').prepend(txt);
+					}
+					{{ else }}
+					if (data.id == 0) {
+						let txt = document.createElement('article');
+						txt.appendChild(document.createTextNode(data.message));
+						txt.setAttribute('class', 'txt');
+						txt.setAttribute('data-id', newid);
+						newid++;
 
-					txt.scrollIntoView(true);
+						let created_at = document.createElement('span');
+						created_at.innerText = data.created_at;
+						created_at.setAttribute('class', 'spn_created_at');
+						txt.appendChild(created_at);
+
+						document.getElementById('list').prepend(txt);
+
+						txt.scrollIntoView(true);
+					} else {
+						let txt = document.querySelector('[data-id="' + data.id + '"]');
+						txt.innerText = data.message;
+					}
+					{{ end }}
 				}
 
 				ws.onclose = () => {
@@ -132,18 +180,27 @@
 
 			function send() {
 				let txt = document.getElementById('text').value;
-				console.log(txt);
 				let createdAt = new Date();
 				ws.send(JSON.stringify({
 					"message": txt,
+					"id": 0,
 					"created_at": createdAt.getHours() + ':' + createdAt.getMinutes() + ' ' + createdAt.getSeconds()
 				}));
 				document.getElementById('text').value = '';
 				document.getElementById('text').focus();
 			}
+
+			function upd(elm) {
+				ws.send(JSON.stringify({
+					"message": elm.value,
+					"id": elm.getAttribute('data-id') - 0
+				}));
+				document.getElementById('text').focus();
+			}
 			{{ end }}
-			{{ if ne .Login.Id -1 }}
-			{{ end }}
+			function openGb() {
+				window.open("/live/{{ .Trans.Id }}/gb", msg.liver.name + "さんのライブ通訳", "scrollbars=yes")
+			}
 		</script>
 	</body>
 </html>
