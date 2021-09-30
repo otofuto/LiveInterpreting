@@ -44,6 +44,11 @@
 				text-align: center;
 			}
 
+			#eval {
+				width: 100%;
+				text-align: center;
+			}
+
 			#msg {
 				height: 0px;
 				background-color: var(--color3);
@@ -88,6 +93,13 @@
 				<div id="talk" style="display: none;">
 					<button class="button">トークルームに移動する</button>
 					<p><a href="/live/">通訳ページに移動する</a></p>
+				</div>
+				<div id="eval" style="display: none;">
+					{{ if eq .Trans.To .Login.Id }}
+					<button class="button">購入者の評価をする</button>
+					{{ else }}
+					<button class="button">通訳者の評価をする</button>
+					{{ end }}
 				</div>
 			</div>
 		</main>
@@ -224,6 +236,15 @@
 					appendRow('辞退日時', formatdate(msg.trans.estimate_date.String));
 					appendRow('辞退理由', msg.trans.response.String);
 				}
+			}
+			let live_start = new Date(msg.trans.live_start.String);
+			live_start.setMinutes(live_start.getMinutes() + msg.trans.live_time.Int64);
+			if (new Date() > live_start) {
+				appendHeader('ライブ配信が終了しました。');
+				document.querySelector('#eval button').addEventListener('click', () => {
+					location = '/trans/eval/' + msg.trans.id;
+				});
+				document.getElementById('eval').removeAttribute('style');
 			}
 		</script>
 	</body>

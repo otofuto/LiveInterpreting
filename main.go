@@ -763,6 +763,54 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			talks = talkrooms.List(tr.Id)
 			filename = "talkroom"
+		} else if strings.HasPrefix(filename, "eval/") {
+			trid, err := strconv.Atoi(filename[len("eval/"):])
+			if err != nil {
+				http.Error(w, "page not found", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "trans not found", 404)
+				return
+			}
+			if tr.From != login.Id && tr.To != login.Id {
+				http.Redirect(w, r, "/home/", 303)
+				return
+			}
+			ac.Id = tr.To
+			if !ac.Get() {
+				http.Error(w, "failed to get user(to) data", 500)
+				return
+			}
+			from := accounts.Accounts{Id: tr.From}
+			db := database.Connect()
+			defer db.Close()
+			if !from.GetLite(db) {
+				http.Error(w, "failed to get user(from) data", 500)
+				return
+			}
+			msgobj := struct {
+				Trans trans.Trans       `json:"trans"`
+				From  accounts.Accounts `json:"from"`
+				To    accounts.Accounts `json:"to"`
+				Langs []langs.Langs     `json:"langs"`
+			}{
+				Trans: tr,
+				From:  from,
+				To: accounts.Accounts{
+					Id:   ac.Id,
+					Name: ac.Name,
+				},
+				Langs: langs.All(),
+			}
+			bytes, err := json.Marshal(msgobj)
+			if err != nil {
+				http.Error(w, "failed to convert trans object to json", 500)
+				return
+			}
+			msg = string(bytes)
+			filename = "eval"
 		} else {
 			trid, err := strconv.Atoi(filename)
 			if err != nil {

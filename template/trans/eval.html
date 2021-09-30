@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>評価を送信する | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
+		<style>
+            #evalPanel {
+                display: inline-block;
+                position: relative;
+                width: 95%;
+                max-width: 400px;
+                height: max-content;
+            }
+
+            #evalPanel input {
+                display: none;
+            }
+
+            #evalPanel svg {
+                display: block;
+                position: relative;
+                width: 40px;
+                height: 40px;
+                fill: gray;
+                transition: all 100ms 0ms ease;
+                cursor: pointer;
+            }
+
+            #evalPanel input[type="checkbox"]:checked + label > svg {
+                fill: gold;
+            }
+
+            #stars {
+                display: flex;
+                justify-content: space-around;
+            }
+		</style>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			p.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			{{ end }}
+			appendHeader(p);
+		</script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				<div onclick="logout()"><span>ログアウト</span></div>
+			</div>
+			<div id="content">
+				{{ if eq .Trans.To .Login.Id }}
+				<h1>購入者の評価を送信します</h1>
+				{{ else }}
+				<h1>通訳者の評価を送信します</h1>
+				{{ end }}
+                <div id="evalPanel" class="box1">
+					<div id="stars">
+						<div>
+							<input type="checkbox" class="eval_check" id="chk1">
+							<label for="chk1"><svg><use xlink:href="/st/materials/star.svg#star"></use></svg></label>
+						</div>
+						<div>
+							<input type="checkbox" class="eval_check" id="chk2">
+							<label for="chk2"><svg><use xlink:href="/st/materials/star.svg#star"></use></svg></label>
+						</div>
+						<div>
+							<input type="checkbox" class="eval_check" id="chk3">
+							<label for="chk3"><svg><use xlink:href="/st/materials/star.svg#star"></use></svg></label>
+						</div>
+						<div>
+							<input type="checkbox" class="eval_check" id="chk4">
+							<label for="chk4"><svg><use xlink:href="/st/materials/star.svg#star"></use></svg></label>
+						</div>
+						<div>
+							<input type="checkbox" class="eval_check" id="chk5">
+							<label for="chk5"><svg><use xlink:href="/st/materials/star.svg#star"></use></svg></label>
+						</div>
+					</div>
+					<div>
+						<textarea id="eval_comment" placeholder="評価コメントを入力してください。" style="width: 100%; height: 100px; margin-top: 15px;"></textarea>
+					</div>
+					<div style="text-align: center;">
+						<button class="button" onclick="sendEval()">評価を送信する</button>
+					</div>
+				</div>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label><script>footerText();</script></label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script src="/st/js/constant.js"></script>
+		<script>
+			let msg = JSON.parse("{{ .Message }}");
+            chk1 = document.getElementById('chk1');
+            chk2 = document.getElementById('chk2');
+            chk3 = document.getElementById('chk3');
+            chk4 = document.getElementById('chk4');
+            chk5 = document.getElementById('chk5');
+
+            chk1.addEventListener('change', e => {
+                chk1.checked = true;
+                chk2.checked = false;
+                chk3.checked = false;
+                chk4.checked = false;
+                chk5.checked = false;
+            });
+            chk2.addEventListener('change', e => {
+                chk1.checked = true;
+                chk2.checked = true;
+                chk3.checked = false;
+                chk4.checked = false;
+                chk5.checked = false;
+            });
+            chk3.addEventListener('change', e => {
+                chk1.checked = true;
+                chk2.checked = true;
+                chk3.checked = true;
+                chk4.checked = false;
+                chk5.checked = false;
+            });
+            chk4.addEventListener('change', e => {
+                chk1.checked = true;
+                chk2.checked = true;
+                chk3.checked = true;
+                chk4.checked = true;
+                chk5.checked = false;
+            });
+            chk5.addEventListener('change', e => {
+                chk1.checked = true;
+                chk2.checked = true;
+                chk3.checked = true;
+                chk4.checked = true;
+                chk5.checked = true;
+            });
+		</script>
+	</body>
+</html>
