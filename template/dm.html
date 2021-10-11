@@ -121,7 +121,7 @@
 			</div>
 			<div id="accountinfo">
 				<div class="icon-disp" style="background-image: url('/Account/img/{{ .Account.Id }}');" onclick="location = '/u/{{ .Account.Id }}';"></div>
-				<p style="font-weight: bold;" class="user-name">{{ .Account.Name }}</p>
+				<p style="font-weight: bold;" class="user-name" onclick="location = '/u/{{ .Account.Id }}';">{{ .Account.Name }}</p>
 				<pre>{{ .Account.Description }}</pre>
 			</div>
 			<div id="content">
@@ -131,7 +131,7 @@
 						<div style="display: flex;">
 							<div class="icon-disp" style="background-image: url('/Account/img/{{ .From }}');" onclick="location = '/u/{{ .From }}';"></div>
 							<div style="display: inline-flex; justify-content: space-between; width: 100%;">
-								<p class="user-name">{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
+								<p class="user-name" onclick="location = '/u/{{ .From }}';">{{ if eq .From $.Account.Id }}{{ $.Account.Name }}{{ else }}{{ $.Login.Name }}{{ end }}</p>
 								<p style="color: gray;">{{ .CreatedAt }}</p>
 							</div>
 						</div>

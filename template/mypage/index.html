@@ -41,9 +41,15 @@
 				font-weight: bold;
 			}
 
-			.list article header span img {
-				max-width: 50px;
-				max-height: 50px;
+			.list article header div img {
+				max-width: 40px;
+				max-height: 40px;
+				border-radius: 7px;
+			}
+
+			.spinner {
+				width: 40px;
+				transition: width 250ms 0ms ease;
 			}
 
 			.list article main {
@@ -127,7 +133,8 @@
 						<article onclick="locationMove(this, '/directmessages/{{ if eq $.Login.Id .From }}{{ .To }}{{ else }}{{ .From }}{{ end }}')">
 							<header>
 								<div>
-									<img style="height: 40px; border-radius: 7px;" src="/Account/img/{{ if eq $.Login.Id .From }}{{ .To }}{{ else }}{{ .From }}{{ end }}">
+									<img src="/st/materials/spinner.gif" class="spinner" style="width: 0;">
+									<img src="/Account/img/{{ if eq $.Login.Id .From }}{{ .To }}{{ else }}{{ .From }}{{ end }}">
 									<h3><label data-userid="{{ .From }}"></label> >> <label data-userid="{{ .To }}"></label></h3>
 								</div>
 								<span>{{ .CreatedAt }}</span>
@@ -142,6 +149,7 @@
 						<article onclick="locationMove(this, '/trans/{{ .Id }}')">
 							<header>
 								<div>
+									<img src="/st/materials/spinner.gif" class="spinner" style="width: 0;">
 									<img style="height: 40px; border-radius: 7px;" src="/Account/img/{{ if eq $.Login.Id .From }}{{ .To }}{{ else }}{{ .From }}{{ end }}">
 									<h3><label data-userid="{{ .From }}"></label> >> <label data-userid="{{ .To }}"></label></h3>
 								</div>
@@ -213,6 +221,7 @@
 			function locationMove(elm, path) {
 				Array.from(document.querySelectorAll('.list article')).forEach(art => {
 					if (art != elm) art.setAttribute('class', 'hideright');
+					else art.querySelector('.spinner').removeAttribute('style');
 				});
 				location = path;
 			}
