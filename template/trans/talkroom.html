@@ -122,7 +122,7 @@
 			<div id="content">
 				<div id="dmlist">
 					{{ range .Talks }}
-					<div class="msg">
+					<div class="msg" {{ if eq .From $.Login.Id }}style="background-color: aliceblue;"{{ end }}>
 						<div style="display: flex;">
 							<div class="icon-disp" style="background-image: url('/Account/img/{{ .From }}');" onclick="location = '/u/{{ .From }}';"></div>
 							<div style="display: inline-flex; justify-content: space-between; width: 100%;">
@@ -180,6 +180,7 @@
 					console.log(data);
 					let msg = document.createElement("div");
 					msg.setAttribute("class", "msg");
+					if (data.from == {{ .Login.Id }}) msg.style.backgroundColor = 'aliceblue';
 					document.getElementById("dmlist").appendChild(msg);
 
 					let div = document.createElement("div");

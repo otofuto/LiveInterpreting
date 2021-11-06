@@ -77,8 +77,9 @@
 					<div>
 						<button id="sendBtn" class="button" onclick="send()">送信</button>
 					</div>
-					{{ end }}
+					{{ else }}
 					<p><button class="button" onclick="openGb()">GB画面を使う</button></p>
+					{{ end }}
 					<div id="list">
 						{{ range .LiveTexts }}
 						{{ if eq $.Login.Id $.Trans.To }}
@@ -86,7 +87,7 @@
 						<span class="spn_created_at">{{ .CreatedAt }}</span>
 						{{ else }}
 						<article class="txt" data-id="{{ .Id }}">
-							{{ .Text }}
+							<label>{{ .Text }}</label>
 							<span class="spn_created_at">{{ .CreatedAt }}</span>
 						</article>
 						{{ end }}
@@ -144,8 +145,11 @@
 					}
 					{{ else }}
 					if (data.id == 0) {
+						let lbl = document.createElement('label');
+						lbl.innerText = data.message;
+
 						let txt = document.createElement('article');
-						txt.appendChild(document.createTextNode(data.message));
+						txt.appendChild(lbl);
 						txt.setAttribute('class', 'txt');
 						txt.setAttribute('data-id', newid);
 						newid++;
@@ -160,7 +164,7 @@
 						txt.scrollIntoView(true);
 					} else {
 						let txt = document.querySelector('[data-id="' + data.id + '"]');
-						txt.innerText = data.message;
+						txt.querySelector('label').innerText = data.message;
 					}
 					{{ end }}
 				}

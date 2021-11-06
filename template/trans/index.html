@@ -85,7 +85,7 @@
 				<p>通訳者: <a id="to"></a></p>
 				<table><tbody id="tbl"></tbody></table>
 				<div id="sendEst" style="display: none;">
-					<button class="button">見積を送信または辞退する</button>
+					<button class="button">見積を作成または辞退する</button>
 				</div>
 				<div id="buy" style="display: none;">
 					<button class="button">この見積内容で購入する</button>
@@ -95,11 +95,7 @@
 					<p><a href="/live/">通訳ページに移動する</a></p>
 				</div>
 				<div id="eval" style="display: none;">
-					{{ if eq .Trans.To .Login.Id }}
-					<button class="button">購入者の評価をする</button>
-					{{ else }}
-					<button class="button">通訳者の評価をする</button>
-					{{ end }}
+					<button class="button" id="evalButton">相手の評価をする</button>
 				</div>
 			</div>
 		</main>
@@ -244,6 +240,7 @@
 				document.querySelector('#eval button').addEventListener('click', () => {
 					location = '/trans/eval/' + msg.trans.id;
 				});
+				document.getElementById('evalButton').innerText = msg.trans.to == {{ .Login.Id }} ? '購入者の評価をする' : '通訳者の評価をする';
 				document.getElementById('eval').removeAttribute('style');
 			}
 		</script>

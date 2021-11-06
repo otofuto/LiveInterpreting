@@ -76,6 +76,7 @@ func main() {
 	http.HandleFunc("/PassForgot/", account.PassForgotHandle)
 
 	http.HandleFunc("/Notifications/", NotificationsHandle)
+	http.HandleFunc("/Eval/", EvalHandle)
 
 	http.HandleFunc("/u/", UserHandle)
 	http.HandleFunc("/mypage/", MypageHandle)
@@ -209,6 +210,72 @@ func NotificationsHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func EvalHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodPost {
+		r.ParseMultipartForm(32 << 20)
+		ref := r.Referer()
+		if strings.Index(ref, "/trans/eval/") <= 0 {
+			http.Error(w, "お前誰じゃボケ", 403)
+			return
+		}
+		eval, err := strconv.Atoi(r.FormValue("eval"))
+		if err != nil {
+			http.Error(w, "eval is not integer", 400)
+			return
+		}
+		if eval < 1 || eval > 5 {
+			http.Error(w, "eval allowed value is between 1 to 5", 400)
+			return
+		}
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		trid_str := ref[strings.Index(ref, "/trans/eval/")+len("/trans/eval/"):]
+		if trid_str == "" {
+			http.Error(w, "trans's id is not set", 404)
+			return
+		}
+		trid, err := strconv.Atoi(trid_str)
+		if err != nil {
+			http.Error(w, "trans's id is not integer", 404)
+			return
+		}
+		tr := trans.Trans{Id: trid}
+		if !tr.Get() {
+			http.Error(w, "trans not found", 404)
+			return
+		}
+		if (tr.From == login.Id && tr.FromEval.Valid) || (tr.To == login.Id && tr.ToEval.Valid) {
+			http.Error(w, "already evalutioned", 410)
+			return
+		}
+		if tr.From == login.Id {
+			tr.FromEval.Valid = true
+			tr.FromEval.Int64 = int64(eval)
+			tr.FromComment.Valid = true
+			tr.FromComment.String = r.FormValue("comment")
+		} else if tr.To == login.Id {
+			tr.ToEval.Valid = true
+			tr.ToEval.Int64 = int64(eval)
+			tr.ToComment.Valid = true
+			tr.ToComment.String = r.FormValue("comment")
+		}
+		err = tr.Update()
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "failed to update trans eval", 500)
+			return
+		}
+		fmt.Fprintf(w, "true")
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
 func UserHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -238,6 +305,8 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 				Login      accounts.Accounts `json:"login"`
 				IsFollow   bool              `json:"is_follow"`
 				IsFollower bool              `json:"is_follower"`
+				Transes    []trans.Trans     `json:"transes"`
+				Message    string            `json:"message"`
 			}{
 				Account:    ac,
 				Login:      accounts.Accounts{Id: -1},
@@ -246,9 +315,26 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			loginaccount := account.LoginAccount(r)
 			if loginaccount.Id != -1 {
+				db := database.Connect()
+				defer db.Close()
 				context.Login = loginaccount
-				context.IsFollow = accounts.CheckFollow(loginaccount.Id, ac.Id)
-				context.IsFollower = accounts.CheckFollow(ac.Id, loginaccount.Id)
+				context.IsFollow = accounts.CheckFollow(db, loginaccount.Id, ac.Id)
+				context.IsFollower = accounts.CheckFollow(db, ac.Id, loginaccount.Id)
+				context.Transes = loginaccount.GetTranses(db, ac, 10, 0)
+				users := make([]accounts.Accounts, 0)
+				for _, tr := range context.Transes {
+					var u accounts.Accounts
+					if tr.From != loginaccount.Id {
+						u.Id = tr.From
+					} else {
+						u.Id = tr.To
+					}
+					u.GetLite(db)
+					users = append(users, u)
+				}
+				users = append(users, loginaccount)
+				bytes, _ := json.Marshal(users)
+				context.Message = string(bytes)
 				loginaccount.UpdateLastLogin()
 			}
 			temp := template.Must(template.ParseFiles("template/user.html"))
@@ -290,9 +376,9 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		if filename == "index" {
 			login.GetView(login.Id)
 			msgs = login.GetDMs(10)
-			trs = login.GetTranses(10, 0)
 			db := database.Connect()
 			defer db.Close()
+			trs = login.GetTranses(db, accounts.Accounts{Id: 0}, 10, 0)
 			for _, dm := range msgs {
 				u := accounts.Accounts{Id: dm.From}
 				if dm.From == login.Id {
@@ -557,6 +643,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(filename, "/") {
 			filename = filename[:len(filename)-1]
 		}
+		var tr trans.Trans
 		ac := accounts.Accounts{Id: -1}
 		if strings.HasPrefix(filename, "req/") {
 			uid, err := strconv.Atoi(filename[len("req/"):])
@@ -577,7 +664,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -608,7 +695,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -649,7 +736,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -698,7 +785,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -739,7 +826,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -769,7 +856,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -817,7 +904,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "page not found", 404)
 				return
 			}
-			tr := trans.Trans{Id: trid}
+			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
 				http.Error(w, "trans not found", 404)
 				return
@@ -867,6 +954,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			Message:  msg,
 			Messages: msgs,
 			Talks:    talks,
+			Trans:    tr,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)

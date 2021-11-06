@@ -39,7 +39,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		hw, err := strconv.Atoi(r.FormValue("hourly_wage"))
-		if err != nil {
+		if err != nil && r.FormValue("user_type") == "interpreter" {
 			http.Error(w, "hourly_wage is type of int", 400)
 			return
 		}

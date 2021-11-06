@@ -10,12 +10,32 @@
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
+			table {
+				width: 90%;
+			}
+
+			tr {
+				box-shadow: 0 1px 0 gray;
+			}
+
+			th {
+				background-color: var(--color1);
+				color: white;
+			}
+
+			td:nth-of-type(1) {
+				width: fit-content;
+				padding: 4px 10px;
+				color: dimgray;
+			}
+
             #evalPanel {
-                display: inline-block;
+                display: block;
                 position: relative;
                 width: 95%;
                 max-width: 400px;
                 height: max-content;
+				margin: 0 auto;
             }
 
             #evalPanel input {
@@ -68,7 +88,14 @@
 				{{ else }}
 				<h1>通訳者の評価を送信します</h1>
 				{{ end }}
+				<p><a id="backtotrans">案件内容に戻る</a></p>
+				<div>
+					<p>依頼者: <a id="from"></a></p>
+					<p>通訳者: <a id="to"></a></p>
+					<table><tbody id="tbl"></tbody></table>
+				</div>
                 <div id="evalPanel" class="box1">
+					<p>取引の中で感じたことや感謝の言葉を書きましょう。</p>
 					<div id="stars">
 						<div>
 							<input type="checkbox" class="eval_check" id="chk1">
@@ -95,8 +122,9 @@
 						<textarea id="eval_comment" placeholder="評価コメントを入力してください。" style="width: 100%; height: 100px; margin-top: 15px;"></textarea>
 					</div>
 					<div style="text-align: center;">
-						<button class="button" onclick="sendEval()">評価を送信する</button>
+						<button class="button" onclick="sendEval(this)" id="sendButton">評価を送信する</button>
 					</div>
+					<p id="result"></p>
 				</div>
 			</div>
 		</main>
@@ -106,7 +134,37 @@
 		<script src="/st/js/master.js"></script>
 		<script src="/st/js/constant.js"></script>
 		<script>
+			function appendRow(k, v) {
+				let row = document.createElement('tr');
+				let td1 = document.createElement('td');
+				td1.innerText = k;
+				row.appendChild(td1);
+				let td2 = document.createElement('td');
+				td2.innerText = v;
+				row.appendChild(td2);
+				document.getElementById('tbl').appendChild(row);
+			}
+			function appendHeader(text) {
+				let row = document.createElement('tr');
+				let th = document.createElement('th');
+				th.innerText = text;
+				th.setAttribute('colspan', '2');
+				row.appendChild(th);
+				document.getElementById('tbl').appendChild(row);
+			}
 			let msg = JSON.parse("{{ .Message }}");
+			appendHeader('依頼内容');
+			document.getElementById('backtotrans').setAttribute('href', '/trans/' + msg.trans.id);
+			document.getElementById('from').innerText = msg.from.name;
+			document.getElementById('from').setAttribute('href', '/u/' + msg.from.id);
+			document.getElementById('to').innerText = msg.to.name;
+			document.getElementById('to').setAttribute('href', '/u/' + msg.to.id);
+			appendRow('依頼タイトル', msg.trans.request_title);
+			appendRow('配信日時', formatdate(msg.trans.live_start.String) + " ～ " + msg.trans.live_time.Int64 + '分');
+			appendRow('通訳言語', msg.langs.find(l => l.id == msg.trans.lang).lang);
+			appendRow('通訳形態', ['テキスト', '音声', 'テキストと音声'][msg.trans.request_type]);
+			appendRow('購入金額', "￥" + msg.trans.price.Int64.toLocaleString());
+
             chk1 = document.getElementById('chk1');
             chk2 = document.getElementById('chk2');
             chk3 = document.getElementById('chk3');
@@ -149,8 +207,54 @@
                 chk5.checked = true;
             });
 
-			function sendEval() {
-				//
+			if (msg.trans.from == {{ .Login.Id }}) {
+				appendRow('評価', msg.trans.from_eval.Valid ? '送信済み' : '未入力');
+				if (msg.trans.from_eval.Valid) {
+					document.getElementById('chk' + msg.trans.from_eval.Int64).click();
+					document.getElementById('eval_comment').value = msg.trans.from_comment.String;
+					document.getElementById('eval_comment').setAttribute('readonly', '');
+					document.getElementById('sendButton').remove();
+					Array.from(document.querySelectorAll('#stars label')).forEach(lbl => lbl.removeAttribute('for'));
+				}
+			} else if (msg.trans.to == {{ .Login.Id }}) {
+				appendRow('評価', msg.trans.to_eval.Valid ? '送信済み' : '未入力');
+				if (msg.trans.to_eval.Valid) {
+					document.getElementById('chk' + msg.trans.to_eval.Int64).click();
+					document.getElementById('eval_comment').value = msg.trans.to_comment.String;
+					document.getElementById('eval_comment').setAttribute('readonly', '');
+					document.getElementById('sendButton').remove();
+					Array.from(document.querySelectorAll('#stars label')).forEach(lbl => lbl.removeAttribute('for'));
+				}
+			}
+
+			function sendEval(btn) {
+				btn.setAttribute('disabled', '');
+				let data = new FormData();
+				data.append('comment', document.getElementById('eval_comment').value);
+				document.getElementById('eval_comment').setAttribute('disabled', '');
+				let ev = 0;
+				if (chk1.checked) ev = 1;
+				if (chk2.checked) ev = 2;
+				if (chk3.checked) ev = 3;
+				if (chk4.checked) ev = 4;
+				if (chk5.checked) ev = 5;
+				if (ev == 0) {
+					document.getElementById('result').innerText = '星1以上を選択してください。';
+					document.getElementById('result').removeAttribute('style');
+					btn.removeAttribute('disabled');
+					document.getElementById('eval_comment').removeAttribute('disabled');
+				}
+				data.append('eval', ev);
+				post('/Eval/', data).then(res => {
+					document.getElementById('result').innerText = '評価を送信しました。';
+					document.getElementById('result').removeAttribute('style');
+				}).catch(err => {
+					console.error(err);
+					document.getElementById('result').innerText = 'エラーにより送信に失敗しました。';
+					document.getElementById('result').style.color = 'red';
+					btn.removeAttribute('disabled');
+					document.getElementById('eval_comment').removeAttribute('disabled');
+				});
 			}
 		</script>
 	</body>

@@ -10,10 +10,11 @@
 		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
 			body {
-				background-color: lime;
+				background-color: limegreen;
 			}
 
 			#list {
+				font-family: 'M PLUS Rounded 1c', sans-serif;
 				width: 100%;
 				padding: 5px;
 				box-sizing: border-box;
@@ -48,7 +49,7 @@
 		<div id="list">
 			{{ range .LiveTexts }}
 			<article class="txt" data-id="{{ .Id }}">
-				{{ .Text }}
+				<label>{{ .Text }}</label>
 				<span class="spn_created_at">{{ .CreatedAt }}</span>
 			</article>
 			{{ end }}
@@ -79,8 +80,11 @@
 					console.log(data);
 
 					if (data.id == 0) {
+						let lbl = document.createElement('label');
+						lbl.innerText = data.message;
+
 						let txt = document.createElement('article');
-						txt.appendChild(document.createTextNode(data.message));
+						txt.appendChild(lbl);
 						txt.setAttribute('class', 'txt');
 						txt.setAttribute('data-id', newid);
 						newid++;
@@ -95,7 +99,7 @@
 						txt.scrollIntoView(true);
 					} else {
 						let txt = document.querySelector('[data-id="' + data.id + '"]');
-						txt.innerText = data.message;
+						txt.querySelector('label').innerText = data.message;
 					}
 				}
 

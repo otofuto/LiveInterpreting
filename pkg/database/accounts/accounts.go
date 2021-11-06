@@ -68,7 +68,7 @@ func (ac *Accounts) Insert() int {
 	db := database.Connect()
 	defer db.Close()
 
-	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Insert()")
 		log.Println(err)
@@ -703,10 +703,7 @@ func (s *AccountSocial) Delete() bool {
 	return true
 }
 
-func CheckFollow(id int, targetId int) bool {
-	db := database.Connect()
-	defer db.Close()
-
+func CheckFollow(db *sql.DB, id int, targetId int) bool {
 	rows, err := db.Query("select * from `account_social` where `action` = 0 and `id` = " + strconv.Itoa(id) + " and `target_id` = " + strconv.Itoa(targetId))
 	if err != nil {
 		fmt.Println(err)
@@ -962,16 +959,18 @@ func (ac *Accounts) GetDMs(count int) []directMessages.DirectMessages {
 	return ret
 }
 
-func (ac *Accounts) GetTranses(count, offset int) []trans.Trans {
+func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int) []trans.Trans {
 	ret := make([]trans.Trans, 0)
 
-	db := database.Connect()
-	defer db.Close()
+	where := "`from` = " + strconv.Itoa(ac.Id) + " or `to` = " + strconv.Itoa(ac.Id)
+	if oppo.Id > 0 {
+		where = "(`from` = " + strconv.Itoa(ac.Id) + " and `to` = " + strconv.Itoa(oppo.Id) + ") or (`from` = " + strconv.Itoa(oppo.Id) + " and `to` = " + strconv.Itoa(ac.Id) + ")"
+	}
 
 	sql := "select `id`, `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +
 		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
 		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
-		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` where `from` = " + strconv.Itoa(ac.Id) + " or `to` = " + strconv.Itoa(ac.Id) +
+		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` where " + where +
 		" order by `request_date` desc limit " + strconv.Itoa(count*2) + " offset " + strconv.Itoa(offset)
 	rows, err := db.Query(sql)
 	if err != nil {

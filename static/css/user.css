@@ -29,3 +29,65 @@ pre {
 	background-position: center;
 	background-color: lightgray;
 }
+
+.list article {
+	display: block;
+	padding: 15px;
+	box-sizing: border-box;
+	border: none;
+	border-radius: 8px;
+	background-color: lightgray;
+	margin: 10px;
+	transition: all 70ms 0ms ease;
+}
+
+.list article:hover {
+	background-color: whitesmoke;
+	box-shadow: 0 0 20px -10px lightgray inset;
+}
+
+.list article header {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+.list article header h3 {
+	margin: 0;
+	font-weight: bold;
+}
+
+.list article header div img {
+	max-width: 40px;
+	max-height: 40px;
+	border-radius: 7px;
+}
+
+.spinner {
+	width: 40px;
+	transition: width 250ms 0ms ease;
+}
+
+.list article main {
+	padding: 5px;
+	box-sizing: border-box;
+}
+
+.hideright {
+	position: relative;
+	animation-name: hideright;
+	animation-delay: 0ms;
+	animation-timing-function: ease;
+	animation-fill-mode: forwards;
+	animation-duration: 300ms;
+}
+
+@keyframes hideright {
+	0% {
+		left: 0;
+	}
+
+	100% {
+		left: 100vw;
+	}
+}
