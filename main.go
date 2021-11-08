@@ -20,6 +20,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/directMessages"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
+	"github.com/otofuto/LiveInterpreting/pkg/database/lives"
 	"github.com/otofuto/LiveInterpreting/pkg/database/talkrooms"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
 	stripe "github.com/otofuto/LiveInterpreting/pkg/stripeHandler"
@@ -42,6 +43,7 @@ type TempContext struct {
 	Transes   []trans.Trans                   `json:"transes"`
 	Talks     []talkrooms.TalkRooms           `json:"talkrooms"`
 	LiveTexts []LiveTexts                     `json:"live_texts"`
+	Live      lives.Lives                     `json:"live"`
 }
 
 type SocketMessage struct {
@@ -320,7 +322,7 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 				context.Login = loginaccount
 				context.IsFollow = accounts.CheckFollow(db, loginaccount.Id, ac.Id)
 				context.IsFollower = accounts.CheckFollow(db, ac.Id, loginaccount.Id)
-				context.Transes = loginaccount.GetTranses(db, ac, 10, 0)
+				context.Transes = loginaccount.GetTranses(db, ac, 10, 0, true)
 				users := make([]accounts.Accounts, 0)
 				for _, tr := range context.Transes {
 					var u accounts.Accounts
@@ -372,13 +374,16 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		if filename[len(filename)-1:] == "/" {
 			filename = filename[:len(filename)-1]
 		}
+		var liv lives.Lives
+		var tr trans.Trans
+		var usr accounts.Accounts
 		users := make([]accounts.Accounts, 0)
-		if filename == "index" {
+		if filename == "index" || filename == "trans" {
 			login.GetView(login.Id)
 			msgs = login.GetDMs(10)
 			db := database.Connect()
 			defer db.Close()
-			trs = login.GetTranses(db, accounts.Accounts{Id: 0}, 10, 0)
+			trs = login.GetTranses(db, accounts.Accounts{Id: 0}, 10, 0, filename == "trans")
 			for _, dm := range msgs {
 				u := accounts.Accounts{Id: dm.From}
 				if dm.From == login.Id {
@@ -408,6 +413,30 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "failed to fetch account info", 500)
 				return
 			}
+		} else if filename == "lives" {
+			if r.FormValue("trans") != "" {
+				trid, err := strconv.Atoi(r.FormValue("trans"))
+				if err == nil {
+					db := database.Connect()
+					defer db.Close()
+					tr = trans.Trans{Id: trid}
+					if tr.Get() {
+						liv, err = lives.GetFromTrans(db, trid)
+						if err != nil {
+							log.Println(err)
+							http.Error(w, "failed to get live data", 500)
+							return
+						}
+						if liv.Id == 0 {
+							liv, err = lives.CreateLive(tr)
+							if err != nil {
+								log.Println(err)
+							}
+						}
+					}
+				}
+			}
+			usr.Langs = langs.All()
 		}
 		temp := template.Must(template.ParseFiles("template/mypage/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
@@ -415,7 +444,10 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 			Message:  msg,
 			Messages: msgs,
 			Transes:  trs,
+			User:     usr,
 			Users:    users,
+			Trans:    tr,
+			Live:     liv,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
@@ -1236,6 +1268,34 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			fmt.Fprintf(w, "true")
+		} else if strings.HasPrefix(mode, "live/") {
+			/*trid, err := strconv.Atoi(mode[len("live/"):])
+			if err != nil {
+				http.Error(w, "trans id is not set", 404)
+				return
+			}
+			tr := trans.Trans{Id: trid}
+			if !tr.Get() {
+				http.Error(w, "failed to get trans data", 404)
+				return
+			}
+			if tr.From != login.Id {
+				http.Error(w, "誰だてめぇは", 403)
+				return
+			}
+			db := database.Connect()
+			defer db.Close()
+
+			liv, err := lives.GetFromTrans(db, tr.Id)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to get live data", 500)
+				return
+			}
+			if liv.Id == 0 {
+				http.Error(w, "live is not registered", 404)
+				return
+			}*/
 		} else {
 			http.Error(w, "user not designation", 404)
 		}

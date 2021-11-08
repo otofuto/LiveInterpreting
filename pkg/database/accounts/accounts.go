@@ -959,12 +959,15 @@ func (ac *Accounts) GetDMs(count int) []directMessages.DirectMessages {
 	return ret
 }
 
-func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int) []trans.Trans {
+func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int, getall bool) []trans.Trans {
 	ret := make([]trans.Trans, 0)
 
-	where := "`from` = " + strconv.Itoa(ac.Id) + " or `to` = " + strconv.Itoa(ac.Id)
+	where := "(`from` = " + strconv.Itoa(ac.Id) + " or `to` = " + strconv.Itoa(ac.Id) + ")"
 	if oppo.Id > 0 {
-		where = "(`from` = " + strconv.Itoa(ac.Id) + " and `to` = " + strconv.Itoa(oppo.Id) + ") or (`from` = " + strconv.Itoa(oppo.Id) + " and `to` = " + strconv.Itoa(ac.Id) + ")"
+		where = "((`from` = " + strconv.Itoa(ac.Id) + " and `to` = " + strconv.Itoa(oppo.Id) + ") or (`from` = " + strconv.Itoa(oppo.Id) + " and `to` = " + strconv.Itoa(ac.Id) + "))"
+	}
+	if !getall {
+		where += " and (`from_eval` is null and `to_eval` is null)"
 	}
 
 	sql := "select `id`, `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +

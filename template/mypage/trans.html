@@ -6,12 +6,13 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>{{.Account.Name}}さん | Live interpreting</title>
+		<title>全ての取引 | {{.Login.Name}}さん | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
 		<link rel="stylesheet" href="/st/css/user.css">
 		<style>
 			#iconDisp {
-				background-image: url('/Account/img/{{.Account.Id}}');
+				background-image: url('/Account/img/{{.Login.Id}}');
 			}
 		</style>
 	</head>
@@ -31,65 +32,19 @@
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>
-				{{ if ne .Login.Id -1 }}
 				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
-				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/'" class="selected"><span>マイページ</span></div>
 				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
 				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
-				{{ end }}
 				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
-				{{ if ne .Login.Id -1 }}
 				<div onclick="logout()"><span>ログアウト</span></div>
-				{{ else }}
-				<div onclick="location = '/st/login/'"><span>ログイン</span></div>
-				{{ end }}
 			</div>
 			<div id="content">
-				<header id="accountinfo">
-					<div id="iconDisp"></div>
-					<div style="width: calc(100% - 130px);">
-						<div style="font-size: 120%; font-weight: bold;">{{.Account.Name}}</div>
-						<span>性別: {{ if eq .Account.Sex 0 }}男性{{ else if eq .Account.Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
-						<span>{{ if eq .Account.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
-						<span><script>let createdAt = new Date('{{.Account.CreatedAt}}'); document.write(createdAt.getFullYear() + '年 ' + (createdAt.getMonth() + 1) + '月 ' + createdAt.getDate() + '日');</script>に登録</span>
-					</div>
-					<div style="width: 100%;"><pre style="white-space: normal;">{{.Account.Description}}</pre></div>
-					<div style="width: 100%;">
-						{{ if ne .Account.Url1 "" }}<p><a href="{{ .Account.Url1 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url1 }}</a></p>{{ end }}
-						{{ if ne .Account.Url2 "" }}<p><a href="{{ .Account.Url2 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url2 }}</a></p>{{ end }}
-						{{ if ne .Account.Url3 "" }}<p><a href="{{ .Account.Url3 }}" target="_blank" rel="noopener noreferrer">{{ .Account.Url3 }}</a></p>{{ end }}
-					</div>
-					{{ if ne (len .Account.Langs) 0 }}
-						<p>使用出来る言語: </p>
-						<p>
-						{{ range .Account.Langs }}
-						{{ .Lang }}<br>
-						{{ end }}
-					</p>{{ end }}
-				</header>
-				<div style="width: 100%; text-align: right;">
-					{{ if ne .Login.Id -1 }}
-					{{ if and (ne .Login.Id .Account.Id) (.IsFollower) }}
-					<span>フォローされています</span>
-					{{ end }}
-					{{ if ne .Login.Id .Account.Id }}
-						{{ if .IsFollow }}
-					<button class="button" onclick="unfollow(this)" style="background-color: var(--color1); color: white;">✔フォロー中</button>
-						{{ else }}
-					<button class="button" onclick="follow(this)">フォロー</button>
-						{{ end }}
-					<button class="button" onclick="location = '/directmessages/{{ .Account.Id }}';">ダイレクトメッセージを送る</button>
-					{{ if eq .Account.UserType "interpreter" }}
-					<button class="button" onclick="location = '/trans/req/{{ .Account.Id }}';">見積もり依頼</button>
-					{{ end }}
-					<button class="button" style="background-color: red; color: white;">通報</button>
-					{{ end }}
-					{{ end }}
+				<h1>全ての取引</h1>
+				<div style="width: 100%; text-align: left;">
+					<button class="button" onclick="location = '/mypage'">マイページに戻る</button>
 				</div>
 				<div style="width: 100%; text-align: left;">
-					{{ if ne (len .Transes) 0 }}
-					<h2>取引履歴</h2>
-					{{ end }}
 					<div id="transList" class="list">
 						{{ range .Transes }}
 						<article onclick="locationMove(this, '/trans/{{ .Id }}')">
@@ -116,10 +71,9 @@
 			document.querySelectorAll('[data-userid]').forEach(elm => {
 				elm.innerText = users.find(u => u.id == elm.getAttribute('data-userid')).name;
 			});
-
 			function follow(btn) {
 				var data = new FormData();
-				data.append("target_id", "{{.Account.Id}}");
+				data.append("target_id", "{{.Login.Id}}");
 				data.append("action", "0");
 				fetch('/AccountSocial/', {
 					method: "post",
@@ -144,7 +98,7 @@
 
 			function unfollow(btn) {
 				var data = new FormData();
-				data.append("target_id", "{{.Account.Id}}");
+				data.append("target_id", "{{.Login.Id}}");
 				fetch('/AccountSocial/', {
 					method: "delete",
 					body: data,

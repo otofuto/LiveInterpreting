@@ -91,6 +91,9 @@
 				<h1>案件内容</h1>
 				<p>依頼者: <a id="from"></a></p>
 				<p>通訳者: <a id="to"></a></p>
+				{{ if eq .Trans.From .Login.Id }}
+				<p><a href="/mypage/lives/?trans={{ .Trans.Id }}">配信登録する</a></p>
+				{{ end }}
 				<table><tbody id="tbl"></tbody></table>
 				<div id="sendEst" style="display: none;">
 					<button class="button">見積を作成または辞退する</button>

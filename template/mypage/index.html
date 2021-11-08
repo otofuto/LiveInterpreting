@@ -61,7 +61,7 @@
 					{{ end }}
 				</header>
 				<div style="width: 100%; text-align: right;">
-					<button class="button" onclick="location = '/u/{{ .Login.Id }}'">自分のユーザーページを見る</button>
+					<button class="button" onclick="location = '/u/{{ .Login.Id }}'">自分のユーザーページ</button>
 					<button class="button" onclick="location = '/mypage/profile/'">プロフィール編集</button>
 				</div>
 				<div style="width: 100%; text-align: left;">
@@ -81,7 +81,8 @@
 						</article>
 						{{ end }}
 					</div>
-					<h2>案件履歴</h2>
+					<h2>進行中の取引</h2>
+					<p><a href="/mypage/trans/">完了分も見る</a></p>
 					<div id="transList" class="list">
 						{{ range .Transes }}
 						<article onclick="locationMove(this, '/trans/{{ .Id }}')">

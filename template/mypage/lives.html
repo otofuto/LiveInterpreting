@@ -34,6 +34,38 @@
 			</div>
 			<div id="content">
 				<h1>配信登録</h1>
+				<form name="fm" onsubmit="update(); return false;">
+					<input type="hidden" name="id" value="{{.Live.Id}}">
+					<div class="field">
+						<input type="text" name="title" class="input" value="{{.Live.Title}}" maxlength="127" placeholder="自由に入力できます" required>
+						<lavel class="input-label">配信タイトル</lavel>
+					</div>
+					<label id="emailexists"></label>
+					<div class="field">
+						<input type="url" name="url" class="input" placeholder="配信ページなどのURLを入力してください" maxlength="127" value="{{.Live.Url}}">
+						<label class="input-label">URL</label>
+					</div>
+					<div class="field">
+						<input type="datetime-local" class="input" name="start" value="{{.Live.Start}}" required>
+						<label class="input-label">配信開始</label>
+					</div>
+					<div class="field">
+						<input type="datetime-local" class="input" name="end" value="{{.Live.End}}" required>
+						<label class="input-label">配信終了</label>
+					</div>
+					<div class="field">
+						<select name="lang" class="input" required>
+							{{ range .User.Langs }}
+							<option value="{{ .Id }}" {{ if eq $.Live.LangId .Id }}selected{{ end }}>{{ .Lang }}</option>
+							{{ end }}
+						</select>
+						<label class="input-label">通訳言語</label>
+					</div>
+					<input type="submit" style="display: none;" name="sub">
+				</form>
+				<div style="text-align: center;">
+					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">更新</button>
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
