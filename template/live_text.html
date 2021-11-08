@@ -72,7 +72,7 @@
 				<h2 id="liveTitle"></h2>
 				<p id="liveInfo"></p>
 				<div id="textInteArea">
-					{{ if eq .Login.Id .Trans.To }}
+					{{ if and (eq .Login.Id .Trans.To) (and (eq .Trans.FromEval.Valid false) (eq .Trans.ToEval.Valid false)) }}
 					<textarea id="text" class="textarea" placeholder="通訳文をここへ入力、Ctrl+Enterで送信"></textarea>
 					<div>
 						<button id="sendBtn" class="button" onclick="send()">送信</button>
@@ -82,7 +82,7 @@
 					{{ end }}
 					<div id="list">
 						{{ range .LiveTexts }}
-						{{ if eq $.Login.Id $.Trans.To }}
+						{{ if and (eq $.Login.Id $.Trans.To) (and (eq $.Trans.FromEval.Valid false) (eq $.Trans.ToEval.Valid false)) }}
 						<textarea class="txt" data-id="{{ .Id }}" onchange="upd(this)">{{ .Text }}</textarea>
 						<span class="spn_created_at">{{ .CreatedAt }}</span>
 						{{ else }}
