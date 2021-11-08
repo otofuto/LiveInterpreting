@@ -49,7 +49,7 @@
 					<div id="iconDisp"></div>
 					<div style="width: calc(100% - 130px);">
 						<div style="font-size: 120%; font-weight: bold;">{{.Account.Name}}</div>
-						<span>{{ if eq .Account.Sex 0 }}男性{{ else if eq .Account.Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
+						<span>性別: {{ if eq .Account.Sex 0 }}男性{{ else if eq .Account.Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
 						<span>{{ if eq .Account.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
 						<span><script>let createdAt = new Date('{{.Account.CreatedAt}}'); document.write(createdAt.getFullYear() + '年 ' + (createdAt.getMonth() + 1) + '月 ' + createdAt.getDate() + '日');</script>に登録</span>
 					</div>
@@ -87,7 +87,9 @@
 					{{ end }}
 				</div>
 				<div style="width: 100%; text-align: left;">
+					{{ if ne (len .Transes) 0 }}
 					<h2>案件履歴</h2>
+					{{ end }}
 					<div id="transList" class="list">
 						{{ range .Transes }}
 						<article onclick="locationMove(this, '/trans/{{ .Id }}')">

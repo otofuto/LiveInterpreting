@@ -56,6 +56,13 @@
 				overflow: hidden;
 				text-align: center;
 			}
+
+			.star {
+				display: inline-block;
+				width: 17px;
+				height: 17px;
+				fill: gold;
+			}
 		</style>
 	</head>
 	<body>
@@ -68,6 +75,7 @@
 			{{ end }}
 			appendHeader(p);
 		</script>
+		<svg id="starSvg" style="display: none;" class="star"><use xlink:href="/st/materials/star.svg#star"></use></svg>
 		<main>
 			<div id="sidemenu">
 				<div onclick="location = '/home/'"><span>ホーム</span></div>
@@ -135,6 +143,7 @@
 				td2.innerText = v;
 				row.appendChild(td2);
 				document.getElementById('tbl').appendChild(row);
+				return td2;
 			}
 			function appendHeader(text) {
 				let row = document.createElement('tr');
@@ -233,15 +242,37 @@
 					appendRow('辞退理由', msg.trans.response.String);
 				}
 			}
-			let live_start = new Date(msg.trans.live_start.String);
-			live_start.setMinutes(live_start.getMinutes() + msg.trans.live_time.Int64);
-			if (new Date() > live_start) {
-				appendHeader('ライブ配信が終了しました。');
-				document.querySelector('#eval button').addEventListener('click', () => {
-					location = '/trans/eval/' + msg.trans.id;
-				});
-				document.getElementById('evalButton').innerText = msg.trans.to == {{ .Login.Id }} ? '購入者の評価をする' : '通訳者の評価をする';
-				document.getElementById('eval').removeAttribute('style');
+			if (msg.trans.from == {{ .Login.Id }} && msg.trans.from_eval.Valid) {
+				appendHeader('評価を送信しました。');
+				let td2 = appendRow('評価', '星' + msg.trans.from_eval.Int64);
+				for (let i = 0; i < msg.trans.from_eval.Int64; i++) {
+					let svg = document.getElementById('starSvg').cloneNode(true);
+					svg.removeAttribute('id');
+					svg.removeAttribute('style');
+					td2.appendChild(svg);
+				}
+				appendRow('コメント', msg.trans.from_comment.String);
+			} else if (msg.trans.to == {{ .Login.Id }} && msg.trans.to_eval.Valid) {
+				appendHeader('評価を送信しました。');
+				let td2 = appendRow('評価', '星' + msg.trans.to_eval.Int64);
+				for (let i = 0; i < msg.trans.to_eval.Int64; i++) {
+					let svg = document.getElementById('starSvg').cloneNode(true);
+					svg.removeAttribute('id');
+					svg.removeAttribute('style');
+					td2.appendChild(svg);
+				}
+				appendRow('コメント', msg.trans.to_comment.String);
+			} else {
+				let live_start = new Date(msg.trans.live_start.String);
+				live_start.setMinutes(live_start.getMinutes() + msg.trans.live_time.Int64);
+				if (new Date() > live_start) {
+					appendHeader('ライブ配信が終了しました。');
+					document.querySelector('#eval button').addEventListener('click', () => {
+						location = '/trans/eval/' + msg.trans.id;
+					});
+					document.getElementById('evalButton').innerText = msg.trans.to == {{ .Login.Id }} ? '購入者の評価をする' : '通訳者の評価をする';
+					document.getElementById('eval').removeAttribute('style');
+				}
 			}
 		</script>
 	</body>
