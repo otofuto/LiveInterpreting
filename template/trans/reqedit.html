@@ -35,7 +35,8 @@
 			<div id="content">
 				<h1>見積り依頼修正</h1>
 				<h3>{{ .User.Name }}さんに送った見積もり依頼を変更します。</h3>
-				<p id="alreadyEst" style="display: none; color: red;">※既に見積が届いている依頼は編集出来ません。</p>
+				<p id="alreadyEst" style="display: none; color: red;">※既に見積が届いているか辞退された依頼は編集出来ません。</p>
+				<p><a id="backtotrans">案件内容に戻る</a></p>
 				<form name="fm" onsubmit="sub(); return false;">
 					<div class="field">
 						<input type="datetime-local" class="input" name="live_start" required>
@@ -101,6 +102,7 @@
 			});
 
 			trans = JSON.parse("{{ .Message }}");
+			document.getElementById('backtotrans').setAttribute('href', '/trans/' + trans.id);
 			let lt = trans.live_time.Int64;
 			trans.live_time = frontZero(Math.floor(lt / 60)) + ':' + frontZero(lt % 60);
 			object2form(trans, document.fm);

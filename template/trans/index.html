@@ -265,7 +265,7 @@
 					td2.appendChild(svg);
 				}
 				appendRow('コメント', msg.trans.to_comment.String);
-			} else {
+			} else if (msg.trans.buy_date.Valid) {
 				let live_start = new Date(msg.trans.live_start.String);
 				live_start.setMinutes(live_start.getMinutes() + msg.trans.live_time.Int64);
 				if (new Date() > live_start) {
