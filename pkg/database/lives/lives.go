@@ -109,3 +109,46 @@ func GetFromTrans(db *sql.DB, trid int) (Lives, error) {
 	}
 	return liv, nil
 }
+
+func Get(livid int) (Lives, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "select lives.id, lives.trans, lives.liver, livers.`name`, lives.interpreter, interpreters.`name`, lives.start, lives.end, lives.lang, langs.lang, lives.url, lives.title, lives.image " +
+		"from lives left outer join accounts as `livers` on livers.id = lives.liver left outer join accounts as `interpreters` on interpreters.id = lives.interpreter left outer join langs on langs.id = lives.lang " +
+		"where lives.id = " + strconv.Itoa(livid)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("lives.go Get(livid int) db.Query()")
+		return Lives{}, err
+	}
+	defer rows.Close()
+	var liv Lives
+	if rows.Next() {
+		err = rows.Scan(&liv.Id, &liv.TransId, &liv.LiverId, &liv.LiverName, &liv.InterpreterId, &liv.InterpreterName, &liv.Start, &liv.End, &liv.LangId, &liv.LangName, &liv.Url, &liv.Title, &liv.Image)
+		if err != nil {
+			log.Println("lives.go Get(livid int) rows.Scan()")
+			return liv, err
+		}
+	}
+	return liv, nil
+}
+
+func (liv *Lives) Update() error {
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "update `lives` set `title` = ?, `url` = ?, `start` = ?, `end` = ?, `lang` = ? where `id` = ?"
+	upd, err := db.Prepare(sql)
+	if err != nil {
+		log.Println("lives.go (liv *Lives) Update() db.Prepare()")
+		return err
+	}
+	defer upd.Close()
+	_, err = upd.Exec(&liv.Title, &liv.Url, &liv.Start, &liv.End, &liv.LangId, &liv.Id)
+	if err != nil {
+		log.Println("lives.go (liv *Lives) Update() upd.Exec()")
+		return err
+	}
+	return nil
+}

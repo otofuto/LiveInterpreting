@@ -36,6 +36,7 @@
 				<h1>配信登録</h1>
 				<form name="fm" onsubmit="update(); return false;">
 					<input type="hidden" name="id" value="{{.Live.Id}}">
+					<input type="hidden" name="trans" value="{{.Live.TransId}}">
 					<div class="field">
 						<input type="text" name="title" class="input" value="{{.Live.Title}}" maxlength="127" placeholder="自由に入力できます" required>
 						<lavel class="input-label">配信タイトル</lavel>
@@ -73,6 +74,21 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
+			live_data = {{ .Live }};
+			object2form(live_data, document.fm);
+
+			function update() {
+				let data = new FormData(document.fm);
+				formDisabled(document.fm, true);
+				post('/mypage/live', data)
+				.then(() => {
+					alert('完了');
+					formDisabled(document.fm, false);
+				}).catch(err => {
+					console.error(err);
+					alert('エラーにより失敗しました。');
+				});
+			}
 		</script>
 	</body>
 </html>

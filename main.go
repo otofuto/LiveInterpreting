@@ -280,7 +280,7 @@ func EvalHandle(w http.ResponseWriter, r *http.Request) {
 
 func UserHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	//w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
 		accountId, err := strconv.Atoi(r.URL.Path[len("/u/"):])
@@ -356,7 +356,7 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 
 func MypageHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	//w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
 		login := account.LoginAccount(r)
@@ -453,6 +453,82 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "HTTP 500 Internal server error", 500)
 		}
 		login.UpdateLastLogin()
+	} else if r.Method == http.MethodPost {
+		w.Header().Set("Content-Type", "application/json")
+		mode := r.URL.Path[len("/mypage/"):]
+		if mode[len(mode)-1:] == "/" {
+			mode = mode[:len(mode)-1]
+		}
+		if mode == "live" {
+			r.ParseMultipartForm(32 << 20)
+			if isset(r, []string{"id", "trans", "title", "url", "start", "end", "lang"}) {
+				if r.FormValue("id") == "0" {
+					trid, err := strconv.Atoi(r.FormValue("trans"))
+					if err != nil {
+						http.Error(w, "trans is not integer", 400)
+						return
+					}
+					tr := trans.Trans{Id: trid}
+					if !tr.Get() {
+						http.Error(w, "trans is not registered", 400)
+						return
+					}
+					liv, err := lives.CreateLive(tr)
+					if err != nil {
+						log.Println(err)
+						http.Error(w, "failed to create live", 500)
+						return
+					}
+					lid, err := strconv.Atoi(r.FormValue("lang"))
+					if err != nil {
+						http.Error(w, "lang iid is not integer", 400)
+						return
+					}
+					liv.Title = r.FormValue("title")
+					liv.Url = r.FormValue("url")
+					liv.Start = r.FormValue("start")
+					liv.End = r.FormValue("end")
+					liv.LangId = lid
+					err = liv.Update()
+					if err != nil {
+						log.Println(err)
+						http.Error(w, "failed to update", 500)
+						return
+					}
+					fmt.Fprintf(w, "true")
+				} else {
+					livid, err := strconv.Atoi(r.FormValue("id"))
+					if err != nil {
+						http.Error(w, "id is not integer", 400)
+						return
+					}
+					liv, err := lives.Get(livid)
+					if err != nil {
+						http.Error(w, "failed to get live data", 500)
+						return
+					}
+					lid, err := strconv.Atoi(r.FormValue("lang"))
+					if err != nil {
+						http.Error(w, "lang iid is not integer", 400)
+						return
+					}
+					liv.Title = r.FormValue("title")
+					liv.Url = r.FormValue("url")
+					liv.Start = r.FormValue("start")
+					liv.End = r.FormValue("end")
+					liv.LangId = lid
+					err = liv.Update()
+					if err != nil {
+						log.Println(err)
+						http.Error(w, "failed to update", 500)
+						return
+					}
+					fmt.Fprintf(w, "true")
+				}
+			}
+		} else {
+			http.Error(w, "undefined mode", 404)
+		}
 	} else {
 		http.Error(w, "method not allowed", 405)
 	}
