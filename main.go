@@ -367,6 +367,10 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		msg := ""
 		msgs := make([]directMessages.DirectMessages, 0)
 		trs := make([]trans.Trans, 0)
+		var liv lives.Lives
+		var tr trans.Trans
+		var usr accounts.Accounts
+		users := make([]accounts.Accounts, 0)
 		filename := r.URL.Path[len("/mypage/"):]
 		if filename == "" {
 			filename = "index"
@@ -374,10 +378,6 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 		if filename[len(filename)-1:] == "/" {
 			filename = filename[:len(filename)-1]
 		}
-		var liv lives.Lives
-		var tr trans.Trans
-		var usr accounts.Accounts
-		users := make([]accounts.Accounts, 0)
 		if filename == "index" || filename == "trans" {
 			login.GetView(login.Id)
 			msgs = login.GetDMs(10)
@@ -419,6 +419,7 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					db := database.Connect()
 					defer db.Close()
+					trs = login.GetTranses(db, accounts.Accounts{Id: 0}, 10, 0, false)
 					tr = trans.Trans{Id: trid}
 					if tr.Get() {
 						liv, err = lives.GetFromTrans(db, trid)

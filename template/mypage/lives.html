@@ -29,14 +29,26 @@
 				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
 				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
 				<div onclick="location = '/mypage/lives/'" class="selected"><span>配信登録</span></div>
-				<div onclick="location = '/search/'"><span>翻訳者を探す</span></div>
+				<div onclick="location = '/search/'"><span>通訳者を探す</span></div>
 				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
 				<h1>配信登録</h1>
+				{{ if len .Transes }}
 				<form name="fm" onsubmit="update(); return false;">
 					<input type="hidden" name="id" value="{{.Live.Id}}">
+					{{ if eq .Live.Id 0 }}
+					<div class="field">
+						<select name="trans">
+							{{ range .Transes }}
+							<option value="{{ .Id }}">{{ .Request }}</option>
+							{{ end }}
+						</select>
+						<lavel class="input-label">取引</lavel>
+					</div>
+					{{ else }}
 					<input type="hidden" name="trans" value="{{.Live.TransId}}">
+					{{ end }}
 					<div class="field">
 						<input type="text" name="title" class="input" value="{{.Live.Title}}" maxlength="127" placeholder="自由に入力できます" required>
 						<lavel class="input-label">配信タイトル</lavel>
@@ -67,6 +79,10 @@
 				<div style="text-align: center;">
 					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">更新</button>
 				</div>
+				{{ else }}
+				<p>まずは通訳者さんへ見積もり依頼をしましょう！</p>
+				<p><a href="/search/">通訳者を探す</a></p>
+				{{ end }}
 			</div>
 		</main>
 		<footer class="page-footer">
