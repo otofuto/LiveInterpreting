@@ -34,14 +34,15 @@
 			</div>
 			<div id="content">
 				<h1>配信登録</h1>
+				<p>ここでは、自分のライブ配信の情報を登録しておくことで、トップページに表示して宣伝することができます。</p>
 				{{ if len .Transes }}
 				<form name="fm" onsubmit="update(); return false;">
 					<input type="hidden" name="id" value="{{.Live.Id}}">
 					{{ if eq .Live.Id 0 }}
 					<div class="field">
-						<select name="trans">
+						<select name="trans" class="input">
 							{{ range .Transes }}
-							<option value="{{ .Id }}">{{ .Request }}</option>
+							<option value="{{ .Id }}">{{ .RequestTitle }} ({{ .RequestDate }})</option>
 							{{ end }}
 						</select>
 						<lavel class="input-label">取引</lavel>
@@ -77,7 +78,7 @@
 					<input type="submit" style="display: none;" name="sub">
 				</form>
 				<div style="text-align: center;">
-					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">更新</button>
+					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">{{ if eq .Live.Id 0 }}登録{{ else }}更新{{ end }}</button>
 				</div>
 				{{ else }}
 				<p>まずは通訳者さんへ見積もり依頼をしましょう！</p>

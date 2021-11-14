@@ -152,3 +152,61 @@ func (liv *Lives) Update() error {
 	}
 	return nil
 }
+
+func ListNow(count, offset int) ([]Lives, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	ret := make([]Lives, 0)
+	n := time.Now().Format("2006-01-02 15:04:05")
+	sql := "select lives.id, lives.trans, lives.liver, livers.`name`, lives.interpreter, interpreters.`name`, lives.start, lives.end, lives.lang, langs.lang, lives.url, lives.title, lives.image " +
+		"from lives left outer join accounts as `livers` on livers.id = lives.liver left outer join accounts as `interpreters` on interpreters.id = lives.interpreter left outer join langs on langs.id = lives.lang " +
+		"where `start` <= '" + n + "' and `end` >= '" + n + "' " +
+		"order by `start` desc " +
+		"limit " + strconv.Itoa(count) + " offset " + strconv.Itoa(offset)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("lives.go GetLives(db *sql.DB, count, offset int)")
+		return ret, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var liv Lives
+		err = rows.Scan(&liv.Id, &liv.TransId, &liv.LiverId, &liv.LiverName, &liv.InterpreterId, &liv.InterpreterName, &liv.Start, &liv.End, &liv.LangId, &liv.LangName, &liv.Url, &liv.Title, &liv.Image)
+		if err != nil {
+			log.Println("lives.go GetLives(db *sql.DB, count, offset int) rows.Scan()")
+			return ret, err
+		}
+		ret = append(ret, liv)
+	}
+	return ret, nil
+}
+
+func ListToday(count, offset int) ([]Lives, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	ret := make([]Lives, 0)
+	t := time.Now()
+	sql := "select lives.id, lives.trans, lives.liver, livers.`name`, lives.interpreter, interpreters.`name`, lives.start, lives.end, lives.lang, langs.lang, lives.url, lives.title, lives.image " +
+		"from lives left outer join accounts as `livers` on livers.id = lives.liver left outer join accounts as `interpreters` on interpreters.id = lives.interpreter left outer join langs on langs.id = lives.lang " +
+		"where `start` >= '" + t.Format("2006-01-02") + " 00:00:00' and `start` <= '" + t.AddDate(0, 0, 1).Format("2006-01-02") + " 00:00:00" + "' " +
+		"order by `start` desc " +
+		"limit " + strconv.Itoa(count) + " offset " + strconv.Itoa(offset)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("lives.go GetLives(db *sql.DB, count, offset int)")
+		return ret, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var liv Lives
+		err = rows.Scan(&liv.Id, &liv.TransId, &liv.LiverId, &liv.LiverName, &liv.InterpreterId, &liv.InterpreterName, &liv.Start, &liv.End, &liv.LangId, &liv.LangName, &liv.Url, &liv.Title, &liv.Image)
+		if err != nil {
+			log.Println("lives.go GetLives(db *sql.DB, count, offset int) rows.Scan()")
+			return ret, err
+		}
+		ret = append(ret, liv)
+	}
+	return ret, nil
+}

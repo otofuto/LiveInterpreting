@@ -540,7 +540,7 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 	defer db.Close()
 
 	if search == "" && user_type == "" && lans == "" {
-		log.Println("search and user_type is empty")
+		log.Println("search and user_type and langs is empty")
 		return make([]Accounts, 0)
 	}
 
@@ -575,7 +575,7 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 
 	sortQ := ""
 	if sort == "created_at" || sort == "last_logined" {
-		sortQ = " order by `" + sort + "`"
+		sortQ = " order by `" + sort + "` desc"
 	}
 	if sort == "major" {
 		//
@@ -967,7 +967,7 @@ func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int, get
 		where = "((`from` = " + strconv.Itoa(ac.Id) + " and `to` = " + strconv.Itoa(oppo.Id) + ") or (`from` = " + strconv.Itoa(oppo.Id) + " and `to` = " + strconv.Itoa(ac.Id) + "))"
 	}
 	if !getall {
-		where += " and (`from_eval` is null and `to_eval` is null)"
+		where += " and (`from_eval` is null and `to_eval` is null and `request_cancel` = 0 and `cancel_date` is null and (`response_type` = 0 or `response_type` is null))"
 	}
 
 	sql := "select `id`, `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +

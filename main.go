@@ -79,6 +79,7 @@ func main() {
 
 	http.HandleFunc("/Notifications/", NotificationsHandle)
 	http.HandleFunc("/Eval/", EvalHandle)
+	http.HandleFunc("/Lives/", LivesHandle)
 
 	http.HandleFunc("/u/", UserHandle)
 	http.HandleFunc("/mypage/", MypageHandle)
@@ -278,6 +279,48 @@ func EvalHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func LivesHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodGet {
+		mode := r.URL.Path[len("/Lives/"):]
+		if mode[len(mode)-1:] == "/" {
+			mode = mode[:len(mode)-1]
+		}
+		count, err := strconv.Atoi(r.FormValue("count"))
+		if err != nil {
+			count = 0
+		}
+		offset, err := strconv.Atoi(r.FormValue("offset"))
+		if err != nil {
+			offset = 0
+		}
+		if mode == "now" {
+			livs, err := lives.ListNow(count, offset)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to fetch current list", 500)
+				return
+			}
+			bytes, _ := json.Marshal(livs)
+			fmt.Fprintf(w, string(bytes))
+		} else if mode == "today" {
+			livs, err := lives.ListToday(count, offset)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to fetch today's list", 500)
+				return
+			}
+			bytes, _ := json.Marshal(livs)
+			fmt.Fprintf(w, string(bytes))
+		} else {
+			http.Error(w, "", 404)
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
 func UserHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -414,12 +457,12 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else if filename == "lives" {
+			db := database.Connect()
+			defer db.Close()
+			trs = login.GetTranses(db, accounts.Accounts{Id: 0}, 50, 0, false)
 			if r.FormValue("trans") != "" {
 				trid, err := strconv.Atoi(r.FormValue("trans"))
 				if err == nil {
-					db := database.Connect()
-					defer db.Close()
-					trs = login.GetTranses(db, accounts.Accounts{Id: 0}, 10, 0, false)
 					tr = trans.Trans{Id: trid}
 					if tr.Get() {
 						liv, err = lives.GetFromTrans(db, trid)

@@ -89,12 +89,13 @@
 			</div>
 			<div id="content">
 				<div style="text-align: right;">
-					<button class="button" onclick="openLangs()">言語を選択</button>
-					<button class="button" onclick="openWage()">金額(時間あたり)を選択</button>
-					<button class="button" onclick="openSort()">並び替え</button>
-					<button class="button" onclick="search()" id="searchBtn">検索する</button>
-					<div style="padding: 0 10px;">
-						<div id="langs" class="selectBox" data-opened="false"></div>
+					<div style="padding: 10px; box-sizing: border-box;">
+						<div id="langs" class="selectBox" style="height: 200px; overflow: auto; padding: 10px; opacity: 1;"></div>
+						<div id="sort" class="selectBox" style="height: 50px; overflow: auto; padding: 10px; opacity: 1;">
+							<label>おすすめ順<input type="radio" name="sort" value="major" checked></label>
+							<label>登録日時<input type="radio" name="sort" value="created_at"></label>
+							<label>ログイン日時<input type="radio" name="sort" value="last_logined"></label>
+						</div>
 						<div id="wages" class="selectBox" data-opened="false">
 							<select id="hourly_wage" class="input">
 								<option value="1">～1,000円</option>
@@ -105,12 +106,9 @@
 								<option value="6">5,001円～</option>
 							</select>
 						</div>
-						<div id="sort" class="selectBox" data-opened="false">
-							<label>おすすめ順<input type="radio" name="sort" value="major" checked></label>
-							<label>登録日時<input type="radio" name="sort" value="created_at"></label>
-							<label>ログイン日時<input type="radio" name="sort" value="last_logined"></label>
-						</div>
 					</div>
+					<button class="button" onclick="openWage()" id="openWageButton">金額(時間あたり)を選択</button>
+					<button class="button" onclick="search()" id="searchBtn">検索する</button>
 				</div>
 				<div id="users"></div>
 			</div>
@@ -121,6 +119,10 @@
 		<script src="/st/js/master.js"></script>
 		<script>
 			get('/Lang/').then(list => {
+				let selectedLangs = [];
+				if (new URL(location).searchParams.get('langs') != null) {
+					selectedLangs = new URL(location).searchParams.get('langs').split(',');
+				}
 				document.getElementById('langs').innerHTML = "";
 				Array.from(list).forEach(l => {
 					let lbl = document.createElement("label");
@@ -133,66 +135,58 @@
 					chk.setAttribute("name", "lang");
 					chk.value = l.id;
 					lbl.appendChild(chk);
+
+					if (selectedLangs.find(sl => sl == l.id) != null) chk.checked = true;
 				});
 			});
 
-			function openLangs() {
-				let langs = document.getElementById('langs');
-				if (langs.getAttribute('data-opened') == "false") {
-					langs.setAttribute('data-opened', true);
-					langs.style.height = '200px';
-					langs.style.overflow = 'auto';
-					langs.style.padding = '10px';
-					langs.style.opacity = '1';
-				} else {
-					langs.setAttribute('data-opened', false);
-					langs.removeAttribute('style');
-				}
-			}
-
 			function openWage() {
 				let st = document.getElementById('wages');
+				let btn = document.getElementById('openWageButton');
 				if (st.getAttribute('data-opened') == "false") {
 					st.setAttribute('data-opened', true);
 					st.style.height = '74px';
 					st.style.overflow = 'auto';
 					st.style.padding = '10px';
 					st.style.opacity = '1';
+					btn.style.backgroundColor = 'darkgray';
+					btn.innerText = 'キャンセル';
 				} else {
 					st.setAttribute('data-opened', false);
 					st.removeAttribute('style');
-				}
-			}
-
-			function openSort() {
-				let st = document.getElementById('sort');
-				if (st.getAttribute('data-opened') == "false") {
-					st.setAttribute('data-opened', true);
-					st.style.height = '50px';
-					st.style.overflow = 'auto';
-					st.style.padding = '10px';
-					st.style.opacity = '1';
-				} else {
-					st.setAttribute('data-opened', false);
-					st.removeAttribute('style');
+					btn.removeAttribute('style');
+					btn.innerText = '金額(時間あたり)を選択';
 				}
 			}
 
 			function search() {
 				let checks = Array.from(document.querySelectorAll('input[name="lang"]')).filter(l => l.checked);
 				let langs = checks.map(l => l.value).join(',');
-				let query = 'langs=' + langs  + "&sort=" + document.querySelector('input[name="sort"]:checked').value + '&wage=' + document.getElementById('hourly_wage').value;
+				let query = 'langs=' + langs + '&sort=' + document.querySelector('input[name="sort"]:checked').value;
+				if (document.getElementById('wages').getAttribute('data-opened') == 'true')
+					query += '&wage=' + document.getElementById('hourly_wage').value;
 				location.replace('/search?' + query);
 				document.getElementById('users').innerHTML = '';
 			}
 
+			if (new URL(location).searchParams.get('sort') != null) {
+				document.querySelector('input[value="' + new URL(location).searchParams.get('sort') + '"]').checked = true;
+			}
+			if (new URL(location).searchParams.get('wage') != null) {
+				openWage();
+				document.getElementById('hourly_wage').value = new URL(location).searchParams.get('wage');
+			}
 			if (new URL(location).searchParams.get('langs') != null) {
+				document.getElementById('users').innerHTML = '<p>検索中</p>';
 				let query = 'langs=' + new URL(location).searchParams.get('langs') + '&sort=' + new URL(location).searchParams.get('sort') + '&wage=' + new URL(location).searchParams.get('wage');
 				get('/Account/Search?' + query)
 				.then(accounts => {
+					document.getElementById('users').innerHTML = '';
 					Array.from(accounts).forEach(ac => {
 						document.getElementById('users').appendChild(createAccount(ac));
 					});
+				}).catch(err => {
+					document.getElementById('users').innerHTML = '検索結果はありませんでした。';
 				});
 			}
 
