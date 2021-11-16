@@ -578,7 +578,7 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 		sortQ = " order by `" + sort + "` desc"
 	}
 	if sort == "major" {
-		//
+		sortQ = " order by `starsum` desc"
 	}
 
 	wageQ := ""
@@ -614,7 +614,8 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 		wageQ += "`hourly_wage` > 5000"
 	}
 
-	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and " + user_type + searchQ + wageQ + sortQ
+	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts`" +
+		" inner join (select `to`, sum(`from_eval`) as `starsum` from `trans` group by `to`) as `evs` on `evs`.`to` = `id` where `enabled` = 1 and " + user_type + searchQ + wageQ + sortQ
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go Search(search, user_type, lans string, id int)")
@@ -967,7 +968,11 @@ func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int, get
 		where = "((`from` = " + strconv.Itoa(ac.Id) + " and `to` = " + strconv.Itoa(oppo.Id) + ") or (`from` = " + strconv.Itoa(oppo.Id) + " and `to` = " + strconv.Itoa(ac.Id) + "))"
 	}
 	if !getall {
-		where += " and (`from_eval` is null and `to_eval` is null and `request_cancel` = 0 and `cancel_date` is null and (`response_type` = 0 or `response_type` is null))"
+		where += " and (`from_eval` is null and `to_eval` is null" +
+			" and `request_cancel` = 0" +
+			" and `cancel_date` is null" +
+			" and (`response_type` = 0 or `response_type` is null))" +
+			" and ((`estimate_limit_date` > '" + time.Now().AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59' and `estimate_date` is null) or `estimate_date` is not null)"
 	}
 
 	sql := "select `id`, `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +
