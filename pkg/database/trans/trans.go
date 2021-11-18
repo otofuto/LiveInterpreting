@@ -34,6 +34,7 @@ type Trans struct {
 	FromComment       sql.NullString `json:"from_comment"`
 	ToEval            sql.NullInt64  `json:"to_eval"`
 	ToComment         sql.NullString `json:"to_comment"`
+	LiveId            sql.NullInt64
 }
 
 func (tr *Trans) Insert() error {
@@ -95,11 +96,12 @@ func (tr *Trans) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "select `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +
+	sql := "select `from`, `to`, `live_start`, `live_time`, `trans`.`lang`, `request_type`, " +
 		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
 		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
-		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` " +
-		"where `id` = " + strconv.Itoa(tr.Id)
+		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment`, `lives`.`id`" +
+		" from `trans` inner join `lives` on `trans`.`id` = `lives`.`trans`" +
+		" where `trans`.`id` = " + strconv.Itoa(tr.Id)
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println(err)
@@ -111,7 +113,7 @@ func (tr *Trans) Get() bool {
 		err = rows.Scan(&tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType,
 			&tr.RequestTitle, &tr.Request, &tr.RequestDate, &tr.BudgetRange, &tr.RequestCancel, &tr.EstimateLimitDate,
 			&tr.Price, &tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate, &tr.FinishedDate,
-			&tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment)
+			&tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment, &tr.LiveId)
 		if err != nil {
 			log.Println(err)
 			return false

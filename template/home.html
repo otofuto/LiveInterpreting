@@ -109,6 +109,20 @@
 				background-size: 50%;
 			}
 
+			.livepanel__img__start {
+				display: block;
+				position: absolute;
+				width: 100%;
+				height: auto;
+				max-height: 100%;
+				top: 0;
+				bottom: auto;
+				color: black;
+				text-align: left;
+				user-select: none;
+				text-shadow: 1px 1px white;
+			}
+
 			.livepanel__img__title {
 				display: block;
 				position: absolute;
@@ -130,8 +144,9 @@
 				position: relative;
 				width: 100%;
 				height: 20px;
-				color: black;
 				text-align: right;
+				overflow: hidden;
+				color: black;
 				text-decoration: none;
 			}
 
@@ -158,15 +173,30 @@
 				top: 0;
 				left: 0;
 				z-index: 9999;
+				overflow: auto;
 			}
 
 			#popup_back>article {
 				display: block;
 				width: 300px;
-				height: 500px;
+				height: max-content;
 				margin: 20px auto;
 				border-radius: 15px;
 				background-color: whitesmoke;
+				box-shadow: 0 0 20px -10px rgba(0, 0, 0, 0.7);
+				padding: 10px;
+				box-sizing: border-box;
+			}
+
+			#popup_back>article>.liv_image {
+				display: block;
+				width: 100%;
+				height: 157px;
+				border-radius: 5px;
+				background-color: white;
+				background-position: center;
+				background-repeat: no-repeat;
+				background-size: cover;
 				box-shadow: 0 0 20px -10px rgba(0, 0, 0, 0.7);
 			}
 		</style>
@@ -202,22 +232,36 @@
 				<div id="currentlives"></div>
 				<h2>本日の配信</h2>
 				<div id="todaylives"></div>
+				{{ if ne .Login.Id -1 }}
 				<h2 id="notifBtn">通知</h2>
 				<input type="checkbox" style="display: none;" id="notifCheck">
 				<div id="notifications"></div>
+				{{ end }}
 				<h2>▽新着ユーザー▽</h2>
 				<div id="newaccounts"></div>
+				{{ if ne .Login.Id -1 }}
 				<h2>▽フォロー▽</h2>
 				<div id="follows"></div>
 				<h2>▽フォロワー▽</h2>
 				<div id="followers"></div>
+				{{ end }}
 			</div>
 		</main>
 		<footer class="page-footer">
 			<label><script>footerText();</script></label>
 		</footer>
 		<div id="popup_back" onclick="hidePopup(event, this)">
-			<article></article>
+			<article>
+				<div class="liv_image" onclick="openLivePage(this)"></div>
+				<h3 class="liv_title"></h3>
+				<p class="liv_liver"></p>
+				<p class="liv_lang"></p>
+				<p class="liv_interpreter"></p>
+				<p class="liv_start"></p>
+				<p class="liv_end"></p>
+				<p class="liv_url"></p>
+				<p class="lipre_url"></p>
+			</article>
 		</div>
 		<script src="/st/js/master.js"></script>
 		<script>
@@ -304,6 +348,10 @@
 					img.style.backgroundImage = 'url(\'/Account/img/' + liv.liver_id + '\')';
 				}
 				panel.appendChild(img);
+				let start = document.createElement('div');
+				start.setAttribute('class', 'livepanel__img__start');
+				start.innerText = liv.start.substring(11, 16) + '～';
+				img.appendChild(start);
 				let title = document.createElement('div');
 				title.setAttribute('class', 'livepanel__img__title');
 				title.innerText = liv.title;
@@ -318,12 +366,32 @@
 
 			function liveDetail(liv) {
 				document.getElementById('popup_back').style.display = 'block';
-				document.querySelector('#popup_back>article').innerText = liv.title;
+				let art = document.querySelector('#popup_back>article');
+				art.querySelector('.liv_image').style.backgroundImage = 'url(\'' + (liv.image.String == '' ? ('/Account/img/' + liv.liver_id) : liv.image.String) + '\')';
+				art.querySelector('.liv_image').setAttribute('data-url', liv.url == '' ? ('/u/' + liv.liver_id) : liv.url);
+				art.querySelector('.liv_image').setAttribute('data-trans', liv.trans_id);
+				art.querySelector('.liv_title').innerText = liv.title;
+				art.querySelector('.liv_liver').innerHTML = '配信者: <a href="/u/' + liv.liver_id + '" target="_blank">' + liv.liver_name + '</a>';
+				art.querySelector('.liv_lang').innerText = '通訳言語: ' + liv.lang_name;
+				art.querySelector('.liv_interpreter').innerHTML = '通訳者: <a href="/u/' + liv.interpreter_id + '" target="_blank">' + liv.interpreter_name + '</a>';
+				art.querySelector('.liv_start').innerText = '開始: ' + liv.start.substring(0, liv.start.length - 3);
+				art.querySelector('.liv_end').innerText = '終了予定: ' + liv.end.substring(0, liv.end.length - 3);
+				art.querySelector('.liv_url').innerHTML = '配信ページ: <a href="' + liv.url + '" target="_blank">' + liv.url + '</a>';
+				art.querySelector('.lipre_url').innerHTML = '通訳ページ: <a href="/live/' + liv.trans_id + '" target="_blank">移動する</a>';
 			}
 
 			function hidePopup(e, elm) {
 				if (e.target == elm)
 					document.getElementById('popup_back').removeAttribute('style');
+			}
+
+			function openLivePage(elm) {
+				if (elm.getAttribute('data-url') != "") {
+					window.open(elm.getAttribute('data-url'));
+				}
+				if (elm.getAttribute('data-trans') != "") {
+					location = '/live/' + elm.getAttribute('data-trans');
+				}
 			}
 
 			get('/Lives/now/?count=20&offset=0')

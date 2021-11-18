@@ -800,7 +800,7 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `to`, `id` from `trans` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id) + " order by `request_date` desc"
+	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `to`, `id` from `trans` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id) + " and ((`estimate_limit_date` > '" + time.Now().AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59' and `estimate_date` is null) or `estimate_date` is not null) order by `request_date` desc"
 	rows2, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Inbox()")
@@ -975,10 +975,10 @@ func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int, get
 			" and ((`estimate_limit_date` > '" + time.Now().AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59' and `estimate_date` is null) or `estimate_date` is not null)"
 	}
 
-	sql := "select `id`, `from`, `to`, `live_start`, `live_time`, `lang`, `request_type`, " +
+	sql := "select `trans`.`id`, `from`, `to`, `live_start`, `live_time`, `trans`.`lang`, `request_type`, " +
 		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
 		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
-		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment` from `trans` where " + where +
+		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment`, `lives`.`id` from `trans` inner join `lives` on `trans`.id = `lives`.`trans` where " + where +
 		" order by `request_date` desc limit " + strconv.Itoa(count*2) + " offset " + strconv.Itoa(offset)
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -993,7 +993,7 @@ func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int, get
 		err = rows.Scan(&tr.Id, &tr.From, &tr.To, &tr.LiveStart, &tr.LiveTime, &tr.Lang, &tr.RequestType,
 			&tr.RequestTitle, &tr.Request, &tr.RequestDate, &tr.BudgetRange, &tr.RequestCancel, &tr.EstimateLimitDate,
 			&tr.Price, &tr.EstimateDate, &tr.ResponseType, &tr.Response, &tr.BuyDate, &tr.FinishedDate,
-			&tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment)
+			&tr.CancelDate, &tr.FromEval, &tr.FromComment, &tr.ToEval, &tr.ToComment, &tr.LiveId)
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) GetTranses(count, offset int)")
 			log.Println(err)

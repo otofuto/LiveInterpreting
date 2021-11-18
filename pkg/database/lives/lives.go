@@ -34,7 +34,19 @@ func CreateLive(tr trans.Trans) (Lives, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "insert into `lives` (trans, liver, interpreter, start, end, lang, url, title, image) values (?, ?, ?, ?, ?, ?, '', '', null)"
+	sql := "select * from `lives` where `trans` = " + strconv.Itoa(tr.Id)
+	rows, err := db.Query(sql)
+	if err != nil {
+		log.Println("lives.go CreateLive(tr trans.Trans) db.Query()")
+		return Lives{}, err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		log.Println("lives.go CreateLive(tr trans.Trans) rows.Next()")
+		return Lives{}, errors.New("already created")
+	}
+
+	sql = "insert into `lives` (trans, liver, interpreter, start, end, lang, url, title, image) values (?, ?, ?, ?, ?, ?, '', '', null)"
 	ins, err := db.Prepare(sql)
 	if err != nil {
 		log.Println("lives.go CreateLive(tr trans.Trans) db.Prepare()")
@@ -160,8 +172,12 @@ func ListNow(count, offset int) ([]Lives, error) {
 	ret := make([]Lives, 0)
 	n := time.Now().Format("2006-01-02 15:04:05")
 	sql := "select lives.id, lives.trans, lives.liver, livers.`name`, lives.interpreter, interpreters.`name`, lives.start, lives.end, lives.lang, langs.lang, lives.url, lives.title, lives.image " +
-		"from lives left outer join accounts as `livers` on livers.id = lives.liver left outer join accounts as `interpreters` on interpreters.id = lives.interpreter left outer join langs on langs.id = lives.lang " +
-		"where `start` <= '" + n + "' and `end` >= '" + n + "' " +
+		"from lives " +
+		"left outer join accounts as `livers` on livers.id = lives.liver " +
+		"left outer join accounts as `interpreters` on interpreters.id = lives.interpreter " +
+		"left outer join langs on langs.id = lives.lang " +
+		"left outer join trans on trans.id = lives.trans " +
+		"where `start` <= '" + n + "' and `end` >= '" + n + "' and `trans`.`buy_date` is not null " +
 		"order by `start` desc " +
 		"limit " + strconv.Itoa(count) + " offset " + strconv.Itoa(offset)
 	rows, err := db.Query(sql)
@@ -189,8 +205,12 @@ func ListToday(count, offset int) ([]Lives, error) {
 	ret := make([]Lives, 0)
 	t := time.Now()
 	sql := "select lives.id, lives.trans, lives.liver, livers.`name`, lives.interpreter, interpreters.`name`, lives.start, lives.end, lives.lang, langs.lang, lives.url, lives.title, lives.image " +
-		"from lives left outer join accounts as `livers` on livers.id = lives.liver left outer join accounts as `interpreters` on interpreters.id = lives.interpreter left outer join langs on langs.id = lives.lang " +
-		"where `start` >= '" + t.Format("2006-01-02") + " 00:00:00' and `start` <= '" + t.AddDate(0, 0, 1).Format("2006-01-02") + " 00:00:00" + "' " +
+		"from lives " +
+		"left outer join accounts as `livers` on livers.id = lives.liver " +
+		"left outer join accounts as `interpreters` on interpreters.id = lives.interpreter " +
+		"left outer join langs on langs.id = lives.lang " +
+		"left outer join trans on trans.id = lives.trans " +
+		"where `start` >= '" + t.Format("2006-01-02") + " 00:00:00' and `start` <= '" + t.AddDate(0, 0, 1).Format("2006-01-02") + " 00:00:00" + "' and `trans`.`buy_date` is not null " +
 		"order by `start` desc " +
 		"limit " + strconv.Itoa(count) + " offset " + strconv.Itoa(offset)
 	rows, err := db.Query(sql)

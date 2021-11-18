@@ -148,8 +148,7 @@
 					<input type="submit" style="display: none;" name="sub">
 				</form>
 				<div style="text-align: center;">
-					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">更新</button>
-					<button class="button" onclick="location = '/mypage/';">マイページに戻る</button>
+					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">完了</button>
 				</div>
 				<p style="text-align: center;">
 					<button class="button" style="font-size: 100%;" onclick="location = '/mypage/pass/';">パスワードを変更する</button>
@@ -274,6 +273,7 @@
 						alert("アカウント情報を更新しました。");
 						btnUpdate.innerText = "更新";
 						btnUpdate.removeAttribute("disabled");
+						location = '/mypage/';
 					}).catch(err => {
 						formDisabled(document.fm, false);
 						grayBack.style.display = 'none';

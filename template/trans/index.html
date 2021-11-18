@@ -92,7 +92,7 @@
 				<p>依頼者: <a id="from"></a></p>
 				<p>通訳者: <a id="to"></a></p>
 				{{ if eq .Trans.From .Login.Id }}
-				<p><a href="/mypage/lives/?trans={{ .Trans.Id }}">配信登録する</a></p>
+				<p><a href="/mypage/lives/?trans={{ .Trans.Id }}">{{ if .Trans.LiveId.Valid }}配信情報を編集する{{ else }}配信登録する{{ end }}</a></p>
 				{{ end }}
 				<table><tbody id="tbl"></tbody></table>
 				<div id="sendEst" style="display: none;">
@@ -129,11 +129,11 @@
 						'estdel': '見積を取り消しました。',
 						'buy': '購入しました。'
 					};
-					location.replace('/trans/' + msg.trans.id);
 					document.getElementById('msg').innerText = mlist[new URL(location).searchParams.get('msg')];
 					document.getElementById('msg').style.height = '30px';
 					setTimeout(() => {
 						document.getElementById('msg').style.height = '0px';
+						location.replace('/trans/' + msg.trans.id);
 					}, 5000);
 				}
 			};

@@ -35,7 +35,7 @@
 			<div id="content">
 				<h1>配信登録</h1>
 				<p>ここでは、自分のライブ配信の情報を登録しておくことで、トップページに表示して宣伝することができます。</p>
-				{{ if len .Transes }}
+				{{ if or (len .Transes) (ne .Live.Id 0) }}
 				<form name="fm" onsubmit="update(); return false;">
 					<input type="hidden" name="id" value="{{.Live.Id}}">
 					{{ if eq .Live.Id 0 }}
@@ -83,6 +83,7 @@
 				{{ else }}
 				<p>まずは通訳者さんへ見積もり依頼をしましょう！</p>
 				<p><a href="/search/">通訳者を探す</a></p>
+				<p>既に登録されている配信情報を変更するには、<a href="/mypage/">マイページ</a>から取引ページに移ってください。</p>
 				{{ end }}
 			</div>
 		</main>
@@ -97,7 +98,7 @@
 			function update() {
 				let data = new FormData(document.fm);
 				formDisabled(document.fm, true);
-				post('/mypage/live', data)
+				post('/Lives/', data)
 				.then(() => {
 					alert('完了');
 					formDisabled(document.fm, false);
