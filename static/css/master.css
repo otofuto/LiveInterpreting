@@ -66,6 +66,11 @@ body {
 	text-align: right;
 }
 
+.page-header__username>a {
+	color: white;
+	text-decoration: none;
+}
+
 @media screen and (max-width: 812px) {
 	.header-humb {
 		display: block;

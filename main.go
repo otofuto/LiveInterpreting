@@ -396,7 +396,11 @@ func UserHandle(w http.ResponseWriter, r *http.Request) {
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodGet {
-		accountId, err := strconv.Atoi(r.URL.Path[len("/u/"):])
+		accountIdStr := r.URL.Path[len("/u/"):]
+		if accountIdStr[len(accountIdStr)-1:] == "/" {
+			accountIdStr = accountIdStr[:len(accountIdStr)-1]
+		}
+		accountId, err := strconv.Atoi(accountIdStr)
 		if err != nil {
 			http.Error(w, "URLが正しくありません。", 400)
 			return
