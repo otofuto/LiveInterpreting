@@ -8,27 +8,8 @@
 		<meta name="robots" content="noindex,nofollow">
 		<title>通訳者を探す | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/accounts.css">
 		<style>
-			.account {
-				display: inline-block;
-				width: 150px;
-				border-radius: 15px 15px 0 0;
-				margin: 5px;
-				color: white;
-				cursor: pointer;
-			}
-
-			.iconDisp {
-				position: relative;
-				display: block;
-				width: 75px;
-				height: 75px;
-				margin: 5px auto 0 auto;
-				border-radius: 5px;
-				background-size: cover;
-				background-position: center;
-			}
-
 			.selectBox {
 				display: inline-block;
 				border: solid 2px lightgray;
@@ -120,6 +101,7 @@
 			<label><script>footerText();</script></label>
 		</footer>
 		<script src="/st/js/master.js"></script>
+		<script src="/st/js/accounts.js"></script>
 		<script>
 			get('/Lang/').then(list => {
 				let selectedLangs = [];
@@ -191,36 +173,6 @@
 				}).catch(err => {
 					document.getElementById('users').innerHTML = '検索結果はありませんでした。';
 				});
-			}
-
-			function createAccount(ac) {
-				let acbox = document.createElement("div");
-				acbox.setAttribute("class", "account");
-				if (ac.user_type == "influencer") {
-					acbox.style.backgroundColor = "var(--color1)";
-				} else {
-					acbox.style.backgroundColor = "var(--color2)";
-				}
-
-				let iconDisp = document.createElement("div");
-				iconDisp.setAttribute("class", "iconDisp");
-				iconDisp.style.backgroundImage = "url('/Account/img/" + ac.id + "')";
-				acbox.appendChild(iconDisp);
-
-				let namelabel = document.createElement("div");
-				namelabel.innerText = ac.name;
-				acbox.appendChild(namelabel);
-
-				let datelabel = document.createElement("label");
-				datelabel.style.fontSize = "80%";
-				datelabel.innerText = ac.created_at;
-				acbox.appendChild(datelabel);
-
-				acbox.addEventListener('click', () => {
-					location = "/u/" + ac.id;
-				});
-
-				return acbox;
 			}
 		</script>
 	</body>

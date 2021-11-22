@@ -6,7 +6,7 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>フォロー | Live interpreting</title>
+		<title>フォロワー | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<link rel="stylesheet" href="/st/css/accounts.css">
@@ -29,13 +29,13 @@
 				<div onclick="location = '/home/'"><span>ホーム</span></div>
 				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
 				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
-				<div onclick="location = '/mypage/follows/'" class="selected"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
 				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
 				<div onclick="location = '/search/'"><span>通訳者を探す</span></div>
 				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
-				<h1>フォロー</h1>
+				<h1>フォロワー</h1>
 				<div id="follows"></div>
 			</div>
 		</main>
@@ -46,13 +46,13 @@
 		<script src="/st/js/accounts.js"></script>
 		<script>
 			let follows = document.getElementById('follows');
-			get('/Account/Search/?search=follow')
+			get('/Account/Search/?search=follower')
 			.then(accounts => {
 				Array.from(accounts).forEach(ac => {
 					follows.appendChild(createAccount(ac));
 				});
 				if (accounts.length == 0) {
-					follows.innerText = "現在フォローしている人はいません";
+					follows.innerText = "現在フォロワーはいません";
 				}
 			});
 		</script>

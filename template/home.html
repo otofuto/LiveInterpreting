@@ -9,26 +9,6 @@
 		<title>Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<style>
-			.account {
-				display: inline-block;
-				width: 150px;
-				border-radius: 15px 15px 0 0;
-				margin: 5px;
-				color: white;
-				cursor: pointer;
-			}
-
-			.iconDisp {
-				position: relative;
-				display: block;
-				width: 75px;
-				height: 75px;
-				margin: 5px auto 0 auto;
-				border-radius: 5px;
-				background-size: cover;
-				background-position: center;
-			}
-
 			.service-title {
 				float: left;
 			}
@@ -396,6 +376,8 @@
 
 			get('/Lives/now/?count=20&offset=0')
 			.then(livs => {
+				if (livs.length == 0) document.getElementById('currentlives').style.height = '0';
+				else
 				Array.from(livs).forEach(liv => {
 					document.getElementById('currentlives').appendChild(createLivePanel(liv));
 				});
@@ -403,12 +385,14 @@
 
 			get('/Lives/today/?count=20&offset=0')
 			.then(livs => {
+				if (livs.length == 0) document.getElementById('todaylives').style.height = '0';
+				else
 				Array.from(livs).forEach(liv => {
 					document.getElementById('todaylives').appendChild(createLivePanel(liv));
 				});
 			});
 
-			get('/Account/Search/?search=new')
+			/*get('/Account/Search/?search=new')
 			.then(accounts => {
 				Array.from(accounts).forEach(ac => {
 					newaccounts.appendChild(createAccount(ac));
@@ -427,37 +411,7 @@
 				Array.from(accounts).forEach(ac => {
 					followers.appendChild(createAccount(ac));
 				});
-			});
-
-			function createAccount(ac) {
-				let acbox = document.createElement("div");
-				acbox.setAttribute("class", "account");
-				if (ac.user_type == "influencer") {
-					acbox.style.backgroundColor = "var(--color1)";
-				} else {
-					acbox.style.backgroundColor = "var(--color2)";
-				}
-
-				let iconDisp = document.createElement("div");
-				iconDisp.setAttribute("class", "iconDisp");
-				iconDisp.style.backgroundImage = "url('/Account/img/" + ac.id + "')";
-				acbox.appendChild(iconDisp);
-
-				let namelabel = document.createElement("div");
-				namelabel.innerText = ac.name;
-				acbox.appendChild(namelabel);
-
-				let datelabel = document.createElement("label");
-				datelabel.style.fontSize = "80%";
-				datelabel.innerText = ac.created_at;
-				acbox.appendChild(datelabel);
-
-				acbox.addEventListener('click', () => {
-					location = "/u/" + ac.id;
-				});
-
-				return acbox;
-			}
+			});*/
 		</script>
 	</body>
 </html>

@@ -1,0 +1,62 @@
+
+.account-panel {
+    display: block;
+    position: relative;
+    width: calc(100% - 10px);
+    height: 77px;
+    margin: 5px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: solid 1px lightgray;
+    border-radius: 6px;
+    cursor: pointer;
+    overflow: hidden;
+    text-decoration: none;
+    color: black;
+    background-color: white;
+}
+
+.account-panel:hover {
+    background-color: #fffcf7;
+}
+
+.icon-disp {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 75px;
+    height: 100%;
+    margin: 0;
+    border-radius: 6px;
+    background-size: contain;
+    background-position: top;
+    background-repeat: no-repeat;
+}
+
+.account-panel>div:nth-of-type(2) {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 75px;
+    width: calc(100% - 75px);
+    height: 100%;
+}
+
+.account-panel>div:nth-of-type(2)>div:nth-of-type(1) {
+    font-size: 1.1em;
+}
+
+.account-panel>div:nth-of-type(2)>div:nth-of-type(2) {
+    height: 26px;
+    overflow: hidden;
+}
+
+.account-panel>div:nth-of-type(2)>div:nth-of-type(3) {
+    font-size: 0.8em;
+    color: dimgray;
+}
+
+.account-panel>div:nth-of-type(2)>div:nth-of-type(3):before {
+    content: '使用言語: ';
+}

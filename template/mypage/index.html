@@ -13,6 +13,33 @@
 			#iconDisp {
 				background-image: url('/Account/img/{{.Login.Id}}');
 			}
+
+			#mypageHeader {
+				display: flex;
+				flex-wrap: nowrap;
+				justify-content: space-around;
+			}
+
+			#mypageHeader>a {
+				display: block;
+				position: relative;
+				width: 100%;
+				height: 34px;
+				line-height: 34px;
+				border-right: solid 1px lightgray;
+				text-decoration: none;
+				font-size: 1.2em;
+				color: dimgray;
+				text-align: center;
+			}
+
+			#mypageHeader>a:nth-of-type(4) {
+				border-right: none;
+			}
+
+			#mypageHeader>a:hover {
+				background-color: #fffcf7;
+			}
 		</style>
 	</head>
 	<body>
@@ -63,9 +90,11 @@
 						{{ end }}</p>
 					{{ end }}
 				</header>
-				<div style="width: 100%; text-align: right;">
-					<button class="button" onclick="location = '/u/{{ .Login.Id }}'">自分のユーザーページ</button>
-					<button class="button" onclick="location = '/mypage/profile/'">プロフィール編集</button>
+				<div id="mypageHeader">
+					<a href="/mypage/follows/">フォロー</a>
+					<a href="/mypage/followers/">フォロワー</a>
+					<a href="/u/{{ .Login.Id }}">自分のユーザーページ</a>
+					<a href="/mypage/profile/">プロフィール編集</a>
 				</div>
 				<div style="width: 100%; text-align: left;">
 					<h2>DM履歴</h2>
@@ -112,53 +141,6 @@
 			document.querySelectorAll('[data-userid]').forEach(elm => {
 				elm.innerText = users.find(u => u.id == elm.getAttribute('data-userid')).name;
 			});
-			function follow(btn) {
-				var data = new FormData();
-				data.append("target_id", "{{.Login.Id}}");
-				data.append("action", "0");
-				fetch('/AccountSocial/', {
-					method: "post",
-					body: data,
-					credentials: "include"
-				}).then(res => {
-					if (res.status == 200)
-						return res.json();
-					else
-						return false;
-				}).then(result => {
-					if (result) {
-						btn.innerText = "✔フォロー中";
-						btn.style.backgroundColor = "var(--color1)";
-						btn.style.color = "white";
-						btn.setAttribute("onclick", "unfollow(this)");
-					} else {
-						alert('フォローに失敗しました。');
-					}
-				});
-			}
-
-			function unfollow(btn) {
-				var data = new FormData();
-				data.append("target_id", "{{.Login.Id}}");
-				fetch('/AccountSocial/', {
-					method: "delete",
-					body: data,
-					credentials: "include"
-				}).then(res => {
-					if (res.status == 200)
-						return res.json();
-					else
-						return false;
-				}).then(result => {
-					if (result) {
-						btn.innerText = "フォロー";
-						btn.removeAttribute("style");
-						btn.setAttribute("onclick", "follow(this)");
-					} else {
-						alert('フォロー解除に失敗しました。');
-					}
-				});
-			}
 
 			function locationMove(elm, path) {
 				Array.from(document.querySelectorAll('.list article')).forEach(art => {
