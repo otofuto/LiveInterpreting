@@ -91,6 +91,7 @@ func main() {
 	http.HandleFunc("/inbox/", InboxHandle)
 	http.HandleFunc("/payment/", PaymentHandle)
 	http.HandleFunc("/live/", LiveHandle)
+	http.HandleFunc("/connect/", ConnectHandle)
 
 	http.HandleFunc("/document/", documentHandle)
 
@@ -560,6 +561,14 @@ func MypageHandle(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			usr.Langs = langs.All()
+		} else if filename == "earnings" {
+			earn, err := login.GetEarnings()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to get data", 500)
+				return
+			}
+			msg = strconv.Itoa(earn)
 		}
 		temp := template.Must(template.ParseFiles("template/mypage/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
@@ -1773,23 +1782,10 @@ func InboxHandle(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 			return
 		}
-		acc := make([]accounts.Accounts, 0)
-		db := database.Connect()
-		defer db.Close()
-		for _, n := range notifs {
-			ac := accounts.Accounts{Id: n.From}
-			if !ac.GetLite(db) {
-				http.Error(w, "failed to get accounts into", 500)
-				return
-			}
-			acc = append(acc, ac)
-		}
 		bytes, err := json.Marshal(struct {
-			Accounts []accounts.Accounts `json:"accounts"`
-			Notifs   []accounts.Notif    `json:"notifs"`
+			Notifs []accounts.Notif `json:"notifs"`
 		}{
-			Accounts: acc,
-			Notifs:   notifs,
+			Notifs: notifs,
 		})
 		if err != nil {
 			log.Println(err)
@@ -1909,6 +1905,8 @@ func PaymentHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func LiveHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/html")
+
 	if r.Method == http.MethodGet {
 		trid_str := r.URL.Path[len("/live/"):]
 		GbOn := false
@@ -1997,6 +1995,22 @@ func LiveHandle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				http.Error(w, "page not found", 404)
 			}
+		}
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func ConnectHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/html")
+
+	if r.Method == http.MethodGet {
+		temp := template.Must(template.ParseFiles("template/connect.html"))
+		if err := temp.Execute(w, TempContext{
+			Login: account.LoginAccount(r),
+		}); err != nil {
+			log.Println(err)
+			http.Error(w, "HTTP 500 Internal server error", 500)
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)

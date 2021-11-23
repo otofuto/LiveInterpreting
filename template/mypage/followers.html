@@ -6,12 +6,47 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>フォロワー | Live interpreting</title>
+		<title>{{.Login.Name}}さん | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
-		<link rel="stylesheet" href="/st/css/mark.css">
+		<link rel="stylesheet" href="/st/css/user.css">
 		<link rel="stylesheet" href="/st/css/accounts.css">
+		<style>
+			#iconDisp {
+				background-image: url('/Account/img/{{.Login.Id}}');
+			}
+
+			#mypageHeader {
+				display: flex;
+				flex-wrap: nowrap;
+				justify-content: space-around;
+			}
+
+			#mypageHeader>a {
+				display: block;
+				position: relative;
+				width: 100%;
+				height: 34px;
+				line-height: 34px;
+				border-right: solid 1px lightgray;
+				text-decoration: none;
+				font-size: 1.2em;
+				color: dimgray;
+				text-align: center;
+			}
+
+			#mypageHeader>a:nth-of-type(4) {
+				border-right: none;
+			}
+
+			#mypageHeader>a:hover {
+				background-color: #fffcf7;
+			}
+		</style>
 	</head>
 	<body>
+		<script>
+			users = JSON.parse("{{ .Message }}");
+		</script>
 		<script src="/st/js/header.js"></script>
 		<script>
 			var p = document.createElement("p");
@@ -35,8 +70,40 @@
 				<div onclick="logout()"><span>ログアウト</span></div>
 			</div>
 			<div id="content">
-				<h1>フォロワー</h1>
-				<div id="follows"></div>
+				<header id="accountinfo">
+					<div id="iconDisp"></div>
+					<div style="width: calc(100% - 130px);">
+						<div style="font-size: 120%; font-weight: bold;">{{.Login.Name}}</div>
+						<span>性別: {{ if eq .Login.Sex 0 }}男性{{ else if eq .Login.Sex 1 }}女性{{ else }}その他{{ end }}</span><br>
+						<span>{{ if eq .Login.UserType "influencer" }}配信者{{ else }}通訳者{{end}}</span><br>
+						<span><script>let createdAt = new Date('{{ .Login.CreatedAt }}'); document.write(createdAt.getFullYear() + '年 ' + (createdAt.getMonth() + 1) + '月 ' + createdAt.getDate() + '日');</script>に登録</span>
+					</div>
+					<div style="width: 100%;"><pre style="white-space: normal;">{{.Login.Description}}</pre></div>
+					<div style="width: 100%;">
+						{{ if ne .Login.Url1 "" }}<p><a href="{{ .Login.Url1 }}" target="_blank" rel="noopener noreferrer">{{ .Login.Url1 }}</a></p>{{ end }}
+						{{ if ne .Login.Url2 "" }}<p><a href="{{ .Login.Url2 }}" target="_blank" rel="noopener noreferrer">{{ .Login.Url2 }}</a></p>{{ end }}
+						{{ if ne .Login.Url3 "" }}<p><a href="{{ .Login.Url3 }}" target="_blank" rel="noopener noreferrer">{{ .Login.Url3 }}</a></p>{{ end }}
+					</div>
+					{{ if ne (len .Login.Langs) 0 }}
+						<p>使用出来る言語: </p>
+						<p>{{ range .Login.Langs }}
+						{{ .Lang }}<br>
+						{{ end }}</p>
+					{{ end }}
+					<div style="text-align: right; width: 100%;">
+						<a href="/u/{{ .Login.Id }}" target="_blank"><button class="button">自分のユーザーページ</button></a>
+					</div>
+				</header>
+				<div id="mypageHeader">
+					<a href="/mypage/follows/">フォロー</a>
+					<a href="/mypage/followers/" style="background-color: #fffcf7;">フォロワー</a>
+					<a href="/mypage/earnings/">売上管理</a>
+					<a href="/mypage/profile/">プロフィール編集</a>
+				</div>
+				<div style="width: 100%; text-align: left;">
+					<h2>フォロワー</h2>
+					<div id="followers"></div>
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -45,14 +112,14 @@
 		<script src="/st/js/master.js"></script>
 		<script src="/st/js/accounts.js"></script>
 		<script>
-			let follows = document.getElementById('follows');
+			let followers = document.getElementById('followers');
 			get('/Account/Search/?search=follower')
 			.then(accounts => {
 				Array.from(accounts).forEach(ac => {
-					follows.appendChild(createAccount(ac));
+					followers.appendChild(createAccount(ac));
 				});
 				if (accounts.length == 0) {
-					follows.innerText = "現在フォロワーはいません";
+					followers.innerText = "現在フォロワーはいません";
 				}
 			});
 		</script>

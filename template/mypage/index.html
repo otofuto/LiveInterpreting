@@ -89,11 +89,14 @@
 						{{ .Lang }}<br>
 						{{ end }}</p>
 					{{ end }}
+					<div style="text-align: right; width: 100%;">
+						<a href="/u/{{ .Login.Id }}" target="_blank"><button class="button">自分のユーザーページ</button></a>
+					</div>
 				</header>
 				<div id="mypageHeader">
 					<a href="/mypage/follows/">フォロー</a>
 					<a href="/mypage/followers/">フォロワー</a>
-					<a href="/u/{{ .Login.Id }}">自分のユーザーページ</a>
+					<a href="/mypage/earnings/">売上管理</a>
 					<a href="/mypage/profile/">プロフィール編集</a>
 				</div>
 				<div style="width: 100%; text-align: left;">

@@ -248,8 +248,10 @@
 					appendRow('辞退理由', msg.trans.response.String);
 				}
 			}
-			if (msg.trans.from == {{ .Login.Id }} && msg.trans.from_eval.Valid) {
-				appendHeader('評価を送信しました。');
+			if (msg.trans.from_eval.Valid) {
+				if (msg.trans.from == {{ .Login.Id }})
+					appendHeader('評価を送信しました。');
+				else appendHeader('購入者から評価が届きました。');
 				let td2 = appendRow('評価', '星' + msg.trans.from_eval.Int64);
 				for (let i = 0; i < msg.trans.from_eval.Int64; i++) {
 					let svg = document.getElementById('starSvg').cloneNode(true);
@@ -258,8 +260,11 @@
 					td2.appendChild(svg);
 				}
 				appendRow('コメント', msg.trans.from_comment.String);
-			} else if (msg.trans.to == {{ .Login.Id }} && msg.trans.to_eval.Valid) {
-				appendHeader('評価を送信しました。');
+			}
+			if (msg.trans.to_eval.Valid) {
+				if (msg.trans.to == {{ .Login.Id }})
+					appendHeader('評価を送信しました。');
+				else appendHeader('通訳者から評価が届きました。');
 				let td2 = appendRow('評価', '星' + msg.trans.to_eval.Int64);
 				for (let i = 0; i < msg.trans.to_eval.Int64; i++) {
 					let svg = document.getElementById('starSvg').cloneNode(true);
@@ -268,7 +273,8 @@
 					td2.appendChild(svg);
 				}
 				appendRow('コメント', msg.trans.to_comment.String);
-			} else if (msg.trans.buy_date.Valid) {
+			}
+			if (msg.trans.buy_date.Valid && !msg.trans.from_eval.Valid && !msg.trans.to_eval.Valid) {
 				let live_start = new Date(msg.trans.live_start.String);
 				live_start.setMinutes(live_start.getMinutes() + msg.trans.live_time.Int64);
 				if (new Date() > live_start) {

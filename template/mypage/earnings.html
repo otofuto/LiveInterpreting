@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>売上管理 | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+		<link rel="stylesheet" href="/st/css/mark.css">
+		<style>
+		</style>
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			var a = document.createElement('a');
+			a.href = '/mypage/';
+			a.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			p.appendChild(a);
+			{{ end }}
+			appendHeader(p);
+		</script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'"><span>ホーム</span></div>
+				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				<div onclick="location = '/search/'"><span>通訳者を探す</span></div>
+				<div onclick="logout()"><span>ログアウト</span></div>
+			</div>
+			<div id="content">
+				<h1>売上管理</h1>
+				<h2>総売上金額: {{ .Message }}円</h2>
+				<p><a href="/connect/">振り込み設定</a></p>
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label><script>footerText();</script></label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+		<script>
+		</script>
+	</body>
+</html>

@@ -616,7 +616,7 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 	}
 
 	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts`" +
-		" inner join (select `to`, sum(`from_eval`) as `starsum` from `trans` group by `to`) as `evs` on `evs`.`to` = `id` where `enabled` = 1 and " + user_type + searchQ + wageQ + sortQ
+		" left outer join (select `to`, sum(`from_eval`) as `starsum` from `trans` group by `to`) as `evs` on `evs`.`to` = `id` where `enabled` = 1 and " + user_type + searchQ + wageQ + sortQ
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go Search(search, user_type, lans string, id int)")
@@ -640,6 +640,7 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 			log.Println(sql)
 			return make([]Accounts, 0)
 		}
+		ac.Langs = make([]langs.Langs, 0)
 		for rows2.Next() {
 			var l langs.Langs
 			err = rows2.Scan(&l.Id, &l.Lang)
@@ -991,7 +992,7 @@ func (ac *Accounts) GetTranses(db *sql.DB, oppo Accounts, count, offset int, get
 	sql := "select `trans`.`id`, `from`, `to`, `live_start`, `live_time`, `trans`.`lang`, `request_type`, " +
 		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
 		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
-		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment`, `lives`.`id` from `trans` inner join `lives` on `trans`.id = `lives`.`trans` where " + where +
+		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment`, `lives`.`id` from `trans` left outer join `lives` on `trans`.id = `lives`.`trans` where " + where +
 		" order by `request_date` desc limit " + strconv.Itoa(count*2) + " offset " + strconv.Itoa(offset)
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -1034,4 +1035,30 @@ func (ac *Accounts) SetCustomerId(cus string) error {
 	}
 	ac.StripeCustomer = cus
 	return nil
+}
+
+func (ac *Accounts) GetEarnings() (int, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	sqlstr := "select sum(price) from trans where `to` = " + strconv.Itoa(ac.Id) + " and buy_date is not null and from_eval is not null"
+	rows, err := db.Query(sqlstr)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) GetEarnings() db.Query()")
+		return 0, err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var ret sql.NullInt64
+		err = rows.Scan(&ret)
+		if err != nil {
+			log.Println("accounts.go (ac *Accounts) GetEarnings() rows.Scan()")
+			return 0, err
+		}
+		if !ret.Valid {
+			return 0, nil
+		}
+		return database.Int64ToInt(ret.Int64), nil
+	}
+	return 0, errors.New("data is empty")
 }
