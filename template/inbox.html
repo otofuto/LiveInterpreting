@@ -20,7 +20,7 @@
 				color: dimgray;
 			}
 
-			#notifList article {
+			.notif-list article {
 				display: block;
 				padding: 15px;
 				box-sizing: border-box;
@@ -31,32 +31,32 @@
 				transition: all 70ms 0ms ease;
 			}
 
-			#notifList article:hover {
+			.notif-list article:hover {
 				background-color: whitesmoke;
 				box-shadow: 0 0 20px -10px lightgray inset;
 			}
 
-			#notifList article header {
+			.notif-list article header {
 				display: flex;
 				flex-wrap: wrap;
 				justify-content: space-between;
 			}
 
-			#notifList article header h3 {
+			.notif-list article header h3 {
 				margin: 0;
 				font-weight: bold;
 			}
 
-			#notifList article header span:before {
+			.notif-list article header span:before {
 				content: 'From: ';
 			}
 
-			#notifList article header span img {
+			.notif-list article header span img {
 				max-width: 50px;
 				max-height: 50px;
 			}
 
-			#notifList article main {
+			.notif-list article main {
 				padding: 5px;
 				box-sizing: border-box;
 			}
@@ -87,7 +87,11 @@
 			</div>
 			<div id="content">
 				<h1>受信BOX</h1>
-				<div id="notifList">
+				<h2>重要</h2>
+				<div id="notifList1" class="notif-list">
+				</div>
+				<h2>通知</h2>
+				<div id="notifList2" class="notif-list">
 				</div>
 				<div id="ex" style="display: none;">
 					<article>
@@ -105,23 +109,72 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			let msg = JSON.parse({{ .Message }});
-			msg.notifs.forEach(n => {
-				let row = document.getElementById('ex').getElementsByTagName('article')[0].cloneNode(true);
+			get('/Notifications/')
+			.then(notifs => {
+				if (notifs != null) {
+					if (Array.from(notifs).length > 0) {
+						let btn = document.createElement('button');
+						btn.innerText = 'すべて既読にする';
+						btn.setAttribute('onclick', 'clearNotifs()');
+						btn.setAttribute('class', 'button');
+						document.getElementById('notifList2').appendChild(btn);
+					}
+					Array.from(notifs).forEach(notif => {
+						let row = createNotif(notif);
+						row.addEventListener('click', () => {
+							if (notif.type == 'dm')
+								location = '/directmessages/' + notif.from;
+							else if (notif.type.startsWith('trans/')) {
+								let data = new FormData();
+								data.append('from', notif.from);
+								data.append('to', notif.to);
+								data.append('type', notif.type);
+								data.append('date', notif.date);
+								del('/Notifications/', data)
+								.then(() => {
+									location = '/trans/' + notif.id;
+								}).catch(err => {
+									console.error(err);
+									location = '/trans/' + notif.id;
+								});
+							}
+						});
+						document.getElementById('notifList2').appendChild(row);
+					});
+				}
+			});
+
+			function createNotif(n) {
+				let row = document.querySelector('#ex>article').cloneNode(true);
 				row.querySelector('h3').innerText = getNotifTypeMessage(n.type);
-				row.querySelector('span').innerText = msg.accounts.find(a => a.id == n.from).name;
+				row.querySelector('span').innerText = n.from_name;
 				let img = document.createElement('img');
 				img.src = '/Account/img/' + n.from;
 				img.setAttribute('loading', 'lazy');
 				row.querySelector('span').appendChild(img);
 				row.querySelector('main').innerText = n.text;
-				document.getElementById('notifList').appendChild(row);
 				row.addEventListener('click', () => {
 					if (n.type == 'dm')
 						location = '/directmessages/' + n.from;
 					else if (n.type.startsWith('trans/'))
 						location = '/trans/' + n.id;
 				});
+				return row;
+			}
+
+			function clearNotifs() {
+				del('/Notifications/', null)
+				.then(res => {
+					document.getElementById('notifList2').innerHTML = '';
+				}).catch(err => {
+					console.error(err);
+					alert('エラーにより失敗しました。');
+				});
+			}
+
+			let msg = JSON.parse({{ .Message }});
+			msg.notifs.forEach(n => {
+				document.getElementById('notifList1').appendChild(createNotif(n));
 			});
 		</script>
 	</body>

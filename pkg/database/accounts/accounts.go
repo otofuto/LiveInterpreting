@@ -52,12 +52,13 @@ type AccountSocial struct {
 }
 
 type Notif struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-	Date string `json:"date"`
-	From int    `json:"from"`
-	To   int    `json:"to"`
-	Id   int    `json:"id"`
+	Type     string `json:"type"`
+	Text     string `json:"text"`
+	Date     string `json:"date"`
+	From     int    `json:"from"`
+	FromName string `json:"from_name"`
+	To       int    `json:"to"`
+	Id       int    `json:"id"`
 }
 
 func (ac *Accounts) Insert() int {
@@ -735,10 +736,10 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 	defer db.Close()
 
 	var notifs []Notif
-	sql := "select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
+	sql := "select `message`, `direct_messages`.`created_at`, `from`, `accounts`.`name` from `direct_messages` left outer join `accounts` on `accounts`.`id` = `direct_messages`.`from` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Println("accounts.go (ac *Accounts) GetNotifs()")
+		log.Println("accounts.go (ac *Accounts) GetNotifs() db.Query()")
 		log.Println(err)
 		log.Println(sql)
 		return notifs, errors.New("failed to get DM")
@@ -746,18 +747,18 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 	defer rows.Close()
 	for rows.Next() {
 		n := Notif{Type: "dm"}
-		err = rows.Scan(&n.Text, &n.Date, &n.From)
+		err = rows.Scan(&n.Text, &n.Date, &n.From, &n.FromName)
 		if err != nil {
-			log.Println("accounts.go (ac *Accounts) GetNotifs()")
+			log.Println("accounts.go (ac *Accounts) GetNotifs() rows.Scan()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan DM")
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select `type`, `text`, `date`, `from`, `to`, `id` from `notifications` where `to` = " + strconv.Itoa(ac.Id) + " order by `date` desc"
+	sql = "select `type`, `text`, `date`, `from`, `accounts`.`name`, `to`, `notifications`.`id` from `notifications` left outer join `accounts` on `notifications`.`from` = `accounts`.`id` where `to` = " + strconv.Itoa(ac.Id) + " order by `date` desc"
 	rows2, err := db.Query(sql)
 	if err != nil {
-		log.Println("accounts.go (ac *Accounts) GetNotifs()")
+		log.Println("accounts.go (ac *Accounts) GetNotifs() db.Query()")
 		log.Println(err)
 		log.Println(sql)
 		return notifs, errors.New("failed to get notifications")
@@ -765,9 +766,9 @@ func (ac *Accounts) GetNotifs() ([]Notif, error) {
 	defer rows2.Close()
 	for rows2.Next() {
 		var n Notif
-		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.FromName, &n.To, &n.Id)
 		if err != nil {
-			log.Println("accounts.go (ac *Accounts) GetNotifs()")
+			log.Println("accounts.go (ac *Accounts) GetNotifs() rows2.Scan()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan notif")
 		}
@@ -781,10 +782,10 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	defer db.Close()
 
 	notifs := make([]Notif, 0)
-	sql := "select `message`, `created_at`, `from` from `direct_messages` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
+	sql := "select `message`, `direct_messages`.`created_at`, `from`, `accounts`.`name` from `direct_messages` left outer join `accounts` on `direct_messages`.`from` = `accounts`.`id` where `read` = 0 and `to` = " + strconv.Itoa(ac.Id) + " order by `created_at` desc"
 	rows, err := db.Query(sql)
 	if err != nil {
-		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println("accounts.go (ac *Accounts) Inbox() db.Query()")
 		log.Println(err)
 		log.Println(sql)
 		return notifs, errors.New("failed to get DM")
@@ -792,18 +793,18 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	defer rows.Close()
 	for rows.Next() {
 		n := Notif{Type: "dm"}
-		err = rows.Scan(&n.Text, &n.Date, &n.From)
+		err = rows.Scan(&n.Text, &n.Date, &n.From, &n.FromName)
 		if err != nil {
-			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println("accounts.go (ac *Accounts) Inbox() rows.Scan()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan DM")
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `to`, `id` from `trans` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id) + " and ((`estimate_limit_date` > '" + time.Now().AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59' and `estimate_date` is null) or `estimate_date` is not null) order by `request_date` desc"
+	sql = "select 'trans/req' as `type`, `request_title` as `text`, `request_date` as `date`, `from`, `accounts`.`name`, `to`, `trans`.`id` from `trans` left outer join `accounts` on `trans`.`from` = `accounts`.`id` where `request_cancel` = 0 and `response_type` is null and `to` = " + strconv.Itoa(ac.Id) + " and ((`estimate_limit_date` > '" + time.Now().AddDate(0, 0, -1).Format("2006-01-02") + " 23:59:59' and `estimate_date` is null) or `estimate_date` is not null) order by `request_date` desc"
 	rows2, err := db.Query(sql)
 	if err != nil {
-		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println("accounts.go (ac *Accounts) Inbox() db.Query()")
 		log.Println(err)
 		log.Println(sql)
 		return notifs, errors.New("failed to get trans/req")
@@ -811,18 +812,18 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	defer rows2.Close()
 	for rows2.Next() {
 		var n Notif
-		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		err = rows2.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.FromName, &n.To, &n.Id)
 		if err != nil {
-			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println("accounts.go (ac *Accounts) Inbox() rows2.Scan()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan trans/req")
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select 'trans/res' as `type`, `response` as `text`, `estimate_date` as `date`, `to`, `from`, `id` from `trans` where `request_cancel` = 0 and `response_type` = 0 and `estimate_date` is not null and buy_date is null and `from` = " + strconv.Itoa(ac.Id) + " order by `estimate_date` desc"
+	sql = "select 'trans/res' as `type`, `response` as `text`, `estimate_date` as `date`, `to`, `accounts`.`name`, `from`, `trans`.`id` from `trans` left outer join `accounts` on `trans`.`to` = `accounts`.`id` where `request_cancel` = 0 and `response_type` = 0 and `estimate_date` is not null and buy_date is null and `from` = " + strconv.Itoa(ac.Id) + " order by `estimate_date` desc"
 	rows3, err := db.Query(sql)
 	if err != nil {
-		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println("accounts.go (ac *Accounts) Inbox() db.Query()")
 		log.Println(err)
 		log.Println(sql)
 		return notifs, errors.New("failed to get trans/res")
@@ -830,18 +831,18 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	defer rows3.Close()
 	for rows3.Next() {
 		var n Notif
-		err = rows3.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		err = rows3.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.FromName, &n.To, &n.Id)
 		if err != nil {
-			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println("accounts.go (ac *Accounts) Inbox() rows3.Scan()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan trans/res")
 		}
 		notifs = append(notifs, n)
 	}
-	sql = "select 'trans/buy' as `type`, `request_title` as `text`, `buy_date` as `date`, `to`, `from`, `id` from `trans` where `buy_date` is not null and `to` = " + strconv.Itoa(ac.Id) + " and `id` not in (select distinct `trans_id` from `talkrooms`) order by `buy_date` desc"
+	sql = "select 'trans/buy' as `type`, `request_title` as `text`, `buy_date` as `date`, `to`, `accounts`.`name`, `from`, `trans`.`id` from `trans` left outer join `accounts` on `trans`.`to` = `accounts`.`id` where `buy_date` is not null and `to` = " + strconv.Itoa(ac.Id) + " and `trans`.`id` not in (select distinct `trans_id` from `talkrooms`) and `from_eval` is null and `to_eval` is null order by `buy_date` desc"
 	rows4, err := db.Query(sql)
 	if err != nil {
-		log.Println("accounts.go (ac *Accounts) Inbox()")
+		log.Println("accounts.go (ac *Accounts) Inbox() db.Query()")
 		log.Println(err)
 		log.Println(sql)
 		return notifs, errors.New("failed to get trans/buy")
@@ -849,9 +850,9 @@ func (ac *Accounts) Inbox() ([]Notif, error) {
 	defer rows4.Close()
 	for rows4.Next() {
 		var n Notif
-		err = rows4.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.To, &n.Id)
+		err = rows4.Scan(&n.Type, &n.Text, &n.Date, &n.From, &n.FromName, &n.To, &n.Id)
 		if err != nil {
-			log.Println("accounts.go (ac *Accounts) Inbox()")
+			log.Println("accounts.go (ac *Accounts) Inbox() rows4.Scan()")
 			log.Println(err)
 			return notifs, errors.New("failed to scan trans/buy")
 		}
@@ -908,6 +909,18 @@ func ClearNotif(id int) error {
 	}
 	defer del.Close()
 	_, err = del.Exec(&id)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	sql = "update `direct_messages` set `read` = 1 where `to` = ?"
+	upd, err := db.Prepare(sql)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer upd.Close()
+	_, err = upd.Exec(&id)
 	if err != nil {
 		log.Println(err)
 		return err

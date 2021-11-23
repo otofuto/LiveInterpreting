@@ -212,19 +212,6 @@
 				<div id="currentlives"></div>
 				<h2>本日の配信</h2>
 				<div id="todaylives"></div>
-				{{ if ne .Login.Id -1 }}
-				<h2 id="notifBtn">通知</h2>
-				<input type="checkbox" style="display: none;" id="notifCheck">
-				<div id="notifications"></div>
-				{{ end }}
-				<h2>▽新着ユーザー▽</h2>
-				<div id="newaccounts"></div>
-				{{ if ne .Login.Id -1 }}
-				<h2>▽フォロー▽</h2>
-				<div id="follows"></div>
-				<h2>▽フォロワー▽</h2>
-				<div id="followers"></div>
-				{{ end }}
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -245,77 +232,6 @@
 		</div>
 		<script src="/st/js/master.js"></script>
 		<script>
-			{{ if ne .Login.Id -1 }}
-			get('/Notifications/')
-			.then(notifs => {
-				if (notifs != null) {
-					if (Array.from(notifs).length > 0) {
-						let btn = document.createElement('button');
-						btn.innerText = 'すべて既読にする';
-						btn.setAttribute('onclick', 'clearNotifs()');
-						btn.setAttribute('class', 'button');
-						notifications.appendChild(btn);
-					}
-					Array.from(notifs).forEach(notif => {
-						notifications.appendChild(createNotif(notif));
-					});
-					notifBtn.innerText = "通知(" + Object.keys(notifs).length + ")";
-					notifBtn.addEventListener('click', () => {
-						notifCheck.click();
-					});
-				}
-			});
-
-			function createNotif(notif) {
-				let div = document.createElement("div");
-				div.setAttribute("class", "notif");
-				div.addEventListener('click', () => {
-					if (notif.type == 'dm')
-						location = '/directmessages/' + notif.from;
-					else if (notif.type.startsWith('trans/')) {
-						let data = new FormData();
-						data.append('from', notif.from);
-						data.append('to', notif.to);
-						data.append('type', notif.type);
-						data.append('date', notif.date);
-						del('/Notifications/', data)
-						.then(() => {
-							location = '/trans/' + notif.id;
-						}).catch(err => {
-							console.error(err);
-							location = '/trans/' + notif.id;
-						});
-					}
-				});
-
-				let notifType = document.createElement("div");
-				notifType.innerText = getNotifTypeMessage(notif.type);
-				div.appendChild(notifType);
-
-				let notifFrom = document.createElement("div");
-				notifFrom.setAttribute("class", "notif-from");
-				notifFrom.style.backgroundImage = "url('/Account/img/" + notif.from + "')";
-				notifType.appendChild(notifFrom);
-
-				let notifText = document.createElement("div");
-				notifText.innerText = notif.text;
-				div.appendChild(notifText);
-
-				return div;
-			}
-
-			function clearNotifs() {
-				del('/Notifications/', null)
-				.then(res => {
-					notifications.innerHTML = '';
-					notifBtn.innerText = '通知';
-				}).catch(err => {
-					console.error(err);
-					alert('エラーにより失敗しました。');
-				});
-			}
-			{{ end }}
-
 			function createLivePanel(liv) {
 				let panel = document.createElement('article');
 				panel.setAttribute('class', 'livepanel');
@@ -391,27 +307,6 @@
 					document.getElementById('todaylives').appendChild(createLivePanel(liv));
 				});
 			});
-
-			/*get('/Account/Search/?search=new')
-			.then(accounts => {
-				Array.from(accounts).forEach(ac => {
-					newaccounts.appendChild(createAccount(ac));
-				});
-			});
-
-			get('/Account/Search/?search=follow')
-			.then(accounts => {
-				Array.from(accounts).forEach(ac => {
-					follows.appendChild(createAccount(ac));
-				});
-			});
-
-			get('/Account/Search/?search=follower')
-			.then(accounts => {
-				Array.from(accounts).forEach(ac => {
-					followers.appendChild(createAccount(ac));
-				});
-			});*/
 		</script>
 	</body>
 </html>

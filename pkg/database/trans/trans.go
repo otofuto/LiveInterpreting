@@ -100,7 +100,7 @@ func (tr *Trans) Get() bool {
 		"`request_title`, `request`, `request_date`, `budget_range`, `request_cancel`, `estimate_limit_date`, " +
 		"`price`, `estimate_date`, `response_type`, `response`, `buy_date`, `finished_date`, " +
 		"`cancel_date`, `from_eval`, `from_comment`, `to_eval`, `to_comment`, `lives`.`id`" +
-		" from `trans` inner join `lives` on `trans`.`id` = `lives`.`trans`" +
+		" from `trans` left outer join `lives` on `trans`.`id` = `lives`.`trans`" +
 		" where `trans`.`id` = " + strconv.Itoa(tr.Id)
 	rows, err := db.Query(sql)
 	if err != nil {

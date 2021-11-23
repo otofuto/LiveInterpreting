@@ -1061,7 +1061,7 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			tr = trans.Trans{Id: trid}
 			if !tr.Get() {
-				http.Error(w, "trans not found", 404)
+				http.Error(w, "trans "+strconv.Itoa(trid)+" is not found", 404)
 				return
 			}
 			if tr.From != login.Id && tr.To != login.Id {
