@@ -2005,9 +2005,14 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
 
 	if r.Method == http.MethodGet {
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Redirect(w, r, "/st/login/", 303)
+			return
+		}
 		temp := template.Must(template.ParseFiles("template/connect.html"))
 		if err := temp.Execute(w, TempContext{
-			Login: account.LoginAccount(r),
+			Login: login,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
