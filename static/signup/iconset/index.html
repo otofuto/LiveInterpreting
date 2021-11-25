@@ -77,13 +77,13 @@
 							fl.name.toLowerCase().endsWith(".jpg")
 							||
 							fl.name.toLowerCase().endsWith(".jpeg")) {
-							iconDisp.style.backgroundImage = "url('" + URL.createObjectURL(fl) + "')";
+							document.getElementById('iconDisp').style.backgroundImage = "url('" + URL.createObjectURL(fl) + "')";
 						} else {
 							alert("png, jpg, jpegのみ選択可能です。\n\"" + fl.name + "\"");
 						}
 					});
 				} else {
-					iconDisp.style.backgroundImage = "none";
+					document.getElementById('iconDisp').style.backgroundImage = "none";
 				}
 			}
 

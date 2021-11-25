@@ -10,6 +10,34 @@
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
+			#thumbDisp {
+				position: relative;
+				display: block;
+				width: 290px;
+				height: 151px;
+				margin: 2px auto;
+				border: solid 1px gray;
+				border-radius: 5px;
+				background-size: cover;
+				background-position: center;
+			}
+
+			#selectFile {
+				display: inline-block;
+				height: 26px;
+			}
+
+			#grayBack {
+				display: none;
+				position: fixed;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background-color: black;
+				opacity: 0.5;
+				z-index: 9999;
+			}
 		</style>
 	</head>
 	<body>
@@ -42,7 +70,7 @@
 				<h1>配信登録</h1>
 				<p>ここでは、自分のライブ配信の情報を登録しておくことで、トップページに表示して宣伝することができます。</p>
 				{{ if or (len .Transes) (ne .Live.Id 0) }}
-				<form name="fm" onsubmit="update(); return false;">
+				<form name="fm" enctype="multipart/form-data" onsubmit="update(); return false;">
 					<input type="hidden" name="id" value="{{.Live.Id}}">
 					{{ if eq .Live.Id 0 }}
 					<div class="field">
@@ -81,10 +109,19 @@
 						</select>
 						<label class="input-label">通訳言語</label>
 					</div>
+					<div class="field">
+						<div class="input" style="height: 200px; padding-top: 12px;">
+							<div id="thumbDisp"></div>
+							<input type="button" value="ファイルを選択" id="selectFile" onclick="selectFileClick()">
+						</div>
+						<input type="file" name="thumb" accept="image/*" style="display: none;" onchange="viewFile(this)">
+						<label class="input-label">サムネイル画像</label>
+					</div>
 					<input type="submit" style="display: none;" name="sub">
 				</form>
 				<div style="text-align: center;">
-					<button class="button" id="btnUpdate" onclick="document.fm.sub.click()">{{ if eq .Live.Id 0 }}登録{{ else }}更新{{ end }}</button>
+					<button class="button" onclick="history.back()">キャンセル</button>
+					<button class="button mainbutton" id="btnUpdate" onclick="document.fm.sub.click()">完了</button>
 				</div>
 				{{ else }}
 				<p>まずは通訳者さんへ見積もり依頼をしましょう！</p>
@@ -96,21 +133,54 @@
 		<footer class="page-footer">
 			<label><script>footerText();</script></label>
 		</footer>
+		<div id="grayBack"></div>
 		<script src="/st/js/master.js"></script>
 		<script>
 			live_data = {{ .Live }};
 			object2form(live_data, document.fm);
+			if (live_data.image.Valid) {
+				document.getElementById('thumbDisp').style.backgroundImage = "url('/Lives/thumb/" + live_data.image.String + "')";
+			}
+
+			function selectFileClick() {
+				document.querySelector('input[name="thumb"]').click();
+			}
+
+			function viewFile(elm) {
+				if (elm.files.length > 0) {
+					Array.from(elm.files).forEach(fl => {
+						if (fl.name.toLowerCase().endsWith(".png")
+							||
+							fl.name.toLowerCase().endsWith(".jpg")
+							||
+							fl.name.toLowerCase().endsWith(".jpeg")) {
+								document.getElementById('thumbDisp').style.backgroundImage = "url('" + URL.createObjectURL(fl) + "')";
+						} else {
+							alert("png, jpg, jpegのみ選択可能です。\n\"" + fl.name + "\"");
+						}
+					});
+				} else {
+					document.getElementById('thumbDisp').style.backgroundImage = "none";
+				}
+			}
 
 			function update() {
 				let data = new FormData(document.fm);
 				formDisabled(document.fm, true);
+				document.getElementById('grayBack').style.display = 'block';
+				document.getElementById('btnUpdate').innerText = '送信中';
 				post('/Lives/', data)
 				.then(() => {
-					alert('完了');
 					formDisabled(document.fm, false);
+					location = '/trans/' + live_data.trans_id;
+					document.getElementById('grayBack').style.display = 'none';
+					document.getElementById('btnUpdate').innerText = 'お待ちください';
 				}).catch(err => {
 					console.error(err);
 					alert('エラーにより失敗しました。');
+					formDisabled(document.fm, false);
+					document.getElementById('grayBack').style.display = 'none';
+					document.getElementById('btnUpdate').innerText = '完了';
 				});
 			}
 		</script>

@@ -11,4 +11,5 @@ require (
 	github.com/stripe/stripe-go v70.15.0+incompatible
 	github.com/stripe/stripe-go/v72 v72.58.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
 )

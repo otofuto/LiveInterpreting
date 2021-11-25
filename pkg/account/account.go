@@ -79,7 +79,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 
 			img, _, err := image.Decode(file)
 			if err != nil {
-				fmt.Println("画像取得失敗")
+				log.Println("画像取得失敗")
 				ac.Delete()
 				http.Error(w, "image.Decode failed", 500)
 				return
@@ -98,7 +98,9 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			go func() {
 				err = png.Encode(pw, img)
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
+					http.Error(w, "png encode error", 500)
+					return
 				}
 				pw.Close()
 			}()
@@ -115,11 +117,10 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 				Body:   pr,
 			})
 			if err != nil {
-				fmt.Println("S3アップロード失敗")
-				fmt.Println(err)
+				log.Println("S3アップロード失敗")
+				log.Println(err)
 				ac.Delete()
 				http.Error(w, "upload failed", 500)
-				os.Exit(1)
 				return
 			}
 		}
@@ -206,7 +207,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 					Key:    aws.String("accounts/" + ac.IconImage),
 				})
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 					http.Error(w, "failed to fetch account-icon", 404)
 				} else {
 					w.Header().Set("Content-Type", "image/png")

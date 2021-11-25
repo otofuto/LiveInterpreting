@@ -239,7 +239,7 @@
 				let img = document.createElement('div');
 				img.setAttribute('class', 'livepanel__img');
 				if (liv.image.String != '') {
-					img.style.backgroundImage = 'url(\'' + liv.image.String + '\')';
+					img.style.backgroundImage = 'url(\'/Lives/thumb/' + liv.image.String + '\')';
 				} else {
 					img.style.backgroundImage = 'url(\'/Account/img/' + liv.liver_id + '\')';
 				}
@@ -263,7 +263,7 @@
 			function liveDetail(liv) {
 				document.getElementById('popup_back').style.display = 'block';
 				let art = document.querySelector('#popup_back>article');
-				art.querySelector('.liv_image').style.backgroundImage = 'url(\'' + (liv.image.String == '' ? ('/Account/img/' + liv.liver_id) : liv.image.String) + '\')';
+				art.querySelector('.liv_image').style.backgroundImage = 'url(\'' + (liv.image.String == '' ? ('/Account/img/' + liv.liver_id) : ('/Lives/thumb/' + liv.image.String)) + '\')';
 				art.querySelector('.liv_image').setAttribute('data-url', liv.url == '' ? ('/u/' + liv.liver_id) : liv.url);
 				art.querySelector('.liv_image').setAttribute('data-trans', liv.trans_id);
 				art.querySelector('.liv_title').innerText = liv.title;

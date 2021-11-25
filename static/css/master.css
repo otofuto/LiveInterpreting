@@ -207,6 +207,14 @@ body > main {
 	box-shadow: none !important;
 }
 
+.mainbutton {
+	background-color: var(--color1);
+	color: white;
+	overflow: hidden;
+	white-space: nowrap;
+	width: auto;
+}
+
 .field {
 	width: 300px;
 	text-align: left;

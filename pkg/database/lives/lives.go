@@ -3,12 +3,14 @@ package lives
 import (
 	"database/sql"
 	"errors"
+	"image"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
+	"golang.org/x/image/draw"
 )
 
 type Lives struct {
@@ -150,14 +152,14 @@ func (liv *Lives) Update() error {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "update `lives` set `title` = ?, `url` = ?, `start` = ?, `end` = ?, `lang` = ? where `id` = ?"
+	sql := "update `lives` set `title` = ?, `url` = ?, `start` = ?, `end` = ?, `lang` = ?, `image` = ? where `id` = ?"
 	upd, err := db.Prepare(sql)
 	if err != nil {
 		log.Println("lives.go (liv *Lives) Update() db.Prepare()")
 		return err
 	}
 	defer upd.Close()
-	_, err = upd.Exec(&liv.Title, &liv.Url, &liv.Start, &liv.End, &liv.LangId, &liv.Id)
+	_, err = upd.Exec(&liv.Title, &liv.Url, &liv.Start, &liv.End, &liv.LangId, &liv.Image, &liv.Id)
 	if err != nil {
 		log.Println("lives.go (liv *Lives) Update() upd.Exec()")
 		return err
@@ -229,4 +231,28 @@ func ListToday(count, offset int) ([]Lives, error) {
 		ret = append(ret, liv)
 	}
 	return ret, nil
+}
+
+func ResizeThumb(img image.Image, maxsize int) image.Image {
+	bounds := img.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+	var newWidth, newHeight int
+	if width > maxsize || height > maxsize {
+		if width > height && width > maxsize {
+			newWidth = maxsize
+			newHeight = int(float64(maxsize) / float64(width) * float64(height))
+		} else if width < height && height > maxsize {
+			newHeight = maxsize
+			newWidth = int(float64(maxsize) / float64(height) * float64(width))
+		} else if width > maxsize && width == height {
+			newWidth = maxsize
+			newHeight = maxsize
+		}
+	} else {
+		newWidth = width
+		newHeight = height
+	}
+	dest := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+	draw.CatmullRom.Scale(dest, dest.Bounds(), img, bounds, draw.Over, nil)
+	return dest
 }

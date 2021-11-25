@@ -77,7 +77,7 @@
 					{{ end }}
 					{{ if ne .Login.Id .Account.Id }}
 						{{ if .IsFollow }}
-					<button class="button" onclick="unfollow(this)" style="background-color: var(--color1); color: white;">✔フォロー中</button>
+					<button class="button mainbutton" onclick="unfollow(this)">✔フォロー中</button>
 						{{ else }}
 					<button class="button" onclick="follow(this)">フォロー</button>
 						{{ end }}
@@ -136,8 +136,7 @@
 				}).then(result => {
 					if (result) {
 						btn.innerText = "✔フォロー中";
-						btn.style.backgroundColor = "var(--color1)";
-						btn.style.color = "white";
+						btn.setAttribute('class', 'button mainbutton');
 						btn.setAttribute("onclick", "unfollow(this)");
 					} else {
 						alert('フォローに失敗しました。');
@@ -160,7 +159,7 @@
 				}).then(result => {
 					if (result) {
 						btn.innerText = "フォロー";
-						btn.removeAttribute("style");
+						btn.setAttribute('class', 'button');
 						btn.setAttribute("onclick", "follow(this)");
 					} else {
 						alert('フォロー解除に失敗しました。');

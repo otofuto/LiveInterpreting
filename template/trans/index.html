@@ -99,17 +99,17 @@
 				{{ end }}
 				<table><tbody id="tbl"></tbody></table>
 				<div id="sendEst" style="display: none;">
-					<button class="button">見積を作成または辞退する</button>
+					<button class="button mainbutton">見積を作成または辞退する</button>
 				</div>
 				<div id="buy" style="display: none;">
-					<button class="button">この見積内容で購入する</button>
+					<button class="button mainbutton">この見積内容で購入する</button>
 				</div>
 				<div id="talk" style="display: none;">
-					<button class="button">トークルームに移動する</button>
+					<button class="button mainbutton">トークルームに移動する</button>
 					<p><a href="/live/">通訳ページに移動する</a></p>
 				</div>
 				<div id="eval" style="display: none;">
-					<button class="button" id="evalButton">相手の評価をする</button>
+					<button class="button mainbutton" id="evalButton">相手の評価をする</button>
 				</div>
 			</div>
 		</main>
@@ -209,6 +209,7 @@
 			if (msg.trans.request_cancel == 0) {
 				document.querySelector('#sendEst').removeAttribute('style');
 				document.querySelector('#sendEst button').innerText = '変更またはキャンセル';
+				document.querySelector('#sendEst button').setAttribute('class', 'button');
 				document.querySelector('#sendEst button').addEventListener('click', () => {
 					location = '/trans/reqedit/' + msg.trans.id;
 				});

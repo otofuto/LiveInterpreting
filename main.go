@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"image"
+	"image/png"
 	"io"
 	"log"
 	"net/http"
@@ -13,6 +15,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gorilla/websocket"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
 	"github.com/otofuto/LiveInterpreting/pkg/database"
@@ -315,12 +322,35 @@ func LivesHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			bytes, _ := json.Marshal(livs)
 			fmt.Fprintf(w, string(bytes))
+		} else if strings.HasPrefix(mode, "thumb/") {
+			filename := mode[len("thumb/"):]
+
+			sess := session.Must(session.NewSession(&aws.Config{
+				Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
+				Region:      aws.String(os.Getenv("S3_REGION")),
+			}))
+
+			svc := s3.New(sess)
+			obj, err := svc.GetObject(&s3.GetObjectInput{
+				Bucket: aws.String(os.Getenv("S3_BUCKET")),
+				Key:    aws.String("lives/" + filename),
+			})
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to fetch live thumb", 404)
+			} else {
+				w.Header().Set("Content-Type", "image/png")
+				io.Copy(w, obj.Body)
+				obj.Body.Close()
+			}
 		} else {
 			http.Error(w, "", 404)
 		}
 	} else if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
 		if isset(r, []string{"id", "trans", "title", "url", "start", "end", "lang"}) {
+			var liv lives.Lives
+
 			if r.FormValue("id") == "0" {
 				trid, err := strconv.Atoi(r.FormValue("trans"))
 				if err != nil {
@@ -332,7 +362,7 @@ func LivesHandle(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "trans is not registered", 400)
 					return
 				}
-				liv, err := lives.CreateLive(tr)
+				liv, err = lives.CreateLive(tr)
 				if err != nil {
 					log.Println(err)
 					http.Error(w, "failed to create live", 500)
@@ -348,20 +378,13 @@ func LivesHandle(w http.ResponseWriter, r *http.Request) {
 				liv.Start = r.FormValue("start")
 				liv.End = r.FormValue("end")
 				liv.LangId = lid
-				err = liv.Update()
-				if err != nil {
-					log.Println(err)
-					http.Error(w, "failed to update", 500)
-					return
-				}
-				fmt.Fprintf(w, "true")
 			} else {
 				livid, err := strconv.Atoi(r.FormValue("id"))
 				if err != nil {
 					http.Error(w, "id is not integer", 400)
 					return
 				}
-				liv, err := lives.Get(livid)
+				liv, err = lives.Get(livid)
 				if err != nil {
 					http.Error(w, "failed to get live data", 500)
 					return
@@ -376,14 +399,78 @@ func LivesHandle(w http.ResponseWriter, r *http.Request) {
 				liv.Start = r.FormValue("start")
 				liv.End = r.FormValue("end")
 				liv.LangId = lid
-				err = liv.Update()
+			}
+
+			file, _, err := r.FormFile("thumb")
+			if err == nil {
+				defer file.Close()
+
+				deleteOld := liv.Image
+
+				img, _, err := image.Decode(file)
 				if err != nil {
-					log.Println(err)
-					http.Error(w, "failed to update", 500)
+					log.Println("画像取得失敗")
+					http.Error(w, "image.Decode failed", 500)
 					return
 				}
-				fmt.Fprintf(w, "true")
+
+				//縦横最大500pxにリサイズ
+				img = lives.ResizeThumb(img, 500)
+
+				liv.Image = sql.NullString{
+					Valid:  true,
+					String: strconv.Itoa(liv.TransId) + "_" + time.Now().Format("2006_01_02_15_04_05") + ".png",
+				}
+
+				pr, pw := io.Pipe()
+				go func() {
+					err = png.Encode(pw, img)
+					if err != nil {
+						log.Println(err)
+						http.Error(w, "png encode error", 500)
+						return
+					}
+					pw.Close()
+				}()
+
+				sess := session.Must(session.NewSession(&aws.Config{
+					Credentials: credentials.NewStaticCredentials(os.Getenv("IAM_ACCESSKEY"), os.Getenv("IAM_SECRETKEY"), ""),
+					Region:      aws.String(os.Getenv("S3_REGION")),
+				}))
+
+				uploader := s3manager.NewUploader(sess)
+				_, err = uploader.Upload(&s3manager.UploadInput{
+					Bucket: aws.String(os.Getenv("S3_BUCKET")),
+					Key:    aws.String("lives/" + liv.Image.String),
+					Body:   pr,
+				})
+				if err != nil {
+					log.Println("S3アップロード失敗")
+					log.Println(err)
+					http.Error(w, "upload failed", 500)
+					return
+				}
+
+				if deleteOld.Valid {
+					svc := s3.New(sess)
+					input := &s3.DeleteObjectInput{
+						Bucket: aws.String(os.Getenv("S3_BUCKET")),
+						Key:    aws.String("lives/" + deleteOld.String),
+					}
+					_, err := svc.DeleteObject(input)
+					if err != nil {
+						errorData.Insert("Delete file from s3 failed.", "lives/"+deleteOld.String)
+					}
+				}
 			}
+
+			err = liv.Update()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to update", 500)
+				return
+			}
+			fmt.Fprintf(w, "true")
 		} else {
 			http.Error(w, "parameters not enough", 400)
 		}
