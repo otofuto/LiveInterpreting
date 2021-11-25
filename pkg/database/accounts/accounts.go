@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -34,6 +35,7 @@ type Accounts struct {
 	Langs          []langs.Langs `json:"langs"`
 	CreatedAt      string        `json:"created_at"`
 	Enabled        int           `json:"enabled"`
+	EmailAuth      int           `json:"email_auth"`
 	LastLogined    string        `json:"last_logined"`
 	StripeCustomer string        `json:"stripe_customer"`
 }
@@ -61,35 +63,36 @@ type Notif struct {
 	Id       int    `json:"id"`
 }
 
-func (ac *Accounts) Insert() int {
+func (ac *Accounts) Insert() (int, string) {
 	if CheckMail(ac.Email, -1) == false {
-		return -2
+		return -2, ""
 	}
 
 	db := database.Connect()
 	defer db.Close()
 
-	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `email_auth_token`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Insert()")
 		log.Println(err)
-		return -1
+		return -1, ""
 	}
+	defer ins.Close()
 	ac.Password = passHash(ac.Password)
-	result, err := ins.Exec(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment)
+	eatoken := createTokenRand(60)
+	result, err := ins.Exec(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &eatoken)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Insert()")
 		log.Println(err)
-		return -1
+		return -1, ""
 	}
-	ins.Close()
 
 	newid64, err := result.LastInsertId()
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Insert()")
 		log.Println("failed to fetch last inert id")
 		log.Println(err)
-		return -1
+		return -1, ""
 	}
 	newId := database.Int64ToInt(newid64)
 	ac.Id = newId
@@ -98,13 +101,37 @@ func (ac *Accounts) Insert() int {
 		if err != nil {
 			ac.Delete()
 			log.Println(err)
-			return -3
+			return -3, ""
 		}
 		ins.Exec(newId, v.Id)
 		ins.Close()
 	}
 	ac.Enabled = 1
-	return newId
+	return newId, eatoken
+}
+
+func EmailAuth(uid int, token string) (bool, error) {
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "update `accounts` set `email_auth` = 1 where `id` = ? and `email_auth_token` = ?"
+	upd, err := db.Prepare(sql)
+	if err != nil {
+		return false, err
+	}
+	defer upd.Close()
+	result, err := upd.Exec(&uid, &token)
+	if err != nil {
+		return false, err
+	}
+	affect64, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if affect64 == 0 {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (ac *Accounts) SetLangs(jsonstring string) error {
@@ -225,7 +252,7 @@ func (ac *Accounts) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined`, `stripe_customer` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
+	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `email_auth`, `last_logined`, `stripe_customer` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Get()")
@@ -235,7 +262,7 @@ func (ac *Accounts) Get() bool {
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined, &ac.StripeCustomer)
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.EmailAuth, &ac.LastLogined, &ac.StripeCustomer)
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) Get()")
 			log.Println(err)
@@ -616,7 +643,7 @@ func Search(search, user_type, lans, sort, wage string, id int) []Accounts {
 	}
 
 	sql := "select `id`, `name`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts`" +
-		" left outer join (select `to`, sum(`from_eval`) as `starsum` from `trans` group by `to`) as `evs` on `evs`.`to` = `id` where `enabled` = 1 and " + user_type + searchQ + wageQ + sortQ
+		" left outer join (select `to`, sum(`from_eval`) as `starsum` from `trans` group by `to`) as `evs` on `evs`.`to` = `id` where `enabled` = 1 and `email_auth` = 1 and " + user_type + searchQ + wageQ + sortQ
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go Search(search, user_type, lans string, id int)")
@@ -660,7 +687,7 @@ func Social(accountId int, action int) ([]AccountSocial, error) {
 		return make([]AccountSocial, 0), errors.New("action number is not defined")
 	}
 
-	rows, err := db.Query("select `id`, `target_id`, `action`, `created_at` from `account_social` where `id` = " + strconv.Itoa(accountId) + " and `action` = " + strconv.Itoa(action) + " and `target_id` not in (select `id` from `accounts` where `enabled` = 0) order by `created_at` desc")
+	rows, err := db.Query("select `id`, `target_id`, `action`, `created_at` from `account_social` where `id` = " + strconv.Itoa(accountId) + " and `action` = " + strconv.Itoa(action) + " and `target_id` not in (select `id` from `accounts` where `enabled` = 0 or `email_auth` = 0) order by `created_at` desc")
 	if err != nil {
 		return make([]AccountSocial, 0), errors.New("failed to select query")
 	}
@@ -1061,4 +1088,18 @@ func (ac *Accounts) GetEarnings() (int, error) {
 		return database.Int64ToInt(ret.Int64), nil
 	}
 	return 0, errors.New("data is empty")
+}
+
+func createTokenRand(chr int) string {
+	ret := ""
+	for i := 0; len(ret) < chr; i++ {
+		rand.Seed(time.Now().UnixNano() + int64(i))
+		chr := 48 + rand.Intn(75)
+		if (chr >= 97 && chr <= 122) ||
+			(chr >= 65 && chr <= 90) ||
+			(chr >= 48 && chr <= 57) {
+			ret += string(rune(chr))
+		}
+	}
+	return ret
 }

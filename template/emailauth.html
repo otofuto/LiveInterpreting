@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="robots" content="noindex,nofollow">
+		<title>本登録完了 | Live interpreting</title>
+		<link rel="stylesheet" href="/st/css/master.css">
+	</head>
+	<body>
+		<script src="/st/js/header.js"></script>
+		<script>
+			var p = document.createElement("p");
+			p.setAttribute("class", "page-header__username");
+			{{ if ne .Login.Id -1 }}
+			var a = document.createElement('a');
+			a.href = '/mypage/';
+			a.innerHTML = "ログイン: <span style=\"font-weight: bold;\">{{.Login.Name}}</span>";
+			p.appendChild(a);
+			{{ end }}
+			appendHeader(p);
+		</script>
+		<main>
+			<div id="sidemenu">
+				<div onclick="location = '/home/'">ホーム</div>
+				{{ if ne .Login.Id -1 }}
+				<div onclick="location = '/inbox/'"><span>受信BOX</div>
+				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
+				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
+				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
+				{{ end }}
+				<div onclick="location = '/search/'" class="selected"><span>通訳者を探す</span></div>
+				{{ if ne .Login.Id -1 }}
+				<div onclick="logout()"><span>ログアウト</span></div>
+				{{ else }}
+				<div onclick="location = '/st/login/'"><span>ログイン</span></div>
+				{{ end }}
+			</div>
+			<div id="content">
+                {{ if .Result }}
+                <h1>メールアドレスの認証が完了しました。</h1>
+                {{ else }}
+                <h1>無効なURLです。</h1>
+                {{ end }}
+			</div>
+		</main>
+		<footer class="page-footer">
+			<label><script>footerText();</script></label>
+		</footer>
+		<script src="/st/js/master.js"></script>
+	</body>
+</html>

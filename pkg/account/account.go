@@ -67,7 +67,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "email already registered", 400)
 			return
 		}
-		newId := ac.Insert()
+		newId, eatoken := ac.Insert()
 		if newId == -1 {
 			http.Error(w, "insert failed", 500)
 			return
@@ -125,16 +125,36 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		token := ac.CreateToken()
+		auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
 
-		cookie := &http.Cookie{
-			Name:     "accounttoken",
-			Value:    token,
-			Path:     "/",
-			HttpOnly: true,
-			MaxAge:   3600 * 24 * 7,
+		accessUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//")+2] + r.Host + "/emailauth/" + strconv.Itoa(newId) + "/?t=" + eatoken
+		msg := []byte("" +
+			"From: Live interpreting<" + os.Getenv("MAIL_ADDRESS") + ">\r\n" +
+			"To: " + ac.Name + "<" + ac.Email + ">\r\n" +
+			encodeHeader("Subject", "Gijee仮登録のご案内") +
+			"MIME-Version: 1.0\r\n" +
+			"Content-Type: text/html; charset=\"utf-8\"\r\n" +
+			"Content-Transfer-Encoding: base64\r\n" +
+			"\r\n" +
+			encodeBody(
+				"<p>Live interpretingにご登録いただきありがとうございます。</p>"+
+					"<p>下記URLへアクセスし、メールアドレスの認証を行って下さい。</p>"+
+					"<p><a href=\""+accessUrl+"\">"+accessUrl+"</a></p>"+
+					"<p><br></p>"+
+					"<p><br></p>"+
+					"<p>このメールは配信専用です。<br>ご返信頂いても確認および返信は出来かねますのでご了承ください。<p>"+
+					"<p><br></p>"+
+					"<p>Live interpreting</p>"+
+					"\r\n") +
+			"\r\n")
+
+		err = smtp.SendMail(os.Getenv("MAIL_SERVER")+":587", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
+		if err != nil {
+			log.Println(err)
+			log.Println(accessUrl)
+			http.Error(w, "登録に成功しましたが、確認メールの送信に失敗しました。", 500)
+			return
 		}
-		http.SetCookie(w, cookie)
 
 		bytes, err := json.Marshal(ac)
 		if err != nil {
@@ -563,6 +583,63 @@ func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 		cookie.Value = ""
 		http.SetCookie(w, cookie)
 		fmt.Fprintf(w, "logout")
+	} else {
+		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func EmailauthHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	if r.Method == http.MethodGet {
+		uid_str := r.URL.Path[len("/emailauth/"):]
+		if strings.Index(uid_str, "/") <= 0 {
+			http.Error(w, "page not found", 404)
+			return
+		}
+		uid_str = uid_str[:strings.Index(uid_str, "/")]
+		uid, err := strconv.Atoi(uid_str)
+		if err != nil {
+			http.Error(w, "page not found", 404)
+			return
+		}
+		result, err := accounts.EmailAuth(uid, r.FormValue("t"))
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "failed to update user", 500)
+			return
+		}
+
+		login := accounts.Accounts{Id: -1}
+		if result {
+			login.Id = uid
+			if !login.Get() {
+				http.Error(w, "account not found", 404)
+				return
+			}
+
+			token := login.CreateToken()
+
+			cookie := &http.Cookie{
+				Name:     "accounttoken",
+				Value:    token,
+				Path:     "/",
+				HttpOnly: true,
+				MaxAge:   3600 * 24 * 7,
+			}
+			http.SetCookie(w, cookie)
+		}
+		temp := template.Must(template.ParseFiles("template/emailauth.html"))
+		if err := temp.Execute(w, struct {
+			Result bool
+			Login  accounts.Accounts
+		}{
+			Result: result,
+			Login:  login,
+		}); err != nil {
+			log.Println(err)
+			http.Error(w, "render error", 500)
+		}
 	} else {
 		http.Error(w, "method not allowed", 405)
 	}
