@@ -71,7 +71,7 @@ func (ac *Accounts) Insert() (int, string) {
 	db := database.Connect()
 	defer db.Close()
 
-	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `email_auth_token`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	ins, err := db.Prepare("insert into `accounts` (`name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `email_auth_token`) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Insert()")
 		log.Println(err)
@@ -79,7 +79,7 @@ func (ac *Accounts) Insert() (int, string) {
 	}
 	defer ins.Close()
 	ac.Password = passHash(ac.Password)
-	eatoken := createTokenRand(60)
+	eatoken := CreateTokenRand(60)
 	result, err := ins.Exec(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &eatoken)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Insert()")
@@ -114,7 +114,7 @@ func EmailAuth(uid int, token string) (bool, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "update `accounts` set `email_auth` = 1 where `id` = ? and `email_auth_token` = ?"
+	sql := "update `accounts` set `email_auth` = 1, `email_auth_token` = '' where `id` = ? and `email_auth_token` = ?"
 	upd, err := db.Prepare(sql)
 	if err != nil {
 		return false, err
@@ -132,6 +132,26 @@ func EmailAuth(uid int, token string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func (ac *Accounts) SetEmailauthToken() (string, error) {
+	eatoken := CreateTokenRand(60)
+	db := database.Connect()
+	defer db.Close()
+
+	sql := "update `accounts` set `email_auth_token` = ? where `id` = ?"
+	upd, err := db.Prepare(sql)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) SetEmailauthToken() db.Prepare()")
+		return "", err
+	}
+	defer upd.Close()
+	_, err = upd.Exec(&eatoken, &ac.Id)
+	if err != nil {
+		log.Println("accounts.go (ac *Accounts) SetEmailauthToken() upd.Exec()")
+		return "", err
+	}
+	return eatoken, nil
 }
 
 func (ac *Accounts) SetLangs(jsonstring string) error {
@@ -410,14 +430,14 @@ func Login(email string, pass string) (Accounts, error) {
 	db := database.Connect()
 	defer db.Close()
 
-	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(email) + "'")
+	rows, err := db.Query("select `id`, `name`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `email_auth`, `last_logined` from `accounts` where `enabled` = 1 and `email` = '" + database.Escape(email) + "'")
 	if err != nil {
 		log.Println(err)
 		return Accounts{}, errors.New("failed to select login")
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.LastLogined)
+		err = rows.Scan(&ac.Id, &ac.Name, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.EmailAuth, &ac.LastLogined)
 		if err != nil {
 			log.Println(err)
 			return ac, errors.New("failed select in login")
@@ -426,6 +446,9 @@ func Login(email string, pass string) (Accounts, error) {
 			ac.Password = ""
 			ac.Email = ""
 			return ac, errors.New("unmatched password")
+		}
+		if ac.EmailAuth == 0 {
+			return ac, errors.New("no auth")
 		}
 		ac.Password = ""
 		ac.Email = ""
@@ -1090,7 +1113,7 @@ func (ac *Accounts) GetEarnings() (int, error) {
 	return 0, errors.New("data is empty")
 }
 
-func createTokenRand(chr int) string {
+func CreateTokenRand(chr int) string {
 	ret := ""
 	for i := 0; len(ret) < chr; i++ {
 		rand.Seed(time.Now().UnixNano() + int64(i))

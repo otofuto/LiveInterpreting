@@ -131,7 +131,7 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 		msg := []byte("" +
 			"From: Live interpreting<" + os.Getenv("MAIL_ADDRESS") + ">\r\n" +
 			"To: " + ac.Name + "<" + ac.Email + ">\r\n" +
-			encodeHeader("Subject", "Gijee仮登録のご案内") +
+			encodeHeader("Subject", "Live interpreting仮登録のご案内") +
 			"MIME-Version: 1.0\r\n" +
 			"Content-Type: text/html; charset=\"utf-8\"\r\n" +
 			"Content-Transfer-Encoding: base64\r\n" +
@@ -525,8 +525,12 @@ func LoginHandle(w http.ResponseWriter, r *http.Request) {
 		pass := r.FormValue("password")
 		ac, err := accounts.Login(email, pass)
 		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "failed", 400)
+			if err.Error() == "no auth" {
+				fmt.Fprintf(w, "{\"result\": \"no auth\"}")
+			} else {
+				fmt.Println(err)
+				http.Error(w, "failed", 400)
+			}
 			return
 		}
 		token := ac.CreateToken()
@@ -639,6 +643,60 @@ func EmailauthHandle(w http.ResponseWriter, r *http.Request) {
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "render error", 500)
+		}
+	} else if r.Method == http.MethodPost {
+		r.ParseMultipartForm(32 << 20)
+		email := r.FormValue("email")
+		pass := r.FormValue("password")
+		ac, err := accounts.Login(email, pass)
+		if err == nil {
+			fmt.Fprintf(w, "false")
+			return
+		}
+
+		if err.Error() == "no auth" {
+			eatoken, err := ac.SetEmailauthToken()
+			ac.Email = email
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "account update error", 500)
+				return
+			}
+			auth := smtp.PlainAuth("", os.Getenv("MAIL_ADDRESS"), os.Getenv("MAIL_PASS"), os.Getenv("MAIL_SERVER"))
+
+			accessUrl := r.Header.Get("Referer")[:strings.Index(r.Header.Get("Referer"), "//")+2] + r.Host + "/emailauth/" + strconv.Itoa(ac.Id) + "/?t=" + eatoken
+			msg := []byte("" +
+				"From: Live interpreting<" + os.Getenv("MAIL_ADDRESS") + ">\r\n" +
+				"To: " + ac.Name + "<" + ac.Email + ">\r\n" +
+				encodeHeader("Subject", "Live interpreting仮登録のご案内") +
+				"MIME-Version: 1.0\r\n" +
+				"Content-Type: text/html; charset=\"utf-8\"\r\n" +
+				"Content-Transfer-Encoding: base64\r\n" +
+				"\r\n" +
+				encodeBody(
+					"<p>Live interpretingにご登録いただきありがとうございます。</p>"+
+						"<p>下記URLへアクセスし、メールアドレスの認証を行って下さい。</p>"+
+						"<p><a href=\""+accessUrl+"\">"+accessUrl+"</a></p>"+
+						"<p><br></p>"+
+						"<p><br></p>"+
+						"<p>このメールは配信専用です。<br>ご返信頂いても確認および返信は出来かねますのでご了承ください。<p>"+
+						"<p><br></p>"+
+						"<p>Live interpreting</p>"+
+						"\r\n") +
+				"\r\n")
+
+			err = smtp.SendMail(os.Getenv("MAIL_SERVER")+":587", auth, os.Getenv("MAIL_ADDRESS"), []string{ac.Email}, msg)
+			if err != nil {
+				log.Println(err)
+				log.Println(accessUrl)
+				http.Error(w, "failed to send email", 500)
+				return
+			}
+			fmt.Fprintf(w, "true")
+		} else {
+			log.Println(err)
+			http.Error(w, "failed to check email and pass", 500)
+			return
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)

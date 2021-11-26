@@ -18,6 +18,22 @@
 				background-color: var(--color2);
 				color: white;
 			}
+
+			#grayBack {
+				opacity: 1;
+			}
+
+			#grayBack>div {
+				display: block;
+				position: relative;
+				width: 400px;
+				max-width: calc(100% - 30px);
+				height: calc(100% - 60px);
+				margin: 30px auto;
+				background-color: white;
+				padding: 20px;
+				box-sizing: border-box;
+			}
 		</style>
 	</head>
 	<body>
@@ -44,6 +60,14 @@
 		<footer class="page-footer">
 			<label><script>footerText();</script></label>
 		</footer>
+		<div id="grayBack">
+			<div>
+				<h2>メールアドレスの認証が完了していません。</h2>
+				<p>ご登録頂いたメールアドレスに本登録用のURLを送信しましたのでそこから本登録を行ってください。</p>
+				<p>メールが届いていない場合、こちらから再送信できます。</p>
+				<p style="text-align: center;"><button class="button" onclick="mailResend()">再送信</button></p>
+			</div>
+		</div>
 		<script src="/st/js/master.js"></script>
 		<script>
 			function login() {
@@ -62,6 +86,9 @@
 					if (result == null) {
 						formDisabled(document.fm, false);
 						loginresult.innerText = "ログインできませんでした\n";
+					} else if (result.result == 'no auth') {
+						formDisabled(document.fm, false);
+						document.getElementById('grayBack').style.display = 'block';
 					} else {
 						loginresult.innerText = "ログイン成功\n";
 						document.getElementById('loginbtn').innerText = 'お待ち下さい';
@@ -69,7 +96,19 @@
 					}
 				}).catch(err => {
 					formDisabled(document.fm, false);
+					console.error(err);
 					loginresult.innerText = "エラーによりログインに失敗しました。\n";
+				});
+			}
+
+			function mailResend() {
+				let data = new FormData(document.fm);
+				post('/emailauth/', data)
+				.then(res => {
+					location = '/st/signup/success/';
+				}).catch(err => {
+					console.error(err);
+					alert('送信に失敗しました。');
 				});
 			}
 		</script>

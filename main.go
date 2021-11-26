@@ -82,6 +82,7 @@ func main() {
 	http.HandleFunc("/AccountSocial/", account.AccountSocialHandle)
 	http.HandleFunc("/Login/", account.LoginHandle)
 	http.HandleFunc("/Logout/", account.LogoutHandle)
+	http.HandleFunc("/emailauth/", account.EmailauthHandle)
 	http.HandleFunc("/PassForgot/", account.PassForgotHandle)
 
 	http.HandleFunc("/Notifications/", NotificationsHandle)
