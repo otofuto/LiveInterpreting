@@ -38,6 +38,7 @@ type Accounts struct {
 	EmailAuth      int           `json:"email_auth"`
 	LastLogined    string        `json:"last_logined"`
 	StripeCustomer string        `json:"stripe_customer"`
+	StripeAccount  string        `json:"stripe_account"`
 }
 
 type AccountTokens struct {
@@ -1084,6 +1085,25 @@ func (ac *Accounts) SetCustomerId(cus string) error {
 		return err
 	}
 	ac.StripeCustomer = cus
+	return nil
+}
+
+func (ac *Accounts) SetAccountId(acc string) error {
+	db := database.Connect()
+	defer db.Close()
+
+	upd, err := db.Prepare("update `accounts` set `stripe_account` = ? where id = ?")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer upd.Close()
+	_, err = upd.Exec(&acc, &ac.Id)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	ac.StripeAccount = acc
 	return nil
 }
 

@@ -30,6 +30,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/lives"
 	"github.com/otofuto/LiveInterpreting/pkg/database/talkrooms"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
+	"github.com/otofuto/LiveInterpreting/pkg/stripeHandler"
 	stripe "github.com/otofuto/LiveInterpreting/pkg/stripeHandler"
 )
 
@@ -2098,12 +2099,52 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/st/login/", 303)
 			return
 		}
-		temp := template.Must(template.ParseFiles("template/connect.html"))
+		filename := r.URL.Path[len("/connect/"):]
+		if filename == "" {
+			filename = "index"
+		}
+		if filename[len(filename)-1:] == "/" {
+			filename = filename[:len(filename)-1]
+		}
+		if filename == "create" {
+			if !login.Get() {
+				http.Error(w, "get login account data error", 500)
+				return
+			}
+			aid := stripeHandler.CreateAccount(login.Email)
+			if aid == "" {
+				http.Error(w, "failed to create account", 500)
+				return
+			}
+			log.Println(aid)
+			err := login.SetAccountId(aid)
+			if err != nil {
+				http.Error(w, "failed to update account", 500)
+				return
+			}
+			alurl := stripeHandler.CreateAccountLink(aid)
+			if alurl == "" {
+				http.Error(w, "failed to create account link", 500)
+			}
+			http.Redirect(w, r, alurl, 303)
+			return
+		}
+		temp := template.Must(template.ParseFiles("template/connect/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
 			Login: login,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)
+		}
+	} else if r.Method == http.MethodPost {
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		mode := r.URL.Path[len("/connect/"):]
+		if mode[len(mode)-1:] == "/" {
+			mode = mode[:len(mode)-1]
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)

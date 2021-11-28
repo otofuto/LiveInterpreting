@@ -7,6 +7,8 @@ import (
 	"os"
 
 	stripe "github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/account"
+	"github.com/stripe/stripe-go/v72/accountlink"
 	"github.com/stripe/stripe-go/v72/customer"
 	"github.com/stripe/stripe-go/v72/paymentintent"
 	"github.com/stripe/stripe-go/v72/setupintent"
@@ -111,4 +113,37 @@ func DeleteCustomer(cusId string) error {
 
 	_, err := customer.Del(cusId, nil)
 	return err
+}
+
+func CreateAccount(email string) string {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+
+	pms := &stripe.AccountParams{
+		Country: stripe.String("JP"),
+		Email:   stripe.String(email),
+		Type:    stripe.String("standard"),
+	}
+	a, err := account.New(pms)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return a.ID
+}
+
+func CreateAccountLink(aid string) string {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+
+	params := &stripe.AccountLinkParams{
+		Account:    stripe.String(aid),
+		RefreshURL: stripe.String(os.Getenv("HOST") + "/connect/success/"),
+		ReturnURL:  stripe.String(os.Getenv("HOST") + "/connect/"),
+		Type:       stripe.String("account_onboarding"),
+	}
+	al, err := accountlink.New(params)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return al.URL
 }
