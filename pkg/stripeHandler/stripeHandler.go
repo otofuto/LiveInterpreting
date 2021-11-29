@@ -136,8 +136,8 @@ func CreateAccountLink(aid string) string {
 
 	params := &stripe.AccountLinkParams{
 		Account:    stripe.String(aid),
-		RefreshURL: stripe.String(os.Getenv("HOST") + "/connect/success/"),
-		ReturnURL:  stripe.String(os.Getenv("HOST") + "/connect/"),
+		RefreshURL: stripe.String(os.Getenv("HOST") + "/connect/create/"),
+		ReturnURL:  stripe.String(os.Getenv("HOST") + "/connect/success/"),
 		Type:       stripe.String("account_onboarding"),
 	}
 	al, err := accountlink.New(params)
@@ -146,4 +146,24 @@ func CreateAccountLink(aid string) string {
 		return ""
 	}
 	return al.URL
+}
+
+func GetAccount(aid string) (*stripe.Account, error) {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+
+	ac, err := account.GetByID(aid, nil)
+	if err != nil {
+		return &stripe.Account{}, err
+	}
+	return ac, nil
+}
+
+func DeleteAccount(aid string) error {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+
+	_, err := account.Del(aid, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

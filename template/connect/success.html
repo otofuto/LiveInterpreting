@@ -42,9 +42,9 @@
 				{{ end }}
 			</div>
 			<div id="content">
-				<h1>振り込み設定</h1>
-				<p>振り込みはStripeから行われます。<br>まずはStipeのアカウントを作成する必要があります。</p>
-				<p><button class="button" onclick="connectAccount()">Connect</button></p>
+				<h1>アカウントを作成しました。</h1>
+				<p>アカウント情報入力：<span id="ds"></span></p>
+				<p>振込：<span id="ce"></span></p>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -52,14 +52,9 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			function connectAccount() {
-				post('/connect/create', null)
-				.then(res => {
-					console.log(res);
-				}).catch(err => {
-					console.error(err);
-				});
-			}
+			msg = JSON.parse("{{ .Message }}");
+			document.getElementById('ds').innerText = msg.details_submitted ? '完了' : '未完了';
+			document.getElementById('ce').innerText = msg.charges_enabled ? '可' : '不可';
 		</script>
 	</body>
 </html>

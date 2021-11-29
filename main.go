@@ -2106,21 +2106,25 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 		if filename[len(filename)-1:] == "/" {
 			filename = filename[:len(filename)-1]
 		}
+		msg := ""
 		if filename == "create" {
 			if !login.Get() {
 				http.Error(w, "get login account data error", 500)
 				return
 			}
-			aid := stripeHandler.CreateAccount(login.Email)
+			aid := login.StripeAccount
 			if aid == "" {
-				http.Error(w, "failed to create account", 500)
-				return
-			}
-			log.Println(aid)
-			err := login.SetAccountId(aid)
-			if err != nil {
-				http.Error(w, "failed to update account", 500)
-				return
+				aid = stripeHandler.CreateAccount(login.Email)
+				if aid == "" {
+					http.Error(w, "failed to create account", 500)
+					return
+				}
+				log.Println(aid)
+				err := login.SetAccountId(aid)
+				if err != nil {
+					http.Error(w, "failed to update account", 500)
+					return
+				}
 			}
 			alurl := stripeHandler.CreateAccountLink(aid)
 			if alurl == "" {
@@ -2128,10 +2132,34 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			http.Redirect(w, r, alurl, 303)
 			return
+		} else if filename == "success" {
+			if !login.Get() {
+				http.Error(w, "get login account data error", 500)
+				return
+			}
+			acc, err := stripeHandler.GetAccount(login.StripeAccount)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to get stripe account", 500)
+				return
+			}
+			if acc.Deleted {
+				http.Error(w, "account is deleted", 400)
+				return
+			}
+			bytes, _ := json.Marshal(struct {
+				DetailsSubmitted bool `json:"details_submitted"`
+				ChargesEnabled   bool `json:"charges_enabled"`
+			}{
+				DetailsSubmitted: acc.DetailsSubmitted,
+				ChargesEnabled:   acc.ChargesEnabled,
+			})
+			msg = string(bytes)
 		}
 		temp := template.Must(template.ParseFiles("template/connect/" + filename + ".html"))
 		if err := temp.Execute(w, TempContext{
-			Login: login,
+			Login:   login,
+			Message: msg,
 		}); err != nil {
 			log.Println(err)
 			http.Error(w, "HTTP 500 Internal server error", 500)

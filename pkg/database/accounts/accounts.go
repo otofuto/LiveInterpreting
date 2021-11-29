@@ -273,7 +273,7 @@ func (ac *Accounts) Get() bool {
 	db := database.Connect()
 	defer db.Close()
 
-	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `email_auth`, `last_logined`, `stripe_customer` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
+	sql := "select `name`, `email`, `password`, `icon_image`, `description`, `sex`, `user_type`, `url1`, `url2`, `url3`, `hourly_wage`, `wage_comment`, `created_at`, `enabled`, `email_auth`, `last_logined`, `stripe_customer`, `stripe_account` from `accounts` where `id` = " + strconv.Itoa(ac.Id)
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("accounts.go (ac *Accounts) Get()")
@@ -283,7 +283,7 @@ func (ac *Accounts) Get() bool {
 	}
 	defer rows.Close()
 	if rows.Next() {
-		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.EmailAuth, &ac.LastLogined, &ac.StripeCustomer)
+		err = rows.Scan(&ac.Name, &ac.Email, &ac.Password, &ac.IconImage, &ac.Description, &ac.Sex, &ac.UserType, &ac.Url1, &ac.Url2, &ac.Url3, &ac.HourlyWage, &ac.WageComment, &ac.CreatedAt, &ac.Enabled, &ac.EmailAuth, &ac.LastLogined, &ac.StripeCustomer, &ac.StripeAccount)
 		if err != nil {
 			log.Println("accounts.go (ac *Accounts) Get()")
 			log.Println(err)
