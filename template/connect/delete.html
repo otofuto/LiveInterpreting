@@ -6,7 +6,7 @@
 		<meta name="keywords" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow">
-		<title>振り込み設定 | Live interpreting</title>
+		<title>連携アカウント削除 | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
@@ -42,10 +42,15 @@
 				{{ end }}
 			</div>
 			<div id="content">
-				<h1>振り込み設定</h1>
-				<p>振り込みはStripeから行われます。<br>まずはStipeのアカウントを作成する必要があります。</p>
-				<p><a href="/connect/create">Connect</a></p>
-				<p><a href="/connect/delete">連携アカウント削除</a></p>
+				{{ if eq .Login.StripeAccount "" }}
+				<p>このアカウントに連携されたStripeアカウントはありません。</p>
+				{{ else }}
+				<p>このアカウントに連携されたStripeアカウントを削除します。</p>
+				<p>この操作は取り消せません。</p>
+				<p><button class="button" onclick="delaccount()">削除する</button></p>
+				<p id="result"></p>
+				{{ end }}
+				<p><a href="/connect/">振込設定画面に戻る</a></p>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -53,6 +58,15 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
+			function delaccount() {
+				del('/connect/', null)
+				.then(res => {
+					document.getElementById('result').innerText = '削除しました。';
+				}).catch(err => {
+					console.error(err);
+					document.getElementById('result').innerText = 'エラーにより失敗しました。';
+				});
+			}
 		</script>
 	</body>
 </html>

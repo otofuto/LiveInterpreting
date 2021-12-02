@@ -2174,6 +2174,29 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 		if mode[len(mode)-1:] == "/" {
 			mode = mode[:len(mode)-1]
 		}
+	} else if r.Method == http.MethodDelete {
+		login := account.LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		if login.StripeAccount == "" {
+			http.Error(w, "account no registered", 400)
+			return
+		}
+		err := stripeHandler.DeleteAccount(login.StripeAccount)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "failed to delete account", 500)
+			return
+		}
+		err = login.SetAccountId("")
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "failed to update account", 500)
+			return
+		}
+		fmt.Fprintf(w, "true")
 	} else {
 		http.Error(w, "method not allowed", 405)
 	}
