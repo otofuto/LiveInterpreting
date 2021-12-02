@@ -811,7 +811,11 @@ func PassForgotHandle(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
 			temp := template.Must(template.ParseFiles("template/mypage/pass.html"))
 
-			if err := temp.Execute(w, ac); err != nil {
+			if err := temp.Execute(w, struct {
+				Login accounts.Accounts
+			}{
+				Login: ac,
+			}); err != nil {
 				log.Fatal(err)
 			}
 		} else {
