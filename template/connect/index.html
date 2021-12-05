@@ -46,6 +46,7 @@
 				<p>振り込みはStripeから行われます。<br>まずはStipeのアカウントを作成する必要があります。</p>
 				<p><a href="/connect/create">Connect</a></p>
 				<p><a href="/connect/delete">連携アカウント削除</a></p>
+				<p id="accountstatus"></p>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -53,6 +54,8 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
+			let accountdata = JSON.parse('{{ .Message }}');
+			document.getElementById('accountstatus').innerText = '有効: ' + !accountdata.deleted + '\nアカウント情報入力完了: ' + accountdata.details_submitted + '\n入金可能: ' + accountdata.charges_enabled;
 		</script>
 	</body>
 </html>
