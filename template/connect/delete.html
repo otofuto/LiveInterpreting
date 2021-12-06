@@ -47,7 +47,7 @@
 				{{ else }}
 				<p>このアカウントに連携されたStripeアカウントを削除します。</p>
 				<p>この操作は取り消せません。</p>
-				<p><button class="button" onclick="delaccount()">削除する</button></p>
+				<p><button class="button" onclick="delaccount(this)">削除する</button></p>
 				<p id="result"></p>
 				{{ end }}
 				<p><a href="/connect/">振込設定画面に戻る</a></p>
@@ -56,15 +56,21 @@
 		<footer class="page-footer">
 			<label><script>footerText();</script></label>
 		</footer>
+		<div id="grayBack"></div>
 		<script src="/st/js/master.js"></script>
 		<script>
-			function delaccount() {
+			function delaccount(btn) {
+				document.getElementById('grayBack').style.display = 'block';
+				document.getElementById('grayBack').style.opacity = '1';
 				del('/connect/', null)
 				.then(res => {
 					document.getElementById('result').innerText = '削除しました。';
+					document.getElementById('grayBack').removeAttribute('style');
+					btn.remove();
 				}).catch(err => {
 					console.error(err);
 					document.getElementById('result').innerText = 'エラーにより失敗しました。';
+					document.getElementById('grayBack').removeAttribute('style');
 				});
 			}
 		</script>

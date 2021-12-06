@@ -2112,21 +2112,27 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "get login account data error", 500)
 				return
 			}
-			acc, err := stripeHandler.GetAccount(login.StripeAccount)
-			if err != nil {
-				log.Println(err)
-				http.Error(w, "failed to get stripe account", 500)
-				return
-			}
-			bytes, _ := json.Marshal(struct {
+			stripeaccount := struct {
 				Deleted          bool `json:"deleted"`
 				DetailsSubmitted bool `json:"details_submitted"`
 				ChargesEnabled   bool `json:"charges_enabled"`
 			}{
-				Deleted:          acc.Deleted,
-				DetailsSubmitted: acc.DetailsSubmitted,
-				ChargesEnabled:   acc.ChargesEnabled,
-			})
+				Deleted:          true,
+				DetailsSubmitted: false,
+				ChargesEnabled:   false,
+			}
+			if login.StripeAccount != "" {
+				acc, err := stripeHandler.GetAccount(login.StripeAccount)
+				if err != nil {
+					log.Println(err)
+					http.Error(w, "failed to get stripe account", 500)
+					return
+				}
+				stripeaccount.Deleted = acc.Deleted
+				stripeaccount.DetailsSubmitted = acc.DetailsSubmitted
+				stripeaccount.ChargesEnabled = acc.ChargesEnabled
+			}
+			bytes, _ := json.Marshal(stripeaccount)
 			msg = string(bytes)
 		} else if filename == "create" {
 			if !login.Get() {

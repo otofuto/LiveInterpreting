@@ -10,6 +10,29 @@
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/mark.css">
 		<style>
+			#stripe_info {
+				display: block;
+				position: relative;
+				border: solid 1.5px gray;
+				border-radius: 10px;
+				padding: 20px 10px 10px 10px;
+				box-sizing: border-box;
+				margin: 10px;
+			}
+
+			#stripe_logo {
+				display: block;
+				position: absolute;
+				left: 15px;
+				top: -15px;
+				width: 90px;
+				height: 40px;
+				background-color: white;
+				background-image: url('/st/materials/stripe_logo.png');
+				background-repeat: no-repeat;
+				background-position: center;
+				background-size: contain;
+			}
 		</style>
 	</head>
 	<body>
@@ -43,10 +66,21 @@
 			</div>
 			<div id="content">
 				<h1>振り込み設定</h1>
-				<p>振り込みはStripeから行われます。<br>まずはStipeのアカウントを作成する必要があります。</p>
-				<p><a href="/connect/create">Connect</a></p>
-				<p><a href="/connect/delete">連携アカウント削除</a></p>
-				<p id="accountstatus"></p>
+				<p>振り込みはStripeから行われます。{{ if eq .Login.StripeAccount "" }}<br>まずはStipeの連携アカウントを作成する必要があります。{{ end }}</p>
+				<div id="stripe_info">
+					<label id="stripe_logo"></label>
+					<p><a href="/connect/create" id="connect_link"><span>連携アカウントを作成する</span></a></p>
+					{{ if ne .Login.StripeAccount "" }}
+					<p><a href="/connect/delete">連携アカウント削除</a></p>
+					{{ end }}
+					<h4>アカウントステータス</h4>
+					{{ if eq .Login.StripeAccount "" }}
+					<p>連携アカウントが作成されていません</p>
+					{{ else }}
+					<p>アカウント情報入力：<span id="ds"></span></p>
+					<p>報酬振込：<span id="ce"></span></p>
+					{{ end }}
+				</div>
 			</div>
 		</main>
 		<footer class="page-footer">
@@ -54,8 +88,9 @@
 		</footer>
 		<script src="/st/js/master.js"></script>
 		<script>
-			let accountdata = JSON.parse('{{ .Message }}');
-			document.getElementById('accountstatus').innerText = '有効: ' + !accountdata.deleted + '\nアカウント情報入力完了: ' + accountdata.details_submitted + '\n入金可能: ' + accountdata.charges_enabled;
+			let msg = JSON.parse('{{ .Message }}');
+			document.getElementById('ds').innerText = msg.details_submitted ? '完了' : '未完了';
+			document.getElementById('ce').innerText = msg.charges_enabled ? '可' : '不可';
 		</script>
 	</body>
 </html>
