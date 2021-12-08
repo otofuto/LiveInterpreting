@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	stripe "github.com/stripe/stripe-go/v72"
@@ -128,6 +129,8 @@ func CreateAccount(ac *accounts.Accounts) string {
 			Name:               stripe.String(ac.Name),
 			ProductDescription: stripe.String("We will be an interpreter for live streaming at the request of influencers."),
 			SupportEmail:       stripe.String(ac.Email),
+			SupportURL:         stripe.String(os.Getenv("HOST") + "/u/" + strconv.Itoa(ac.Id)),
+			URL:                stripe.String(os.Getenv("HOST") + "/u/" + strconv.Itoa(ac.Id)),
 		},
 	}
 	a, err := account.New(pms)
