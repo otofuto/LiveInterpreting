@@ -2141,7 +2141,7 @@ func ConnectHandle(w http.ResponseWriter, r *http.Request) {
 			}
 			aid := login.StripeAccount
 			if aid == "" {
-				aid = stripeHandler.CreateAccount(login.Email)
+				aid = stripeHandler.CreateAccount(&login)
 				if aid == "" {
 					http.Error(w, "failed to create account", 500)
 					return

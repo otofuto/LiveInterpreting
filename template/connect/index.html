@@ -66,16 +66,16 @@
 			</div>
 			<div id="content">
 				<h1>振り込み設定</h1>
-				<p>振り込みはStripeから行われます。{{ if eq .Login.StripeAccount "" }}<br>まずはStipeの連携アカウントを作成する必要があります。{{ end }}</p>
+				<p>振り込みはStripeから行われます。{{ if eq .Login.StripeAccount "" }}<br>まずはStipeの連結アカウントを作成する必要があります。{{ end }}</p>
 				<div id="stripe_info">
 					<label id="stripe_logo"></label>
-					<p><a href="/connect/create" id="connect_link"><span>連携アカウントを作成する</span></a></p>
+					<p><a href="/connect/create" id="connect_link"><span>連結アカウントを作成する</span></a></p>
 					{{ if ne .Login.StripeAccount "" }}
 					<p><a href="/connect/delete">連携アカウント削除</a></p>
 					{{ end }}
 					<h4>アカウントステータス</h4>
 					{{ if eq .Login.StripeAccount "" }}
-					<p>連携アカウントが作成されていません</p>
+					<p>連結アカウントが作成されていません</p>
 					{{ else }}
 					<p>アカウント情報入力：<span id="ds"></span></p>
 					<p>報酬振込：<span id="ce"></span></p>

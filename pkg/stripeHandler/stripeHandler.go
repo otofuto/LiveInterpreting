@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	stripe "github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/account"
 	"github.com/stripe/stripe-go/v72/accountlink"
@@ -115,13 +116,19 @@ func DeleteCustomer(cusId string) error {
 	return err
 }
 
-func CreateAccount(email string) string {
+func CreateAccount(ac *accounts.Accounts) string {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 
 	pms := &stripe.AccountParams{
-		Country: stripe.String("JP"),
-		Email:   stripe.String(email),
-		Type:    stripe.String("standard"),
+		Country:      stripe.String("JP"),
+		Email:        stripe.String(ac.Email),
+		Type:         stripe.String("standard"),
+		BusinessType: stripe.String("individual"),
+		BusinessProfile: &stripe.AccountBusinessProfileParams{
+			Name:               stripe.String(ac.Name),
+			ProductDescription: stripe.String("We will be an interpreter for live streaming at the request of influencers."),
+			SupportEmail:       stripe.String(ac.Email),
+		},
 	}
 	a, err := account.New(pms)
 	if err != nil {
