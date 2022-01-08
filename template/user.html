@@ -9,9 +9,18 @@
 		<title>{{.Account.Name}}さん | Live interpreting</title>
 		<link rel="stylesheet" href="/st/css/master.css">
 		<link rel="stylesheet" href="/st/css/user.css">
+		<link rel="stylesheet" href="/st/css/report.css">
 		<style>
 			#iconDisp {
 				background-image: url('/Account/img/{{.Account.Id}}');
+			}
+			@keyframes msgopen {
+				0% {
+					width: 0;
+				}
+				100% {
+					width: 500px;
+				}
 			}
 		</style>
 	</head>
@@ -85,7 +94,7 @@
 					{{ if eq .Account.UserType "interpreter" }}
 					<button class="button" onclick="location = '/trans/req/{{ .Account.Id }}';">見積もり依頼</button>
 					{{ end }}
-					<button class="button" style="background-color: red; color: white;">通報</button>
+					<button class="button" style="background-color: red; color: white;" onclick="reportuser()">報告</button>
 					{{ end }}
 					{{ end }}
 				</div>
@@ -173,6 +182,132 @@
 					else art.querySelector('.spinner').removeAttribute('style');
 				});
 				location = path;
+			}
+
+			function reportuser() {
+				reportbox();
+				return;
+				let data = new FormData();
+				data.append('id', '{{.Account.Id}}');
+				data.append('reason', reason);
+				post('/Reports/', data)
+				.then(res => {
+					if (res) {
+						msgbox('通報が完了しました');
+					} else {
+						alert('エラーにより失敗しました');
+					}
+				}).catch(err => {
+					console.error(err);
+					alert('エラーにより失敗しました');
+				});
+			}
+			function reportbox() {
+				let back = document.createElement('div');
+				back.id = 'grayBack';
+				back.style.display = 'block';
+				back.style.opacity = '1';
+				let box = document.createElement('div');
+				box.setAttribute('class', 'reportbox');
+				back.appendChild(box);
+				let p = document.createElement('p');
+				p.innerText = '報告する理由を選択してください。';
+				box.appendChild(p);
+				let msg = document.createElement('div');
+				get('/Reports/reason')
+				.then(res => {
+					res.forEach(reason => {
+						let lbl = document.createElement('label');
+						msg.appendChild(lbl);
+						let radio = document.createElement('input');
+						radio.setAttribute('type', 'radio');
+						radio.value = reason.id;
+						radio.name = 'reason';
+						lbl.appendChild(radio);
+						let spn = document.createElement('span');
+						spn.innerText = reason.reason;
+						lbl.appendChild(spn);
+					});
+				}).catch(err => {
+					console.error(err);
+					msg.innerText = 'エラー';
+				});
+				box.appendChild(msg);
+				let btns = document.createElement('div');
+				box.appendChild(btns);
+				let btn = document.createElement('button');
+				btn.innerText = 'キャンセル';
+				btn.setAttribute('class', 'button');
+				btns.appendChild(btn);
+				btn.addEventListener('click', e => {
+					e.target.parentNode.parentNode.parentNode.remove();
+				});
+				let send = document.createElement('button');
+				send.innerText = '決定';
+				send.style.backgroundColor = '#414141';
+				send.style.color = 'white';
+				send.setAttribute('class', 'button');
+				btns.appendChild(send);
+				send.addEventListener('click', e => {
+					let r = document.querySelector('.reportbox [name="reason"]:checked');
+					if (r != null) {
+						let rdata = new FormData();
+						rdata.append('id', '{{.Account.Id}}');
+						rdata.append('reason', r.value);
+						post('/Reports/', rdata)
+						.then(res => {
+							alert('このアカウントの報告が完了しました。');
+							e.target.parentNode.parentNode.parentNode.remove();
+						}).catch(err => {
+							alert('エラーにより失敗しました。');
+						});
+					}
+				});
+				document.body.appendChild(back);
+			}
+			function msgbox(str) {
+				let back = document.createElement('div');
+				back.style.cssText = `
+					display: block;
+					position: fixed;
+					top: 0;
+					left: 0;
+					width: 100vw;
+					height: 100vh;
+				`;
+				let box = document.createElement('div');
+				box.style.cssText = `
+					display: box;
+					position: relative;
+					background-color: #fafafa;
+					border-radius: 15px;
+					padding: 20px;
+					box-sizing: border-box;
+					font-size: 18px;
+					margin: 30vh auto;
+					width: 0;
+					max-width: 90%;
+					box-shadow: 1px 1px 10px -5px black;
+					animation-name: msgopen;
+					animation-duration: 200ms;
+					animation-delay: 0;
+					animation-timing-function: ease;
+					animation-fill-mode: forwards;
+				`;
+				back.appendChild(box);
+				let msg = document.createElement('div');
+				msg.innerText = str;
+				box.appendChild(msg);
+				let btn = document.createElement('button');
+				btn.innerText = 'OK';
+				btn.setAttribute('class', 'button');
+				btn.style.display = 'block';
+				btn.style.margin = '10px auto 0 auto';
+				box.appendChild(btn);
+				btn.addEventListener('click', e => {
+					e.target.parentNode.parentNode.remove();
+				});
+				document.body.appendChild(back);
 			}
 		</script>
 	</body>

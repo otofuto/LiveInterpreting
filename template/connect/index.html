@@ -69,8 +69,17 @@
 				<p>振り込みはStripeから行われます。{{ if eq .Login.StripeAccount "" }}<br>まずはStipeの連結アカウントを作成する必要があります。{{ end }}</p>
 				<div id="stripe_info">
 					<label id="stripe_logo"></label>
+					{{ if eq .Login.StripeAccount "" }}
 					<p><a href="/connect/create" id="connect_link"><span>連結アカウントを作成する</span></a></p>
-					{{ if ne .Login.StripeAccount "" }}
+					<div style="border: solid 0.5px black; border-radius: 10px; padding: 0 15px; box-sizing: border-box;">
+						<p>SMSの確認後、事業情報の入力ではあなたの郵便番号、住所を入力し、事業形態は個人事業主を選択してください。</p>
+						<p>申請者の詳細ではあなたの情報をご入力ください。</p>
+						<p>業種はなんでも良いです。</p>
+						<p>改正割販法に関連する質問には、全ていいえで答えてください。</p>
+						<p>入金用口座には、売上の振込先となる口座を指定してください。</p>
+						<p>顧客サポートの詳細には、「Live interpreting」「ライブインタープリンティング」「Live interpreting」とご入力ください。</p>
+					</div>
+					{{ else }}
 					<p><a href="/connect/delete">連携アカウント削除</a></p>
 					{{ end }}
 					<h4>アカウントステータス</h4>

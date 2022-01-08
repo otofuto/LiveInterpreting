@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	"github.com/otofuto/LiveInterpreting/pkg/account"
 	"github.com/otofuto/LiveInterpreting/pkg/database"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
@@ -28,6 +29,7 @@ import (
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
 	"github.com/otofuto/LiveInterpreting/pkg/database/langs"
 	"github.com/otofuto/LiveInterpreting/pkg/database/lives"
+	"github.com/otofuto/LiveInterpreting/pkg/database/reports"
 	"github.com/otofuto/LiveInterpreting/pkg/database/talkrooms"
 	"github.com/otofuto/LiveInterpreting/pkg/database/trans"
 	"github.com/otofuto/LiveInterpreting/pkg/stripeHandler"
@@ -52,6 +54,7 @@ type TempContext struct {
 	Talks     []talkrooms.TalkRooms           `json:"talkrooms"`
 	LiveTexts []LiveTexts                     `json:"live_texts"`
 	Live      lives.Lives                     `json:"live"`
+	Reports   []reports.Reports
 }
 
 type SocketMessage struct {
@@ -85,6 +88,7 @@ func main() {
 	http.HandleFunc("/Logout/", account.LogoutHandle)
 	http.HandleFunc("/emailauth/", account.EmailauthHandle)
 	http.HandleFunc("/PassForgot/", account.PassForgotHandle)
+	http.HandleFunc("/Reports/", account.ReportsHandle)
 
 	http.HandleFunc("/Notifications/", NotificationsHandle)
 	http.HandleFunc("/Eval/", EvalHandle)
@@ -102,6 +106,7 @@ func main() {
 	http.HandleFunc("/live/", LiveHandle)
 	http.HandleFunc("/connect/", ConnectHandle)
 
+	http.HandleFunc("/admin/", adminHandle)
 	http.HandleFunc("/document/", documentHandle)
 
 	http.HandleFunc("/ws/", SocketHandle)
@@ -2274,6 +2279,72 @@ func InsertLiveText(liveId int, msg SocketMessage) {
 		}
 		/*i64, _ := result.RowsAffected()
 		log.Println(i64)*/
+	}
+}
+
+func adminHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	if r.Method == http.MethodGet {
+		filename := r.URL.Path[len("/admin/"):]
+		if filename == "" {
+			filename = "index"
+		}
+		if filename[len(filename)-1:] == "/" {
+			filename = filename[:len(filename)-1]
+		}
+		cookie, err := r.Cookie("liveinteadmin")
+		if err != nil {
+			filename = "login"
+		} else if cookie.Value != "admin" {
+			filename = "login"
+		}
+		context := TempContext{}
+		if filename == "reports" {
+			repos, err := reports.All()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to fetch", 500)
+				return
+			}
+			context.Reports = repos
+		}
+		temp := template.Must(template.ParseFiles("template/admin/" + filename + ".html"))
+		if err := temp.Execute(w, context); err != nil {
+			log.Println(err)
+			http.Error(w, "HTTP 500 Internal server error", 500)
+		}
+	} else if r.Method == http.MethodPost {
+		mode := r.URL.Path[len("/admin/"):]
+		if mode == "login" {
+			r.ParseMultipartForm(32 << 20)
+			godotenv.Load()
+			if r.FormValue("pass") == os.Getenv("ADMIN") && r.FormValue("pass") != "" {
+				cookie := &http.Cookie{
+					Name:     "liveinteadmin",
+					Value:    "admin",
+					Path:     "/",
+					HttpOnly: true,
+					MaxAge:   3600 * 24 * 7,
+				}
+				http.SetCookie(w, cookie)
+				fmt.Fprintf(w, "true")
+			} else {
+				fmt.Fprintf(w, "false")
+			}
+		} else if mode == "logout" {
+			cookie, err := r.Cookie("liveinteadmin")
+			if err != nil {
+				return
+			}
+			cookie.MaxAge = -1
+			cookie.Value = ""
+			http.SetCookie(w, cookie)
+		} else {
+			http.Error(w, "誰やお前", 404)
+		}
+	} else {
+		http.Error(w, "page not found", 404)
 	}
 }
 

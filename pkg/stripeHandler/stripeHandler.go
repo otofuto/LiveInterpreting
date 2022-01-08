@@ -128,10 +128,29 @@ func CreateAccount(ac *accounts.Accounts) string {
 		BusinessProfile: &stripe.AccountBusinessProfileParams{
 			Name:               stripe.String(ac.Name),
 			ProductDescription: stripe.String("We will be an interpreter for live streaming at the request of influencers."),
-			SupportEmail:       stripe.String(ac.Email),
-			SupportURL:         stripe.String(os.Getenv("HOST") + "/u/" + strconv.Itoa(ac.Id)),
-			URL:                stripe.String(os.Getenv("HOST") + "/u/" + strconv.Itoa(ac.Id)),
+			SupportAddress: &stripe.AddressParams{
+				City:       stripe.String("渋谷区"),
+				Country:    stripe.String("jp"),
+				Line1:      stripe.String("渋谷2-14-6"),
+				Line2:      stripe.String("西田ビル5F"),
+				PostalCode: stripe.String("150-0002"),
+				State:      stripe.String("東京都"),
+			},
+			SupportEmail: stripe.String(ac.Email),
+			SupportPhone: stripe.String("08061234039"),
+			//SupportURL:         stripe.String(os.Getenv("HOST") + "/u/" + strconv.Itoa(ac.Id)),
+			SupportURL: stripe.String("https://live-interpreting.herokuapp.com/u/" + strconv.Itoa(ac.Id)),
+			//URL:                stripe.String(os.Getenv("HOST") + "/u/" + strconv.Itoa(ac.Id)),
+			URL: stripe.String("https://live-interpreting.herokuapp.com/u/" + strconv.Itoa(ac.Id)),
 		},
+		Individual: &stripe.PersonParams{
+			Address: &stripe.AccountAddressParams{
+				Country: stripe.String("jp"),
+			},
+			Email:             stripe.String(ac.Email),
+			PoliticalExposure: stripe.String("none"),
+		},
+		DefaultCurrency: stripe.String("JPY"),
 	}
 	a, err := account.New(pms)
 	if err != nil {

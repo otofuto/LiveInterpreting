@@ -1,0 +1,24 @@
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>報告一覧 | 管理ページ</title>
+        <style>
+            #list a {
+                text-decoration: none;
+                color: black;
+            }
+            #list a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>報告一覧</h1>
+        <div id="list">
+            {{ range .Reports }}
+            <p><a href="/u/{{ .Account }}">{{ .AccountName }} ({{ .Reason.Reason }})</a></p>
+            {{ end }}
+        </div>
+    </body>
+</html>

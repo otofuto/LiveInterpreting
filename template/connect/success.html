@@ -45,6 +45,7 @@
 				<h1>Stripe連結アカウントを作成しました。</h1>
 				<p>アカウント情報入力：<span id="ds"></span></p>
 				<p>報酬振込：<span id="ce"></span></p>
+				<p id="resultmessage"></p>
 				<p><a href="/mypage/earnings/">売上管理ページ</a></p>
 			</div>
 		</main>
@@ -56,6 +57,11 @@
 			msg = JSON.parse("{{ .Message }}");
 			document.getElementById('ds').innerText = msg.details_submitted ? '完了' : '未完了';
 			document.getElementById('ce').innerText = msg.charges_enabled ? '可' : '不可';
+			if (msg.details_submitted && msg.charges_enabled) {
+				document.getElementById('resultmessage').innerText = 'すべての入力が完了し、報酬の振込が可能になりました。';
+			} else {
+				document.getElementById('resultmessage').innerText = '入力内容に不足があり、報酬の振込はまだ出来ません。';
+			}
 		</script>
 	</body>
 </html>

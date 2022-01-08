@@ -25,11 +25,11 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/otofuto/LiveInterpreting/pkg/database/accounts"
 	"github.com/otofuto/LiveInterpreting/pkg/database/errorData"
+	"github.com/otofuto/LiveInterpreting/pkg/database/reports"
 )
 
 func AccountHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
@@ -517,7 +517,6 @@ func ToSquare(img image.Image) image.Image {
 
 func LoginHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		r.ParseMultipartForm(32 << 20)
@@ -573,7 +572,6 @@ func LoginHandle(w http.ResponseWriter, r *http.Request) {
 
 func LogoutHandle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	if r.Method == http.MethodPost {
 		cookie, err := r.Cookie("accounttoken")
@@ -700,6 +698,77 @@ func EmailauthHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.Error(w, "method not allowed", 405)
+	}
+}
+
+func ReportsHandle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method == http.MethodPost {
+		login := LoginAccount(r)
+		if login.Id == -1 {
+			http.Error(w, "not logined", 403)
+			return
+		}
+		r.ParseMultipartForm(32 << 20)
+		mode := r.URL.Path[len("/Reports/"):]
+		if mode == "reason" {
+			rs := make([]reports.Reasons, 0)
+			err := json.NewDecoder(r.Body).Decode(&rs)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to decode json request", 500)
+				return
+			}
+			err = reports.CreateReasons(rs)
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to insert", 500)
+				return
+			}
+			fmt.Fprintf(w, "true")
+		} else {
+			aid, err := strconv.Atoi(r.FormValue("id"))
+			if err != nil {
+				http.Error(w, "id is not integer", 400)
+				return
+			}
+			reason, err := strconv.Atoi(r.FormValue("reason"))
+			if err != nil {
+				http.Error(w, "reason is not integer", 400)
+				return
+			}
+			repo := reports.Reports{
+				Account: aid,
+				Sender:  login.Id,
+				Reason: reports.Reasons{
+					Id: reason,
+				},
+			}
+			err = repo.Insert()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "insert failed", 500)
+				return
+			}
+			fmt.Fprintf(w, "true")
+		}
+	} else if r.Method == http.MethodGet {
+		mode := r.URL.Path[len("/Reports/"):]
+		if mode == "reason" {
+			rs, err := reports.GetReasons()
+			if err != nil {
+				log.Println(err)
+				http.Error(w, "failed to fetch", 500)
+				return
+			}
+			bytes, _ := json.Marshal(rs)
+			fmt.Fprintf(w, string(bytes))
+		} else {
+			http.Error(w, "api not found", 404)
+		}
+	} else {
+		http.Error(w, "medhot not allowed", 405)
 	}
 }
 

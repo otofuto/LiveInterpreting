@@ -64,6 +64,11 @@ body {
 .page-header__username {
 	color: white;
 	text-align: right;
+	text-decoration: none;
+}
+
+a.page-header__username:hover {
+	text-decoration: underline;
 }
 
 .page-header__username>a {

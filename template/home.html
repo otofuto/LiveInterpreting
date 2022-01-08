@@ -184,8 +184,9 @@
 	<body>
 		<script src="/st/js/header.js"></script>
 		<script>
-			var p = document.createElement("p");
+			var p = document.createElement("a");
 			p.setAttribute("class", "page-header__username");
+			p.href = '/mypage/';
 			{{ if ne .Login.Id -1 }}
 			p.innerHTML = "こんにちは <span style=\"font-weight: bold;\">{{.Login.Name}}</span>さん";
 			{{ end }}

@@ -1,0 +1,30 @@
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>ログイン | 管理ページ</title>
+    </head>
+    <body>
+        <h1>管理者としてログインが必要です</h1>
+        <form name="fm" onsubmit="adminlogin(); return false;">
+            <p><input type="password" name="pass" placeholder="password"></p>
+            <p><input type="submit" value="login"></p>
+        </form>
+        <script src="/st/js/master.js"></script>
+        <script>
+            function adminlogin() {
+                post('/admin/login', new FormData(document.fm))
+                .then(res => {
+                    if (res) {
+                        location.reload();
+                    } else {
+                        alert('失敗しました');
+                    }
+                }).catch(err => {
+                    console.error(err);
+                    alert('エラー');
+                });
+            }
+        </script>
+    </body>
+</html>

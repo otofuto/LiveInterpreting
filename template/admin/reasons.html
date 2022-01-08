@@ -1,0 +1,107 @@
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>報告理由設定 | 管理ページ</title>
+        <style>
+            input[type="text"] {
+                width: 300px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>報告理由設定</h1>
+        <p><input type="button" value="追加する" onclick="addRow('')"></p>
+        <div id="list"></div>
+        <p><input type="button" value="決定" onclick="edit()"></p>
+        <p><a href="/admin/">戻る</a></p>
+        <script src="/st/js/master.js"></script>
+        <script>
+            get('/Reports/reason')
+            .then(res => {
+                res.forEach(reason => {
+                    addRow(reason.reason);
+                });
+            }).catch(err => {
+                console.error(err);
+                msg.innerText = 'エラー';
+            });
+            function addRow(reason) {
+                let row = document.createElement('div');
+                document.getElementById('list').appendChild(row);
+
+                let text = document.createElement('input');
+                text.setAttribute('type', 'text');
+                text.value = reason;
+                row.appendChild(text);
+
+                let btnup = document.createElement('input');
+                btnup.setAttribute('type', 'button');
+                btnup.setAttribute('class', 'up');
+                btnup.value = '上へ';
+                btnup.setAttribute('onclick', 'uprow(this)');
+                row.appendChild(btnup);
+
+                let btndown = document.createElement('input');
+                btndown.setAttribute('type', 'button');
+                btndown.setAttribute('class', 'down');
+                btndown.value = '下へ';
+                btndown.setAttribute('onclick', 'downrow(this)');
+                row.appendChild(btndown);
+            }
+            function uprow(btn) {
+                let last = null;
+                Array.from(document.querySelectorAll('#list>div'))
+                .forEach(row => {
+                    if (row.querySelector('.up') == btn) {
+                        if (last == null) return;
+                        last.before(btn.parentNode);
+                        return;
+                    }
+                    last = row;
+                });
+            }
+            function downrow(btn) {
+                let found = false;
+                Array.from(document.querySelectorAll('#list>div'))
+                .forEach(row => {
+                    if (row.querySelector('.down') == btn) {
+                        found = true;
+                    } else if (found) {
+                        found = false;
+                        row.after(btn.parentNode);
+                        return;
+                    }
+                });
+            }
+            function edit() {
+                let data = [];
+                Array.from(document.querySelectorAll('#list input[type="text"]'))
+                .forEach((txt, k) => {
+                    if (txt.value == '') txt.parentNode.remove();
+                    else data.push({'id': k + 1, 'reason': txt.value});
+                });
+                fetch('/Reports/reason', {
+                    method: 'post',
+                    body: JSON.stringify(data),
+                    credentials: "include",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(res => {
+                    if (res.status == 200)
+                        return res.json();
+                    return null;
+                }).then(res => {
+                    if (res == null) alert('エラーにより失敗しました。');
+                    else {
+                        alert('完了しました。');
+                    }
+                }).catch(err => {
+                    console.error(err);
+                    alert('エラーにより失敗しました');
+                });
+            }
+        </script>
+    </body>
+</html>
