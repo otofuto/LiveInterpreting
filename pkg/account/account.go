@@ -379,21 +379,77 @@ func AccountHandle(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else if r.Method == http.MethodDelete {
-		ac := LoginAccount(r)
-		if ac.Id == -1 {
-			http.Error(w, "not logined", 403)
-			return
-		}
-		ac.Get()
-		_, err := accounts.Login(ac.Email, r.FormValue("password"))
-		if err != nil {
-			http.Error(w, "unmatched password", 400)
-			return
-		}
-		if ac.Disabled() {
-			fmt.Fprintf(w, "true")
+		mode := r.URL.Path[len("/Account/"):]
+		if mode == "delete" {
+			cookie, err := r.Cookie("liveinteadmin")
+			if err == nil {
+				if cookie.Value == "admin" {
+					aid, err := strconv.Atoi(r.FormValue("id"))
+					if err != nil {
+						http.Error(w, "id is not integer", 400)
+						return
+					}
+					ac := accounts.Accounts{Id: aid}
+					if ac.Get() {
+						if ac.Delete() {
+							fmt.Fprintf(w, "true")
+						} else {
+							fmt.Fprintf(w, "false")
+						}
+						return
+					} else {
+						http.Error(w, "account nto found", 404)
+						return
+					}
+				} else {
+					http.Error(w, "admin not logined", 403)
+				}
+			} else {
+				http.Error(w, "admin not logined", 403)
+			}
 		} else {
-			fmt.Fprintf(w, "false")
+			doadmin := false
+			cookie, err := r.Cookie("liveinteadmin")
+			if err == nil {
+				if cookie.Value == "admin" {
+					doadmin = true
+					aid, err := strconv.Atoi(r.FormValue("id"))
+					if err != nil {
+						http.Error(w, "id is not integer", 400)
+						return
+					}
+					ac := accounts.Accounts{Id: aid}
+					if ac.Get() {
+						if ac.Disabled() {
+							fmt.Fprintf(w, "true")
+						} else {
+							fmt.Fprintf(w, "false")
+						}
+						return
+					} else {
+						http.Error(w, "account nto found", 404)
+						return
+					}
+				}
+			}
+			if !doadmin {
+				ac := LoginAccount(r)
+				if ac.Id == -1 {
+					http.Error(w, "not logined", 403)
+					return
+				}
+				ac.Get()
+				_, err := accounts.Login(ac.Email, r.FormValue("password"))
+				if err != nil {
+					http.Error(w, "unmatched password", 400)
+					return
+				}
+				if ac.Disabled() {
+					fmt.Fprintf(w, "true")
+				} else {
+					fmt.Fprintf(w, "false")
+				}
+			}
 		}
 	} else {
 		http.Error(w, "method not allowed.", 405)

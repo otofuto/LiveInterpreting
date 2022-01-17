@@ -8,11 +8,12 @@ import (
 )
 
 type Reports struct {
-	Account     int `json:"account"`
-	AccountName string
-	ReportDate  string  `json:"report_date"`
-	Sender      int     `json:"sender"`
-	Reason      Reasons `json:"reason"`
+	Account        int `json:"account"`
+	AccountName    string
+	AccountEnabled bool    `json:"account_enabled"`
+	ReportDate     string  `json:"report_date"`
+	Sender         int     `json:"sender"`
+	Reason         Reasons `json:"reason"`
 }
 
 type Reasons struct {
@@ -116,7 +117,7 @@ func All() ([]Reports, error) {
 	defer db.Close()
 
 	ret := make([]Reports, 0)
-	sql := "select `account`, `report_date`, `sender`, `report_accounts`.`reason`, `report_reasons`.`reason`, `name` from `report_accounts` left outer join `report_reasons` on `report_accounts`.`reason` = `report_reasons`.`id` left outer join `accounts` on `account` = `accounts`.`id` order by `report_date` desc"
+	sql := "select `account`, `accounts`.`enabled`, `report_date`, `sender`, `report_accounts`.`reason`, `report_reasons`.`reason`, `name` from `report_accounts` left outer join `report_reasons` on `report_accounts`.`reason` = `report_reasons`.`id` left outer join `accounts` on `account` = `accounts`.`id` order by `report_date` desc"
 	rows, err := db.Query(sql)
 	if err != nil {
 		log.Println("reports.go All() db.Query()")
@@ -126,7 +127,7 @@ func All() ([]Reports, error) {
 	for rows.Next() {
 		var r Reports
 		var rs Reasons
-		err = rows.Scan(&r.Account, &r.ReportDate, &r.Sender, &rs.Id, &rs.Reason, &r.AccountName)
+		err = rows.Scan(&r.Account, &r.AccountEnabled, &r.ReportDate, &r.Sender, &rs.Id, &rs.Reason, &r.AccountName)
 		if err != nil {
 			log.Println("reports.go All() rows.Scan()")
 			return ret, err
