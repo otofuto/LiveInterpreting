@@ -179,6 +179,24 @@
 				background-size: cover;
 				box-shadow: 0 0 20px -10px rgba(0, 0, 0, 0.7);
 			}
+
+			#notifcount {
+				display: inline-block;
+				background-color: tomato;
+				color: white;
+				font-weight: bold;
+				font-size: 14px;
+				padding: 5px;
+				border-radius: 50px;
+				min-width: 20px;
+				height: 20px;
+				line-height: 20px;
+				text-align: center;
+			}
+
+			#notifcount:empty {
+				display: none;
+			}
 		</style>
 	</head>
 	<body>
@@ -196,7 +214,7 @@
 			<div id="sidemenu">
 				<div onclick="location = '/home/'" class="selected"><span>ホーム</span></div>
 				{{ if ne .Login.Id -1 }}
-				<div onclick="location = '/inbox/'"><span>受信BOX</span></div>
+				<div onclick="location = '/inbox/'"><span>受信BOX</span><span id="notifcount"></span></div>
 				<div onclick="location = '/mypage/'"><span>マイページ</span></div>
 				<div onclick="location = '/mypage/follows/'"><span>フォロー</span></div>
 				<div onclick="location = '/mypage/lives/'"><span>配信登録</span></div>
@@ -307,6 +325,13 @@
 				Array.from(livs).forEach(liv => {
 					document.getElementById('todaylives').appendChild(createLivePanel(liv));
 				});
+			});
+
+			get('/Notifications/')
+			.then(notifs => {
+				if (notifs != null) {
+					document.getElementById('notifcount').innerText = Array.from(notifs).length;
+				}
 			});
 		</script>
 	</body>

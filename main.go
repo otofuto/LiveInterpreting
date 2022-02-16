@@ -1171,6 +1171,35 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/home/", 303)
 				return
 			}
+			if r.FormValue("payment_intent") != "" {
+				pi, err := stripe.RetrivePaymentIntent(r.FormValue("payment_intent"))
+				if err != nil {
+					log.Println("main.go TransHandle RetrivePaymentIntent()")
+					http.Error(w, "failed to retrive payment intent", 500)
+					return
+				}
+				if pi.Status == "succeeded" {
+					tr.BuyDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}
+					err = tr.Update()
+					if err != nil {
+						log.Println(err)
+						http.Error(w, "failed to update trans", 500)
+						return
+					}
+					n := accounts.Notif{
+						Type: "trans/buy",
+						Text: tr.RequestTitle,
+						From: tr.From,
+						To:   tr.To,
+						Id:   tr.Id,
+					}
+					err = n.Insert()
+					if err != nil {
+						log.Println(err)
+						errorData.Insert("failed to insert notif "+strconv.Itoa(login.Id)+" to "+strconv.Itoa(tr.From), err.Error())
+					}
+				}
+			}
 			ac.Id = tr.To
 			if !ac.Get() {
 				http.Error(w, "failed to get user(to) data", 500)
@@ -1407,11 +1436,20 @@ func TransHandle(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "already buyed", 400)
 				return
 			}
-			err = stripe.Payment(login.StripeCustomer, tr.Price.Int64)
+			nextaction, err := stripe.Payment(login.StripeCustomer, tr.Price.Int64, trid)
 			if err != nil {
 				log.Println("main.go TransHandle(w http.ResponseWriter, r *http.Request) POST")
 				log.Println(err)
 				http.Error(w, "failed to payment", 500)
+				return
+			}
+			if nextaction != "" {
+				bytes, _ := json.Marshal(struct {
+					RedirectToURL string `json:"redirect_to_url"`
+				}{
+					RedirectToURL: nextaction,
+				})
+				fmt.Fprintf(w, string(bytes))
 				return
 			}
 			tr.BuyDate = sql.NullString{String: time.Now().Format("2006-01-02 15:04:05"), Valid: true}

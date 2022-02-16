@@ -41,13 +41,13 @@ type WebhookObject struct {
 // 	return paymentintent.New(params)
 // }
 
-func Payment(cusid string, yen int64) error {
+func Payment(cusid string, yen int64, trid int) (string, error) {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 	cus, err := customer.Get(cusid, nil)
 	if err != nil {
 		log.Println("stripeHandler.go Payment(cusid string, yen int)")
 		log.Println(err)
-		return err
+		return "", err
 	}
 	a := cus.InvoiceSettings.DefaultPaymentMethod
 	fmt.Println(a.ID)
@@ -58,19 +58,33 @@ func Payment(cusid string, yen int64) error {
 		Customer:           &cusid,
 		PaymentMethod:      stripe.String(a.ID),
 		Confirm:            stripe.Bool(true),
+		ReturnURL:          stripe.String(os.Getenv("HOST") + "/trans/" + strconv.Itoa(trid)),
 	}
 	pi, err := paymentintent.New(pms)
 	if err != nil {
 		log.Println("stripeHandler.go Payment(cusid string, yen int)")
 		log.Println(err)
-		return err
+		return "", err
 	}
 	fmt.Println(pi.ID)
 	fmt.Println(pi.Status)
 	if pi.Status == stripe.PaymentIntentStatusSucceeded {
-		return nil
+		return "", nil
+	} else if pi.Status == stripe.PaymentIntentStatusRequiresAction {
+		return pi.NextAction.RedirectToURL.URL, nil
 	}
-	return errors.New("undefined error")
+	return "", errors.New("undefined error")
+}
+
+func RetrivePaymentIntent(pid string) (*stripe.PaymentIntent, error) {
+	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
+
+	pi, err := paymentintent.Get(pid, nil)
+	if err != nil {
+		log.Println("stripeHandler.go RetrivePaymentIntent(pid string) Get()")
+		return pi, err
+	}
+	return pi, nil
 }
 
 func GetClientSecret() string {
